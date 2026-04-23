@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/joho/godotenv"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,7 +22,6 @@ import (
 var (
 	DB          *gorm.DB
 	RedisClient *redis.Client
-	RabbitMQ    *amqp.Connection
 	S3Client    *s3.Client
 	S3Bucket    string
 )
@@ -68,6 +66,14 @@ func GetEnv(key, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		return fallback
+	}
+	return value
+}
+
+func GetEnvRequired(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Required environment variable %s is not set", key)
 	}
 	return value
 }
@@ -145,25 +151,6 @@ func ConnectRedis() error {
 	return nil
 }
 
-func ConnectRabbitMQ() error {
-	rabbitUser := GetEnv("RABBITMQ_USER", "guest")
-	rabbitPass := GetEnv("RABBITMQ_PASSWORD", "guest")
-	rabbitHost := GetEnv("RABBITMQ_HOST", "localhost")
-	rabbitPort := GetEnv("RABBITMQ_PORT", "5672")
-
-	rabbitURL := fmt.Sprintf("amqp://%s:%s@%s:%s/", rabbitUser, rabbitPass, rabbitHost, rabbitPort)
-
-	var err error
-	RabbitMQ, err = amqp.Dial(rabbitURL)
-	if err != nil {
-		RabbitMQ = nil
-		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
-	}
-
-	log.Println("RabbitMQ connected successfully")
-	return nil
-}
-
 func ConnectS3() {
 	accessKey := GetEnv("AWS_ACCESS_KEY_ID", "")
 	secretKey := GetEnv("AWS_SECRET_ACCESS_KEY", "")
@@ -219,20 +206,10 @@ func IsRedisConnected() bool {
 	return RedisClient.Ping(ctx).Err() == nil
 }
 
-func IsRabbitMQConnected() bool {
-	return RabbitMQ != nil && !RabbitMQ.IsClosed()
-}
-
 func CloseConnections() {
 	if RedisClient != nil {
 		if err := RedisClient.Close(); err != nil {
 			log.Printf("Error closing Redis connection: %v", err)
-		}
-	}
-
-	if RabbitMQ != nil {
-		if err := RabbitMQ.Close(); err != nil {
-			log.Printf("Error closing RabbitMQ connection: %v", err)
 		}
 	}
 

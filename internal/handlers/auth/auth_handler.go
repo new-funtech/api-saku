@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
+	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	authSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/auth"
 	"github.com/gofiber/fiber/v2"
@@ -32,15 +33,11 @@ func NewHandler(service authSvc.Service) *Handler {
 // @Router       /api/v1/auth/login [post]
 func (h *Handler) Login(c *fiber.Ctx) error {
 	var req model.LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
-			Status:  "error",
-			Code:    http.StatusBadRequest,
-			Message: constants.ErrInvalidRequest,
-		})
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
 	}
 
-	result, err := h.service.Login(req)
+	result, err := h.service.Login(c.Context(), req)
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(model.APIResponse{
 			Status:  "error",
@@ -70,15 +67,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 // @Router       /api/v1/auth/register [post]
 func (h *Handler) Register(c *fiber.Ctx) error {
 	var req model.RegisterRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
-			Status:  "error",
-			Code:    http.StatusBadRequest,
-			Message: constants.ErrInvalidRequest,
-		})
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
 	}
 
-	result, err := h.service.Register(req)
+	result, err := h.service.Register(c.Context(), req)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		message := constants.ErrInternalServer

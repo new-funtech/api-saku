@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -10,11 +11,11 @@ import (
 )
 
 type Service interface {
-	GetAllUsers(page, limit int) ([]model.UserResponse, *model.PaginationMeta, error)
-	GetUserByID(id uuid.UUID) (*model.UserResponse, error)
-	CreateUser(req model.CreateUserRequest) (*model.UserResponse, error)
-	UpdateUser(id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error)
-	DeleteUser(id uuid.UUID) error
+	GetAllUsers(ctx context.Context, page, limit int) ([]model.UserResponse, *model.PaginationMeta, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.UserResponse, error)
+	CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.UserResponse, error)
+	UpdateUser(ctx context.Context, id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error)
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type service struct {
@@ -25,15 +26,15 @@ func NewService(repo userRepo.Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) GetAllUsers(page, limit int) ([]model.UserResponse, *model.PaginationMeta, error) {
+func (s *service) GetAllUsers(ctx context.Context, page, limit int) ([]model.UserResponse, *model.PaginationMeta, error) {
 	if page < 1 {
 		page = 1
 	}
-	if limit < 1 {
+	if limit < 1 || limit > 100 {
 		limit = 10
 	}
 
-	users, total, err := s.repo.FindAll(page, limit)
+	users, total, err := s.repo.FindAll(ctx, page, limit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,8 +61,8 @@ func (s *service) GetAllUsers(page, limit int) ([]model.UserResponse, *model.Pag
 	return responses, meta, nil
 }
 
-func (s *service) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
-	user, err := s.repo.FindByID(id)
+func (s *service) GetUserByID(ctx context.Context, id uuid.UUID) (*model.UserResponse, error) {
+	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +71,8 @@ func (s *service) GetUserByID(id uuid.UUID) (*model.UserResponse, error) {
 	return &resp, nil
 }
 
-func (s *service) CreateUser(req model.CreateUserRequest) (*model.UserResponse, error) {
-	existingUser, _ := s.repo.FindByEmail(req.Email)
+func (s *service) CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.UserResponse, error) {
+	existingUser, _ := s.repo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return nil, errors.New("email already exists")
 	}
@@ -93,7 +94,7 @@ func (s *service) CreateUser(req model.CreateUserRequest) (*model.UserResponse, 
 		Role:     role,
 	}
 
-	if err = s.repo.Create(&user); err != nil {
+	if err = s.repo.Create(ctx, &user); err != nil {
 		return nil, err
 	}
 
@@ -101,8 +102,8 @@ func (s *service) CreateUser(req model.CreateUserRequest) (*model.UserResponse, 
 	return &resp, nil
 }
 
-func (s *service) UpdateUser(id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error) {
-	user, err := s.repo.FindByID(id)
+func (s *service) UpdateUser(ctx context.Context, id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error) {
+	user, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (s *service) UpdateUser(id uuid.UUID, req model.UpdateUserRequest) (*model.
 		user.Name = req.Name
 	}
 	if req.Email != "" {
-		existingUser, _ := s.repo.FindByEmail(req.Email)
+		existingUser, _ := s.repo.FindByEmail(ctx, req.Email)
 		if existingUser != nil && existingUser.ID != id {
 			return nil, errors.New("email already exists")
 		}
@@ -128,7 +129,7 @@ func (s *service) UpdateUser(id uuid.UUID, req model.UpdateUserRequest) (*model.
 		user.Role = req.Role
 	}
 
-	if err = s.repo.Update(user); err != nil {
+	if err = s.repo.Update(ctx, user); err != nil {
 		return nil, err
 	}
 
@@ -136,12 +137,12 @@ func (s *service) UpdateUser(id uuid.UUID, req model.UpdateUserRequest) (*model.
 	return &resp, nil
 }
 
-func (s *service) DeleteUser(id uuid.UUID) error {
-	_, err := s.repo.FindByID(id)
+func (s *service) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(id)
+	return s.repo.Delete(ctx, id)
 }
 
 func toUserResponse(u model.User) model.UserResponse {

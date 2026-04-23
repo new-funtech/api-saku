@@ -21,11 +21,11 @@ const (
 )
 
 type Service interface {
-	GetAllProducts(page, limit int) ([]model.ProductResponse, *model.PaginationMeta, error)
-	GetProductByID(id uuid.UUID) (*model.ProductResponse, error)
-	CreateProduct(req model.CreateProductRequest) (*model.ProductResponse, error)
-	UpdateProduct(id uuid.UUID, req model.UpdateProductRequest) (*model.ProductResponse, error)
-	DeleteProduct(id uuid.UUID) error
+	GetAllProducts(ctx context.Context, page, limit int) ([]model.ProductResponse, *model.PaginationMeta, error)
+	GetProductByID(ctx context.Context, id uuid.UUID) (*model.ProductResponse, error)
+	CreateProduct(ctx context.Context, req model.CreateProductRequest) (*model.ProductResponse, error)
+	UpdateProduct(ctx context.Context, id uuid.UUID, req model.UpdateProductRequest) (*model.ProductResponse, error)
+	DeleteProduct(ctx context.Context, id uuid.UUID) error
 }
 
 type service struct {
@@ -41,15 +41,14 @@ type cachedProductList struct {
 	Total    int64           `json:"total"`
 }
 
-func (s *service) GetAllProducts(page, limit int) ([]model.ProductResponse, *model.PaginationMeta, error) {
+func (s *service) GetAllProducts(ctx context.Context, page, limit int) ([]model.ProductResponse, *model.PaginationMeta, error) {
 	if page < 1 {
 		page = 1
 	}
-	if limit < 1 {
+	if limit < 1 || limit > 100 {
 		limit = 10
 	}
 
-	ctx := context.Background()
 	cacheKey := fmt.Sprintf("%spage:%d:limit:%d", listKeyPrefix, page, limit)
 
 	var products []model.Product
@@ -63,7 +62,7 @@ func (s *service) GetAllProducts(page, limit int) ([]model.ProductResponse, *mod
 
 	if products == nil {
 		var err error
-		products, total, err = s.repo.FindAll(page, limit)
+		products, total, err = s.repo.FindAll(ctx, page, limit)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -99,8 +98,7 @@ func (s *service) GetAllProducts(page, limit int) ([]model.ProductResponse, *mod
 	return responses, meta, nil
 }
 
-func (s *service) GetProductByID(id uuid.UUID) (*model.ProductResponse, error) {
-	ctx := context.Background()
+func (s *service) GetProductByID(ctx context.Context, id uuid.UUID) (*model.ProductResponse, error) {
 	cacheKey := fmt.Sprintf("%s%s", cacheKeyPrefix, id.String())
 
 	var product *model.Product
@@ -111,7 +109,7 @@ func (s *service) GetProductByID(id uuid.UUID) (*model.ProductResponse, error) {
 
 	if product == nil {
 		var err error
-		product, err = s.repo.FindByID(id)
+		product, err = s.repo.FindByID(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +125,7 @@ func (s *service) GetProductByID(id uuid.UUID) (*model.ProductResponse, error) {
 	return &resp, nil
 }
 
-func (s *service) CreateProduct(req model.CreateProductRequest) (*model.ProductResponse, error) {
+func (s *service) CreateProduct(ctx context.Context, req model.CreateProductRequest) (*model.ProductResponse, error) {
 	product := model.Product{
 		Name:        req.Name,
 		Description: req.Description,
@@ -136,29 +134,27 @@ func (s *service) CreateProduct(req model.CreateProductRequest) (*model.ProductR
 		Image:       req.Image,
 	}
 
-	if err := s.repo.Create(&product); err != nil {
+	if err := s.repo.Create(ctx, &product); err != nil {
 		return nil, err
 	}
 
-	s.invalidateCache()
+	s.invalidateListCache(ctx)
 
 	resp := toProductResponse(product)
 	if product.Image != "" {
-		ctx := context.Background()
 		url, _ := utils.GeneratePresignedURL(ctx, product.Image, 24*time.Hour)
 		resp.ImageURL = url
 	}
 	return &resp, nil
 }
 
-func (s *service) UpdateProduct(id uuid.UUID, req model.UpdateProductRequest) (*model.ProductResponse, error) {
-	product, err := s.repo.FindByID(id)
+func (s *service) UpdateProduct(ctx context.Context, id uuid.UUID, req model.UpdateProductRequest) (*model.ProductResponse, error) {
+	product, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if req.Image != "" && req.Image != product.Image && product.Image != "" {
-		ctx := context.Background()
 		_ = utils.DeleteFileFromS3(ctx, product.Image)
 	}
 
@@ -178,37 +174,35 @@ func (s *service) UpdateProduct(id uuid.UUID, req model.UpdateProductRequest) (*
 		product.Image = req.Image
 	}
 
-	if err = s.repo.Update(product); err != nil {
+	if err = s.repo.Update(ctx, product); err != nil {
 		return nil, err
 	}
 
-	s.invalidateCache()
+	s.invalidateProductCache(ctx, id)
 
 	resp := toProductResponse(*product)
 	if product.Image != "" {
-		ctx := context.Background()
 		url, _ := utils.GeneratePresignedURL(ctx, product.Image, 24*time.Hour)
 		resp.ImageURL = url
 	}
 	return &resp, nil
 }
 
-func (s *service) DeleteProduct(id uuid.UUID) error {
-	product, err := s.repo.FindByID(id)
+func (s *service) DeleteProduct(ctx context.Context, id uuid.UUID) error {
+	product, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if product.Image != "" {
-		ctx := context.Background()
 		_ = utils.DeleteFileFromS3(ctx, product.Image)
 	}
 
-	if err := s.repo.Delete(id); err != nil {
+	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
 	}
 
-	s.invalidateCache()
+	s.invalidateProductCache(ctx, id)
 	return nil
 }
 
@@ -240,20 +234,36 @@ func (s *service) setCache(ctx context.Context, key string, value interface{}, t
 	}
 }
 
-func (s *service) invalidateCache() {
+// invalidateProductCache invalidates cache for a specific product and all list caches
+func (s *service) invalidateProductCache(ctx context.Context, id uuid.UUID) {
 	if config.RedisClient == nil {
 		return
 	}
-	ctx := context.Background()
 
-	iter := config.RedisClient.Scan(ctx, 0, "product*", 100).Iterator()
+	// Delete specific product cache
+	productKey := fmt.Sprintf("%s%s", cacheKeyPrefix, id.String())
+	config.RedisClient.Del(ctx, productKey)
+
+	// Delete all list caches
+	s.invalidateListCache(ctx)
+
+	log.Printf("Invalidated cache for product %s", id.String())
+}
+
+// invalidateListCache invalidates all product list caches
+func (s *service) invalidateListCache(ctx context.Context) {
+	if config.RedisClient == nil {
+		return
+	}
+
+	iter := config.RedisClient.Scan(ctx, 0, listKeyPrefix+"*", 100).Iterator()
 	var keys []string
 	for iter.Next(ctx) {
 		keys = append(keys, iter.Val())
 	}
 	if len(keys) > 0 {
 		config.RedisClient.Del(ctx, keys...)
-		log.Printf("Invalidated %d product cache keys", len(keys))
+		log.Printf("Invalidated %d product list cache keys", len(keys))
 	}
 }
 

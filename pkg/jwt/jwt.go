@@ -17,7 +17,7 @@ type Claims struct {
 }
 
 func GenerateToken(userID uuid.UUID, email, role string) (string, error) {
-	secret := config.GetEnv("JWT_SECRET", "ganipedia-secret-key")
+	secret := config.GetEnvRequired("JWT_SECRET")
 
 	claims := Claims{
 		UserID: userID,
@@ -34,7 +34,7 @@ func GenerateToken(userID uuid.UUID, email, role string) (string, error) {
 }
 
 func ValidateToken(tokenString string) (*Claims, error) {
-	secret := config.GetEnv("JWT_SECRET", "ganipedia-secret-key")
+	secret := config.GetEnvRequired("JWT_SECRET")
 
 	token, err := jwtlib.ParseWithClaims(tokenString, &Claims{}, func(token *jwtlib.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwtlib.SigningMethodHMAC); !ok {

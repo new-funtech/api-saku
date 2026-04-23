@@ -40,7 +40,7 @@ func (h *ProductHandler) moveTempToPermanent(product *model.ProductResponse) {
 	}
 
 	updateReq := model.UpdateProductRequest{Image: permanentKey}
-	updated, err := h.service.UpdateProduct(product.ID, updateReq)
+	updated, err := h.service.UpdateProduct(ctx, product.ID, updateReq)
 	if err != nil {
 		log.Printf("Warning: Failed to update product image path: %v", err)
 		return
@@ -63,7 +63,7 @@ func (h *ProductHandler) GetAllProducts(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 
-	products, meta, err := h.service.GetAllProducts(page, limit)
+	products, meta, err := h.service.GetAllProducts(c.Context(), page, limit)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -103,7 +103,7 @@ func (h *ProductHandler) GetProductByID(c *fiber.Ctx) error {
 		})
 	}
 
-	product, err := h.service.GetProductByID(id)
+	product, err := h.service.GetProductByID(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
 			Status:  "error",
@@ -142,7 +142,7 @@ func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 		})
 	}
 
-	product, err := h.service.CreateProduct(req)
+	product, err := h.service.CreateProduct(c.Context(), req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -196,7 +196,7 @@ func (h *ProductHandler) UpdateProduct(c *fiber.Ctx) error {
 		})
 	}
 
-	product, err := h.service.UpdateProduct(id, req)
+	product, err := h.service.UpdateProduct(c.Context(), id, req)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
 			Status:  "error",
@@ -239,7 +239,7 @@ func (h *ProductHandler) DeleteProduct(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.service.DeleteProduct(id)
+	err = h.service.DeleteProduct(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
 			Status:  "error",

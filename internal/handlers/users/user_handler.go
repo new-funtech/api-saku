@@ -36,7 +36,7 @@ func (h *UserHandler) GetAllUsers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
 
-	users, meta, err := h.service.GetAllUsers(page, limit)
+	users, meta, err := h.service.GetAllUsers(c.Context(), page, limit)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -77,7 +77,7 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.service.GetUserByID(id)
+	user, err := h.service.GetUserByID(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
 			Status:  "error",
@@ -116,7 +116,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.service.CreateUser(req)
+	user, err := h.service.CreateUser(c.Context(), req)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		message := constants.ErrInternalServer
@@ -173,7 +173,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := h.service.UpdateUser(id, req)
+	user, err := h.service.UpdateUser(c.Context(), id, req)
 	if err != nil {
 		statusCode := http.StatusNotFound
 		message := constants.ErrUserNotFound
@@ -219,7 +219,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	err = h.service.DeleteUser(id)
+	err = h.service.DeleteUser(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
 			Status:  "error",

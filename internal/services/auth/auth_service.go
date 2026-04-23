@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -10,8 +11,8 @@ import (
 )
 
 type Service interface {
-	Login(req model.LoginRequest) (*model.AuthResponse, error)
-	Register(req model.RegisterRequest) (*model.AuthResponse, error)
+	Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error)
+	Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error)
 }
 
 type service struct {
@@ -22,8 +23,8 @@ func NewService(userRepo userRepo.Repository) Service {
 	return &service{userRepo: userRepo}
 }
 
-func (s *service) Login(req model.LoginRequest) (*model.AuthResponse, error) {
-	user, err := s.userRepo.FindByEmail(req.Email)
+func (s *service) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {
+	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
 	}
@@ -48,8 +49,8 @@ func (s *service) Login(req model.LoginRequest) (*model.AuthResponse, error) {
 	}, nil
 }
 
-func (s *service) Register(req model.RegisterRequest) (*model.AuthResponse, error) {
-	existing, _ := s.userRepo.FindByEmail(req.Email)
+func (s *service) Register(ctx context.Context, req model.RegisterRequest) (*model.AuthResponse, error) {
+	existing, _ := s.userRepo.FindByEmail(ctx, req.Email)
 	if existing != nil {
 		return nil, errors.New("email already exists")
 	}
@@ -66,7 +67,7 @@ func (s *service) Register(req model.RegisterRequest) (*model.AuthResponse, erro
 		Role:     "user",
 	}
 
-	if err := s.userRepo.Create(&user); err != nil {
+	if err := s.userRepo.Create(ctx, &user); err != nil {
 		return nil, err
 	}
 

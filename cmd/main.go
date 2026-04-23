@@ -64,11 +64,6 @@ func main() {
 		log.Printf("Warning: %v - Redis caching will be disabled", err)
 	}
 
-	// Connect to RabbitMQ
-	if err := config.ConnectRabbitMQ(); err != nil {
-		log.Printf("Warning: %v - Message queue features will be disabled", err)
-	}
-
 	// Connect to S3/MinIO
 	config.ConnectS3()
 
@@ -88,14 +83,17 @@ func main() {
 	// Middleware
 	app.Use(requestid.New())
 	app.Use(logger.New(logger.Config{
-		Format:     "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${error}\n",
+		Format:     "[${time}] ${locals:requestid} | ${status} | ${latency} | ${ip} | ${method} ${path} | ${error}\n",
 		TimeFormat: "2006-01-02 15:04:05",
+		TimeZone:   "Local",
 	}))
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: config.GetEnv("CORS_ORIGINS", "*"),
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID",
+		AllowOrigins:     config.GetEnv("CORS_ORIGINS", "*"),
+		AllowMethods:     "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
+		AllowCredentials: false,
+		MaxAge:           300, // 5 minutes
 	}))
 
 	// Swagger
@@ -159,11 +157,6 @@ func healthCheck(c *fiber.Ctx) error {
 		redisStatus = "disconnected"
 	}
 
-	rabbitStatus := "connected"
-	if !config.IsRabbitMQConnected() {
-		rabbitStatus = "disconnected"
-	}
-
 	status := "healthy"
 	statusCode := fiber.StatusOK
 	if dbStatus == "disconnected" {
@@ -176,7 +169,6 @@ func healthCheck(c *fiber.Ctx) error {
 		"services": fiber.Map{
 			"database": dbStatus,
 			"redis":    redisStatus,
-			"rabbitmq": rabbitStatus,
 		},
 	})
 }
