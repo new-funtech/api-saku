@@ -8,15 +8,14 @@ import (
 )
 
 type Product struct {
-	ID          uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey"`
-	Name        string         `json:"name" gorm:"type:varchar(255);not null"`
-	Description string         `json:"description" gorm:"type:text"`
-	Price       float64        `json:"price" gorm:"type:decimal(10,2);not null"`
-	Stock       int            `json:"stock" gorm:"type:int;not null;default:0"`
-	Image       string         `json:"image" gorm:"type:varchar(500)"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
+	Name        string    `json:"name" gorm:"type:varchar(255);not null"`
+	Description string    `json:"description" gorm:"type:text"`
+	Price       float64   `json:"price" gorm:"type:decimal(10,2);not null"`
+	Stock       int       `json:"stock" gorm:"type:int;not null;default:0"`
+	Image       string    `json:"image" gorm:"type:varchar(500)"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (p *Product) BeforeCreate(tx *gorm.DB) error {

@@ -10,8 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// extractToken gets the JWT token from the Authorization header.
-// Supports both "Bearer <token>" and raw "<token>" formats.
 func extractToken(header string) string {
 	if strings.HasPrefix(header, "Bearer ") {
 		return strings.TrimPrefix(header, "Bearer ")

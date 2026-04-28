@@ -1,53 +1,345 @@
-# Ganipedia API
+# HRMIS API - Human Resource Management Information System
 
-A modern RESTful API built with Go (Golang) and Fiber framework for product management system. This API provides comprehensive features including user authentication, product management, file storage integration, caching, and message queue support.
+A robust, production-ready HRMIS backend API built with Go, Fiber, PostgreSQL, Redis, and MinIO. This system manages personnel, attendance, leaves, payroll, and comprehensive HR operations.
 
-## 🚀 Features
+## 🚀 Recent Improvements & Best Practices
 
-- **Authentication & Authorization**: JWT-based authentication with role-based access control
-- **Product Management**: Full CRUD operations for products with image upload support
-- **User Management**: User registration, login, and profile management
-- **File Storage**: S3/MinIO integration for scalable image storage with presigned URLs
-- **Caching**: Redis caching for improved performance
-- **Message Queue**: RabbitMQ integration for asynchronous processing
-- **Auto Cleanup**: Scheduled cleanup service for temporary files
-- **API Documentation**: Auto-generated Swagger/OpenAPI documentation
-- **Database**: PostgreSQL with GORM ORM and automatic migrations
-- **Health Checks**: Built-in health check endpoint with dependency status
+### Code Quality Enhancements
+
+#### ✅ **Enhanced Error Handling**
+- Comprehensive AppError system with proper HTTP status codes
+- Consistent error responses across all handlers
+- Error type checkers (IsNotFound, IsValidation, IsUnauthorized, etc.)
+- Proper error wrapping with context
+
+#### ✅ **Handler Layer Improvements**
+- Reduced context timeout from 30s to 10s for better performance
+- Consistent use of utility functions (SuccessResponse, ErrorResponse, HandleError)
+- Better input validation with descriptive error messages
+- Eliminated duplicate error handling code
+- Uses Fiber's context (`c.Context()`) instead of `context.Background()`
+
+#### ✅ **Service Layer Enhancements**
+- Proper use of custom AppError types
+- Business logic validation with clear error messages
+- Cleaner code with reusable helper functions
+- Proper date/time parsing with utility functions
+
+#### ✅ **Repository Pattern Improvements**
+- Consistent error handling with AppError
+- Proper GORM error checking (`gorm.ErrRecordNotFound`)
+- Better error messages for database operations
+- Context propagation throughout
+
+#### ✅ **Utilities & Helpers**
+- Response utility functions
+- Centralized pagination logic
+- Date/Time parsing utilities
+- Pointer helpers
+
+#### ✅ **Docker Optimization**
+- Multi-stage builds (~15MB final image)
+- Non-root user for security
+- Health checks
+- Optimized layer caching
+- Comprehensive .dockerignore
 
 ## 📋 Prerequisites
 
-- Go 1.25.0 or higher
-- PostgreSQL 12+
-- Redis (optional, for caching)
-- RabbitMQ (optional, for message queue)
-- MinIO or AWS S3 (for file storage)
+- Go 1.25+ 
+- Docker & Docker Compose (recommended)
+- PostgreSQL 16+
+- Redis 7+
+- MinIO or AWS S3
 
 ## 🛠️ Installation
 
-1. **Clone the repository**
+### Using Docker (Recommended)
+
 ```bash
-git clone <repository-url>
-cd ganipedia/backend
+# Start all services
+make docker-up
+
+# View logs
+make docker-logs
+
+# Stop services
+make docker-down
 ```
 
-2. **Install dependencies**
+Services available at:
+- **API**: http://localhost:4000
+- **Swagger UI**: http://localhost:4000/swagger/index.html
+- **MinIO Console**: http://localhost:9001
+
+### Local Development
+
 ```bash
-go mod download
+# Install dependencies
+make deps
+
+# Copy environment file
+cp envs/.env.example envs/.env
+
+# Edit configuration
+nano envs/.env
+
+# Run the application
+make run
 ```
 
-3. **Set up environment variables**
+## 🔧 Configuration
 
-Create a `.env` file in the `envs/` directory:
+Create `.env` in `envs/` directory:
 
 ```env
 # Application
 APP_PORT=4000
+APP_ENV=development
 
 # Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=hrmis
+DB_SSLMODE=disable
+DB_MAX_OPEN_CONNS=25
+DB_MAX_IDLE_CONNS=5
+DB_CONN_MAX_LIFETIME=5
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_POOL_SIZE=10
+
+# S3/MinIO
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_DEFAULT_REGION=us-east-1
+AWS_ENDPOINT=http://localhost:9000
+AWS_USE_PATH_STYLE_ENDPOINT=true
+AWS_BUCKET=hrmis
+
+# JWT
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRATION=24h
+
+# CORS
+CORS_ORIGINS=*
+```
+
+## 📚 API Documentation
+
+Access Swagger UI at: http://localhost:4000/swagger/index.html
+
+Regenerate docs:
+```bash
+make swagger
+```
+
+## 🔌 API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/login` - User login
+- `POST /api/v1/auth/register` - User registration
+
+### Personnel Management
+- `GET /api/v1/personnels` - List all personnel
+- `GET /api/v1/personnels/:id` - Get personnel details
+- `POST /api/v1/personnels` - Create personnel
+- `PUT /api/v1/personnels/:id` - Update personnel
+- `DELETE /api/v1/personnels/:id` - Delete personnel
+
+### Attendance
+- `GET /api/v1/attendances` - List attendances
+- `POST /api/v1/attendances` - Create attendance
+- `GET /api/v1/attendance-corrections` - List corrections
+- `POST /api/v1/attendance-corrections` - Request correction
+
+### Leave Management
+- `GET /api/v1/leaves` - List leave requests
+- `POST /api/v1/leaves` - Submit leave request
+- `PUT /api/v1/leaves/:id` - Update leave request
+
+### Payroll
+- `GET /api/v1/payrolls` - List payrolls
+- `POST /api/v1/payrolls` - Generate payroll
+- `GET /api/v1/salary-components` - List salary components
+
+### Health Check
+- `GET /health` - System health status
+
+## 🔐 Authentication
+
+Use JWT tokens in the Authorization header:
+
+```bash
+Authorization: Bearer <your-jwt-token>
+```
+
+Example login:
+```bash
+curl -X POST http://localhost:4000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "password123"
+  }'
+```
+
+## 📂 Project Structure
+
+```
+.
+├── cmd/
+│   └── main.go                 # Application entry point
+├── internal/
+│   ├── config/                 # Configuration
+│   ├── constants/              # Constants
+│   ├── errors/                 # Custom errors
+│   ├── handlers/               # HTTP handlers
+│   ├── middleware/             # Middleware
+│   ├── model/                  # Data models
+│   ├── repository/             # Data access
+│   ├── routes/                 # Routes
+│   └── services/               # Business logic
+├── pkg/
+│   ├── jwt/                    # JWT utilities
+│   └── utils/                  # Helpers
+├── docs/                       # Swagger docs
+├── docker/                     # Docker files
+├── Makefile                    # Dev commands
+└── docker-compose.yml          # Docker compose
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+make test
+
+# Run with coverage
+go test -v -race -coverprofile=coverage.out ./...
+
+# View coverage
+go tool cover -html=coverage.out
+```
+
+## 🛠️ Makefile Commands
+
+```bash
+make help           # Show all commands
+make run            # Run application
+make build          # Build binary
+make test           # Run tests
+make docker-up      # Start docker services
+make docker-down    # Stop docker services
+make docker-logs    # View docker logs
+make swagger        # Generate swagger docs
+make clean          # Clean artifacts
+make fmt            # Format code
+make lint           # Run linter
+```
+
+## 🚢 Deployment
+
+### Docker
+
+```bash
+# Build image
+make docker-build
+
+# Push to registry
+docker tag hrmis-api:latest your-registry/hrmis-api:latest
+docker push your-registry/hrmis-api:latest
+
+# Deploy
+docker-compose up -d
+```
+
+### Binary
+
+```bash
+# Build
+make build
+
+# Run
+./bin/api-hrmis
+```
+
+## 📈 Performance Features
+
+- Database connection pooling (25 max connections)
+- Redis caching with automatic TTL
+- Request timeout middleware (10s default)
+- Optimized Docker image (~15MB)
+- Context-aware operations
+- Prepared statements via GORM
+
+## 🔒 Security Features
+
+- JWT authentication
+- Non-root Docker user
+- CORS configuration
+- Input validation
+- Prepared statements
+- Environment-based secrets
+
+## 📊 Health Check
+
+```bash
+curl http://localhost:4000/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "database": "connected",
+    "redis": "connected"
+  }
+}
+```
+
+## 📦 Key Dependencies
+
+- **Fiber v2** - HTTP framework
+- **GORM** - ORM
+- **PostgreSQL** - Database
+- **Redis** - Cache
+- **MinIO/S3** - File storage
+- **JWT** - Authentication
+- **Swagger** - Documentation
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch
+3. Make changes
+4. Run tests: `make test`
+5. Submit pull request
+
+## 📄 License
+
+[Your License]
+
+## 👥 Support
+
+- GitHub Issues
+- Email: support@hrmis.com
+
+## 📚 Resources
+
+- [Go Docs](https://golang.org/doc/)
+- [Fiber Docs](https://docs.gofiber.io/)
+- [GORM Docs](https://gorm.io/)
+- [PostgreSQL](https://www.postgresql.org/docs/)
+- [Redis](https://redis.io/documentation)
+
 DB_PASSWORD=your_password
 DB_NAME=ganipedia
 DB_SSLMODE=disable

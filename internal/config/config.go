@@ -90,9 +90,22 @@ func ConnectDatabase() {
 	)
 
 	var err error
+	// Build a GORM logger that mirrors the previous Warn level but ignores
+	// "record not found" — those are normal control-flow errors (e.g.
+	// FindByUserID for a super_admin without personnel) and shouldn't spam
+	// the request log.
+	gormLog := gormlogger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		gormlogger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  gormlogger.Warn,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  true,
+		},
+	)
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger:                                   gormlogger.Default.LogMode(gormlogger.Warn),
-		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger:                                   gormLog,
+		DisableForeignKeyConstraintWhenMigrating: false,
 		PrepareStmt:                              true,
 	})
 	if err != nil {

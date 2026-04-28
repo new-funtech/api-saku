@@ -8,34 +8,30 @@ import (
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/config"
-	authHandler "github.com/ganiramadhan/ganipedia/backend/internal/handlers/auth"
-	productHandler "github.com/ganiramadhan/ganipedia/backend/internal/handlers/products"
-	userHandler "github.com/ganiramadhan/ganipedia/backend/internal/handlers/users"
-	productRepo "github.com/ganiramadhan/ganipedia/backend/internal/repository/product"
-	userRepo "github.com/ganiramadhan/ganipedia/backend/internal/repository/user"
+	"github.com/ganiramadhan/ganipedia/backend/internal/handlers"
+	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/ganiramadhan/ganipedia/backend/internal/routes"
-	authSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/auth"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	cleanupSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/cleanup"
-	productSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/product"
-	userSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/user"
 
 	_ "github.com/ganiramadhan/ganipedia/backend/docs"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 )
 
-// @title           Ganipedia API
+// @title           HRMIS API
 // @version         1.0
-// @description     Ganipedia Backend API - Product Management
+// @description     HRMIS Backend API - Human Resource Management Information System
 // @termsOfService  http://swagger.io/terms/
 
-// @contact.name   Gani Ramadhan
-// @contact.email  gani@example.com
+// @contact.name   API Support
+// @contact.email  support@hrmis.com
 
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
@@ -72,7 +68,7 @@ func main() {
 
 	// Initialize Fiber with production-ready config
 	app := fiber.New(fiber.Config{
-		AppName:      "Ganipedia API v1.0",
+		AppName:      "HRMIS API v1.0",
 		BodyLimit:    10 * 1024 * 1024, // 10MB
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -96,6 +92,23 @@ func main() {
 		MaxAge:           300, // 5 minutes
 	}))
 
+	// Global rate limiter: 300 req/min per IP. Skips successful health checks.
+	app.Use(limiter.New(limiter.Config{
+		Max:        300,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		Next: func(c *fiber.Ctx) bool {
+			return c.Path() == "/health"
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"status": "error", "code": fiber.StatusTooManyRequests, "message": "too many requests",
+			})
+		},
+	}))
+
 	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
@@ -103,18 +116,73 @@ func main() {
 	app.Get("/health", healthCheck)
 
 	// Initialize repositories
-	pRepo := productRepo.NewRepository(config.DB)
-	uRepo := userRepo.NewRepository(config.DB)
+	productRepo := repository.NewProductRepository(config.DB)
+	userRepo := repository.NewUserRepository(config.DB)
+	bujpRepo := repository.NewBujpRepository(config.DB)
+	locationRepo := repository.NewLocationRepository(config.DB)
+	shiftRepo := repository.NewShiftRepository(config.DB)
+	personnelRepo := repository.NewPersonnelRepository(config.DB)
+	assignmentRepo := repository.NewAssignmentRepository(config.DB)
+	attendanceRepo := repository.NewAttendanceRepository(config.DB)
+	attendanceCorrectionRepo := repository.NewAttendanceCorrectionRepository(config.DB)
+	patrolRepo := repository.NewPatrolRepository(config.DB)
+	leaveRepo := repository.NewLeaveRepository(config.DB)
+	salaryComponentRepo := repository.NewSalaryComponentRepository(config.DB)
+	payrollRepo := repository.NewPayrollRepository(config.DB)
+	monthlyReportRepo := repository.NewMonthlyReportRepository(config.DB)
+	loanProductRepo := repository.NewLoanProductRepository(config.DB)
+	loanRepo := repository.NewLoanRepository(config.DB)
+	loanApprovalRepo := repository.NewLoanApprovalRepository(config.DB)
+	loanInstallmentRepo := repository.NewLoanInstallmentRepository(config.DB)
+	// notificationRepo := repository.NewNotificationRepository(config.DB) // Notification feature disabled
 
 	// Initialize services
-	pSvc := productSvc.NewService(pRepo)
-	uSvc := userSvc.NewService(uRepo)
-	aSvc := authSvc.NewService(uRepo)
+	productSvc := services.NewProductService(productRepo)
+	userSvc := services.NewUserService(userRepo, personnelRepo, assignmentRepo, loanRepo)
+	authSvc := services.NewAuthService(userRepo)
+	bujpSvc := services.NewBujpService(bujpRepo)
+	locationSvc := services.NewLocationService(locationRepo)
+	shiftSvc := services.NewShiftService(shiftRepo)
+	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo)
+	assignmentSvc := services.NewAssignmentService(assignmentRepo)
+	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
+	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo)
+	patrolSvc := services.NewPatrolService(patrolRepo, attendanceRepo)
+	leaveSvc := services.NewLeaveService(leaveRepo)
+	salaryComponentSvc := services.NewSalaryComponentService(salaryComponentRepo)
+	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, salaryComponentRepo)
+	monthlyReportSvc := services.NewMonthlyReportService(monthlyReportRepo)
+	loanProductSvc := services.NewLoanProductService(loanProductRepo)
+	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo)
+	loanApprovalSvc := services.NewLoanApprovalService(loanApprovalRepo, loanRepo, loanInstallmentRepo, loanSvc)
+	loanInstallmentSvc := services.NewLoanInstallmentService(loanInstallmentRepo, loanRepo)
+	// notificationSvc := services.NewNotificationService(notificationRepo) // Notification feature disabled
+	dashboardSvc := services.NewDashboardService(userRepo, bujpRepo, locationRepo, personnelRepo, assignmentRepo, attendanceRepo, leaveRepo)
 
 	// Initialize handlers
-	pHdl := productHandler.NewProductHandler(pSvc)
-	uHdl := userHandler.NewUserHandler(uSvc)
-	aHdl := authHandler.NewHandler(aSvc)
+	productHdl := handlers.NewProductHandler(productSvc)
+	userHdl := handlers.NewUserHandler(userSvc)
+	authHdl := handlers.NewAuthHandler(authSvc)
+	bujpHdl := handlers.NewBujpHandler(bujpSvc)
+	locationHdl := handlers.NewLocationHandler(locationSvc)
+	shiftHdl := handlers.NewShiftHandler(shiftSvc)
+	personnelImportSvc := services.NewPersonnelImportService(personnelRepo, userRepo)
+	personnelHdl := handlers.NewPersonnelHandler(personnelSvc, personnelImportSvc, userRepo)
+	assignmentHdl := handlers.NewAssignmentHandler(assignmentSvc)
+	attendanceHdl := handlers.NewAttendanceHandler(attendanceSvc)
+	attendanceCorrectionHdl := handlers.NewAttendanceCorrectionHandler(attendanceCorrectionSvc)
+	patrolHdl := handlers.NewPatrolHandler(patrolSvc)
+	leaveHdl := handlers.NewLeaveHandler(leaveSvc)
+	salaryComponentHdl := handlers.NewSalaryComponentHandler(salaryComponentSvc)
+	payrollHdl := handlers.NewPayrollHandler(payrollSvc)
+	monthlyReportHdl := handlers.NewMonthlyReportHandler(monthlyReportSvc, userRepo)
+	loanProductHdl := handlers.NewLoanProductHandler(loanProductSvc)
+	loanHdl := handlers.NewLoanHandler(loanSvc)
+	loanApprovalHdl := handlers.NewLoanApprovalHandler(loanApprovalSvc)
+	loanInstallmentHdl := handlers.NewLoanInstallmentHandler(loanInstallmentSvc, loanSvc)
+	// notificationHdl := handlers.NewNotificationHandler(notificationSvc) // Notification feature disabled
+	uploadHdl := handlers.NewUploadHandler()
+	dashboardHdl := handlers.NewDashboardHandler(dashboardSvc)
 
 	// Start cleanup service for temp files
 	cleanup := cleanupSvc.NewService()
@@ -122,7 +190,7 @@ func main() {
 	defer cleanup.Stop()
 
 	// Setup routes
-	routes.SetupRoutes(app, aHdl, pHdl, uHdl)
+	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, userRepo, personnelRepo)
 
 	// Start server with graceful shutdown
 	port := config.GetEnv("APP_PORT", "4000")

@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  model.APIResponse:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse:
     properties:
       code:
         example: 200
@@ -10,20 +10,802 @@ definitions:
         example: Success
         type: string
       meta:
-        $ref: '#/definitions/model.PaginationMeta'
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
       status:
         example: success
         type: string
     type: object
-  model.AuthResponse:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest:
+    properties:
+      approver_notes:
+        type: string
+      status:
+        enum:
+        - approved
+        - rejected
+        type: string
+    required:
+    - status
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest:
+    properties:
+      approver_notes:
+        type: string
+      status:
+        enum:
+        - approved
+        - rejected
+        type: string
+    required:
+    - status
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      creator:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+      end_date:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location'
+      location_id:
+        type: string
+      notes:
+        type: string
+      personnel:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        description: Relations
+      personnel_id:
+        type: string
+      shift:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Shift'
+      shift_id:
+        type: string
+      start_date:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance:
+    properties:
+      assignment:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment'
+      assignment_id:
+        type: string
+      check_in:
+        type: string
+      check_in_latitude:
+        type: string
+      check_in_longitude:
+        type: string
+      check_in_photo:
+        type: string
+      check_out:
+        type: string
+      check_out_latitude:
+        type: string
+      check_out_longitude:
+        type: string
+      check_out_photo:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location'
+      location_id:
+        type: string
+      notes:
+        type: string
+      personnel:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        description: Relations
+      personnel_id:
+        type: string
+      status:
+        type: string
+      supporting_document:
+        type: string
+      updated_at:
+        type: string
+      work_duration:
+        description: in minutes
+        type: integer
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection:
+    properties:
+      approved_at:
+        type: string
+      approver:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+      approver_id:
+        type: string
+      approver_notes:
+        type: string
+      checkin_time:
+        type: string
+      checkout_time:
+        type: string
+      correction_date:
+        type: string
+      correction_type:
+        description: checkin, checkout, both
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      personnel:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        description: Relations
+      personnel_id:
+        type: string
+      reason:
+        type: string
+      status:
+        type: string
+      supporting_document:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse:
     properties:
       token:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       user:
-        $ref: '#/definitions/model.UserResponse'
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse'
     type: object
-  model.CreateProductRequest:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp:
+    properties:
+      address:
+        type: string
+      bjb_account_number:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      locations:
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location'
+        type: array
+      name:
+        type: string
+      personnels:
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        type: array
+      phone:
+        type: string
+      pic_name:
+        type: string
+      pic_phone:
+        type: string
+      pks_document:
+        type: string
+      pks_number:
+        type: string
+      pks_validity_end:
+        type: string
+      pks_validity_start:
+        type: string
+      shifts:
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Shift'
+        type: array
+      status:
+        type: string
+      updated_at:
+        type: string
+      users:
+        description: Relations
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+        type: array
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse:
+    properties:
+      address:
+        example: Jl. Kebun Mas Blok Q147
+        type: string
+      bjb_account_number:
+        example: "0123456789"
+        type: string
+      code:
+        example: BUJP001
+        type: string
+      created_at:
+        type: string
+      email:
+        example: info@bujp.com
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: GARDA MUTIARA TIMUR
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      pic_name:
+        example: John Doe
+        type: string
+      pic_phone:
+        example: "081234567890"
+        type: string
+      pks_document:
+        example: bujps/pks/doc.pdf
+        type: string
+      pks_document_url:
+        example: https://s3.example.com/presigned-url
+        type: string
+      pks_number:
+        example: PKS/BJB/2026/001
+        type: string
+      pks_validity_end:
+        example: "2027-01-01"
+        type: string
+      pks_validity_start:
+        example: "2026-01-01"
+        type: string
+      status:
+        example: active
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.ChangePasswordRequest:
+    properties:
+      current_password:
+        example: oldpassword123
+        type: string
+      new_password:
+        example: newpassword123
+        minLength: 6
+        type: string
+      new_password_confirmation:
+        example: newpassword123
+        type: string
+    required:
+    - current_password
+    - new_password
+    - new_password_confirmation
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAssignmentRequest:
+    properties:
+      created_by:
+        type: string
+      end_date:
+        description: 'format: 2006-01-02'
+        type: string
+      location_id:
+        type: string
+      notes:
+        type: string
+      personnel_id:
+        type: string
+      shift_id:
+        type: string
+      start_date:
+        description: 'format: 2006-01-02'
+        type: string
+      status:
+        enum:
+        - active
+        - completed
+        - cancelled
+        type: string
+    required:
+    - location_id
+    - personnel_id
+    - start_date
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceCorrectionRequest:
+    properties:
+      checkin_time:
+        description: 'format: 15:04:05'
+        type: string
+      checkout_time:
+        description: 'format: 15:04:05'
+        type: string
+      correction_date:
+        description: 'format: 2006-01-02'
+        type: string
+      correction_type:
+        enum:
+        - checkin
+        - checkout
+        - both
+        type: string
+      personnel_id:
+        type: string
+      reason:
+        type: string
+      supporting_document:
+        type: string
+    required:
+    - correction_date
+    - correction_type
+    - personnel_id
+    - reason
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceRequest:
+    properties:
+      assignment_id:
+        type: string
+      check_in:
+        description: 'format: 2006-01-02T15:04:05Z07:00'
+        type: string
+      check_in_latitude:
+        type: string
+      check_in_longitude:
+        type: string
+      check_in_photo:
+        type: string
+      check_out:
+        type: string
+      check_out_latitude:
+        type: string
+      check_out_longitude:
+        type: string
+      check_out_photo:
+        type: string
+      date:
+        description: 'format: 2006-01-02'
+        type: string
+      location_id:
+        type: string
+      notes:
+        type: string
+      personnel_id:
+        type: string
+      status:
+        enum:
+        - present
+        - late
+        - permission
+        - sick
+        - absent
+        - leave
+        type: string
+      supporting_document:
+        type: string
+    required:
+    - date
+    - location_id
+    - personnel_id
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateBujpRequest:
+    properties:
+      address:
+        example: Jl. Kebun Mas Blok Q147
+        type: string
+      bjb_account_number:
+        example: "0123456789"
+        type: string
+      code:
+        example: BUJP001
+        maxLength: 20
+        type: string
+      email:
+        example: info@bujp.com
+        type: string
+      name:
+        example: GARDA MUTIARA TIMUR
+        maxLength: 200
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      pic_name:
+        example: John Doe
+        type: string
+      pic_phone:
+        example: "081234567890"
+        type: string
+      pks_document:
+        example: bujps/pks/doc.pdf
+        type: string
+      pks_number:
+        example: PKS/BJB/2026/001
+        type: string
+      pks_validity_end:
+        description: 'format: 2006-01-02'
+        example: "2027-01-01"
+        type: string
+      pks_validity_start:
+        description: 'format: 2006-01-02'
+        example: "2026-01-01"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLeaveRequest:
+    properties:
+      end_date:
+        description: 'format: 2006-01-02'
+        type: string
+      personnel_id:
+        type: string
+      reason:
+        type: string
+      start_date:
+        description: 'format: 2006-01-02'
+        type: string
+      supporting_document:
+        type: string
+      total_days:
+        type: integer
+      type:
+        enum:
+        - leave
+        - permission
+        - sick
+        type: string
+    required:
+    - end_date
+    - personnel_id
+    - reason
+    - start_date
+    - type
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanProductRequest:
+    properties:
+      bujp_id:
+        type: string
+      description:
+        type: string
+      interest_rate:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      max_amount:
+        type: number
+      max_tenor:
+        maximum: 120
+        minimum: 1
+        type: integer
+      min_amount:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 100
+        type: string
+      require_collateral:
+        type: boolean
+      require_pks:
+        type: boolean
+    required:
+    - max_tenor
+    - name
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanRequest:
+    properties:
+      collateral_document:
+        type: string
+      deduct_from_payroll:
+        type: boolean
+      interest_rate:
+        maximum: 100
+        minimum: 0
+        type: number
+      ktp_document:
+        type: string
+      loan_amount:
+        type: number
+      loan_product_id:
+        type: string
+      npwp_document:
+        type: string
+      personnel_id:
+        description: optional - inferred from auth user if absent
+        type: string
+      pks_document:
+        type: string
+      placement_address:
+        type: string
+      placement_bujp_name:
+        type: string
+      placement_duration:
+        type: string
+      purpose:
+        type: string
+      selfie_document:
+        type: string
+      selfie_ktp_document:
+        type: string
+      submit_immediately:
+        type: boolean
+      tenor_months:
+        maximum: 120
+        minimum: 1
+        type: integer
+    required:
+    - loan_amount
+    - purpose
+    - tenor_months
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLocationRequest:
+    properties:
+      address:
+        example: Jl. Naripan No. 12-14, Bandung
+        type: string
+      attendance_radius:
+        example: 100
+        maximum: 1000
+        minimum: 10
+        type: integer
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      code:
+        example: LOC001
+        maxLength: 20
+        type: string
+      guards_needed:
+        example: 2
+        minimum: 1
+        type: integer
+      latitude:
+        example: -6.917464
+        type: number
+      longitude:
+        example: 107.60981
+        type: number
+      name:
+        example: Bank BJB Kantor Pusat
+        maxLength: 200
+        type: string
+      pic_name:
+        example: Jane Doe
+        type: string
+      pic_phone:
+        example: "081234567890"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    required:
+    - address
+    - bujp_id
+    - code
+    - name
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateMonthlyReportRequest:
+    properties:
+      bujp_id:
+        type: string
+      period:
+        description: YYYY-MM
+        type: string
+      report_file:
+        type: string
+      total_absent:
+        minimum: 0
+        type: integer
+      total_guards:
+        minimum: 0
+        type: integer
+      total_locations:
+        minimum: 0
+        type: integer
+      total_patrols:
+        minimum: 0
+        type: integer
+      total_payroll:
+        minimum: 0
+        type: number
+      total_permission:
+        minimum: 0
+        type: integer
+      total_present:
+        minimum: 0
+        type: integer
+      total_sick:
+        minimum: 0
+        type: integer
+    required:
+    - bujp_id
+    - period
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePatrolRequest:
+    properties:
+      attendance_id:
+        type: string
+      date:
+        description: 'format: 2006-01-02'
+        type: string
+      latitude:
+        type: number
+      location_id:
+        type: string
+      longitude:
+        type: number
+      notes:
+        type: string
+      patrol_area:
+        type: string
+      patrol_time:
+        description: 'format: 2006-01-02T15:04:05Z07:00'
+        type: string
+      personnel_id:
+        type: string
+      photo:
+        type: string
+    required:
+    - date
+    - location_id
+    - patrol_time
+    - personnel_id
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollDetailRequest:
+    properties:
+      amount:
+        type: number
+      notes:
+        type: string
+      salary_component_id:
+        type: string
+    required:
+    - amount
+    - salary_component_id
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollRequest:
+    properties:
+      base_salary:
+        minimum: 0
+        type: number
+      bujp_id:
+        type: string
+      details:
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollDetailRequest'
+        type: array
+      payment_date:
+        description: YYYY-MM-DD
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        enum:
+        - pending
+        - paid
+        - cancelled
+        type: string
+      period:
+        description: YYYY-MM
+        type: string
+      personnel_id:
+        type: string
+      total_absent:
+        minimum: 0
+        type: integer
+      total_permission:
+        minimum: 0
+        type: integer
+      total_present:
+        minimum: 0
+        type: integer
+    required:
+    - base_salary
+    - bujp_id
+    - period
+    - personnel_id
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePersonnelRequest:
+    properties:
+      account_number:
+        example: "0123456789"
+        type: string
+      address:
+        example: Jl. Merdeka No. 123, Bandung
+        type: string
+      bank_name:
+        example: Bank BJB
+        type: string
+      base_salary:
+        example: "5000000"
+        type: string
+      birth_date:
+        example: "1990-01-15"
+        type: string
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      contract_end_date:
+        example: "2025-01-01"
+        type: string
+      email:
+        example: ahmad@example.com
+        type: string
+      emergency_phone:
+        example: "081234567891"
+        type: string
+      full_name:
+        example: Ahmad Suryadi
+        maxLength: 100
+        type: string
+      gender:
+        enum:
+        - M
+        - F
+        example: M
+        type: string
+      id_number:
+        example: "3201234567890001"
+        maxLength: 16
+        type: string
+      join_date:
+        example: "2024-01-01"
+        type: string
+      license_number:
+        example: LIC123456
+        type: string
+      mother_maiden_name:
+        example: Siti Aminah
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: personnel/photo.jpg
+        type: string
+      photo_final_path:
+        example: PERSONNEL/PHOTOS/{personnel_id}/abc.jpg
+        type: string
+      photo_temp_path:
+        example: PERSONNEL/PHOTOS/temp/abc.jpg
+        type: string
+      status:
+        enum:
+        - active
+        - on_leave
+        - inactive
+        - resigned
+        example: active
+        type: string
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - bujp_id
+    - full_name
+    - id_number
+    - join_date
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateProductRequest:
     properties:
       description:
         example: High performance gaming laptop
@@ -46,27 +828,259 @@ definitions:
     - price
     - stock
     type: object
-  model.CreateUserRequest:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateSalaryComponentRequest:
     properties:
+      amount:
+        minimum: 0
+        type: number
+      bujp_id:
+        type: string
+      calculation_method:
+        enum:
+        - fixed
+        - percentage
+        type: string
+      code:
+        maxLength: 20
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      type:
+        enum:
+        - allowance
+        - deduction
+        type: string
+    required:
+    - calculation_method
+    - code
+    - name
+    - type
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateShiftRequest:
+    properties:
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      description:
+        example: Shift pagi dari pukul 07:00 hingga 15:00
+        type: string
+      duration_hours:
+        example: 8
+        type: number
+      end_time:
+        example: "15:00"
+        type: string
+      name:
+        example: Shift Pagi
+        maxLength: 50
+        type: string
+      start_time:
+        example: "07:00"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    required:
+    - end_time
+    - name
+    - start_time
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.CreateUserRequest:
+    properties:
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
       email:
         example: john@example.com
         type: string
-      name:
+      full_name:
         example: John Doe
+        maxLength: 100
         type: string
       password:
         example: password123
         minLength: 6
         type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: users/photo.jpg
+        type: string
       role:
-        example: user
+        enum:
+        - super_admin
+        - company_admin
+        - supervisor
+        - guard
+        example: guard
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
         type: string
     required:
     - email
-    - name
+    - full_name
     - password
+    - role
     type: object
-  model.LoginRequest:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.GenerateMonthlyReportRequest:
+    properties:
+      bujp_id:
+        type: string
+      force:
+        type: boolean
+      period:
+        description: YYYY-MM
+        type: string
+    required:
+    - period
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.GeneratePayrollRequest:
+    properties:
+      bujp_id:
+        type: string
+      force:
+        type: boolean
+      period:
+        description: YYYY-MM
+        type: string
+    required:
+    - bujp_id
+    - period
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Leave:
+    properties:
+      approved_at:
+        type: string
+      approver:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+      approver_id:
+        type: string
+      approver_notes:
+        type: string
+      created_at:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: string
+      personnel:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        description: Relations
+      personnel_id:
+        type: string
+      reason:
+        type: string
+      start_date:
+        type: string
+      status:
+        type: string
+      supporting_document:
+        type: string
+      total_days:
+        type: integer
+      type:
+        description: leave, permission, sick
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest:
+    properties:
+      action:
+        enum:
+        - approve
+        - reject
+        type: string
+      approved_amount:
+        type: number
+      approved_tenor:
+        maximum: 120
+        minimum: 1
+        type: integer
+      notes:
+        type: string
+    required:
+    - action
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.LoanInstallmentPaymentRequest:
+    properties:
+      notes:
+        type: string
+      paid_amount:
+        type: number
+      payment_date:
+        description: YYYY-MM-DD
+        type: string
+      payment_method:
+        type: string
+      transaction_reference:
+        type: string
+    required:
+    - paid_amount
+    - payment_date
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.LoanUserConfirmationRequest:
+    properties:
+      action:
+        enum:
+        - accept
+        - decline
+        type: string
+      reason:
+        type: string
+    required:
+    - action
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Location:
+    properties:
+      address:
+        type: string
+      attendance_radius:
+        type: integer
+      bujp:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp'
+        description: Relations
+      bujp_id:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      guards_needed:
+        type: integer
+      id:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      pic_name:
+        type: string
+      pic_phone:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.LoginRequest:
     properties:
       email:
         example: john@example.com
@@ -78,7 +1092,44 @@ definitions:
     - email
     - password
     type: object
-  model.PaginationMeta:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse:
+    properties:
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse'
+      bujp_id:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      creator:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse'
+      id:
+        type: string
+      period:
+        type: string
+      report_file:
+        type: string
+      total_absent:
+        type: integer
+      total_guards:
+        type: integer
+      total_locations:
+        type: integer
+      total_patrols:
+        type: integer
+      total_payroll:
+        type: number
+      total_permission:
+        type: integer
+      total_present:
+        type: integer
+      total_sick:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta:
     properties:
       has_next:
         example: true
@@ -99,12 +1150,245 @@ definitions:
         example: 10
         type: integer
     type: object
-  model.RegisterRequest:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol:
+    properties:
+      attendance:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance'
+      attendance_id:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      location:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location'
+      location_id:
+        type: string
+      longitude:
+        type: number
+      notes:
+        type: string
+      patrol_area:
+        type: string
+      patrol_time:
+        type: string
+      personnel:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel'
+        description: Relations
+      personnel_id:
+        type: string
+      photo:
+        type: string
+      updated_at:
+        type: string
+      validated_at:
+        type: string
+      validation_status:
+        type: string
+      validator:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+      validator_id:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollDetailResponse:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      notes:
+        type: string
+      payroll_id:
+        type: string
+      salary_component:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse'
+      salary_component_id:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse:
+    properties:
+      base_salary:
+        type: number
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse'
+      bujp_id:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      creator:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse'
+      id:
+        type: string
+      net_salary:
+        type: number
+      payment_date:
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        type: string
+      payroll_details:
+        items:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollDetailResponse'
+        type: array
+      period:
+        type: string
+      personnel:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PersonnelResponse'
+      personnel_id:
+        type: string
+      total_absent:
+        type: integer
+      total_allowances:
+        type: number
+      total_deductions:
+        type: number
+      total_permission:
+        type: integer
+      total_present:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel:
+    properties:
+      account_number:
+        type: string
+      address:
+        type: string
+      bank_name:
+        type: string
+      base_salary:
+        type: number
+      birth_date:
+        type: string
+      bujp:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp'
+        description: Relations
+      bujp_id:
+        type: string
+      contract_end_date:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      emergency_phone:
+        type: string
+      full_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      id_number:
+        type: string
+      join_date:
+        type: string
+      license_number:
+        type: string
+      mother_maiden_name:
+        type: string
+      phone:
+        type: string
+      photo:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User'
+      user_id:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.PersonnelResponse:
+    properties:
+      account_number:
+        example: "0123456789"
+        type: string
+      address:
+        example: Jl. Merdeka No. 123, Bandung
+        type: string
+      bank_name:
+        example: Bank BJB
+        type: string
+      base_salary:
+        example: 5000000
+        type: number
+      birth_date:
+        example: "1990-01-15"
+        type: string
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse'
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      contract_end_date:
+        example: "2025-01-01"
+        type: string
+      created_at:
+        type: string
+      email:
+        example: ahmad@example.com
+        type: string
+      emergency_phone:
+        example: "081234567891"
+        type: string
+      full_name:
+        example: Ahmad Suryadi
+        type: string
+      gender:
+        example: M
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      id_number:
+        example: "3201234567890001"
+        type: string
+      join_date:
+        example: "2024-01-01"
+        type: string
+      license_number:
+        example: LIC123456
+        type: string
+      mother_maiden_name:
+        example: Siti Aminah
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: personnel/photo.jpg
+        type: string
+      status:
+        example: active
+        type: string
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse'
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.RegisterRequest:
     properties:
       email:
         example: john@example.com
         type: string
-      name:
+      full_name:
         example: John Doe
         type: string
       password:
@@ -113,10 +1397,455 @@ definitions:
         type: string
     required:
     - email
-    - name
+    - full_name
     - password
     type: object
-  model.UpdateProductRequest:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse:
+    properties:
+      amount:
+        type: number
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse'
+      bujp_id:
+        type: string
+      calculation_method:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.Shift:
+    properties:
+      bujp:
+        allOf:
+        - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp'
+        description: Relations
+      bujp_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      duration_hours:
+        type: number
+      end_time:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly'
+      id:
+        type: string
+      name:
+        type: string
+      start_time:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly'
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly:
+    properties:
+      time.Time:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAssignmentRequest:
+    properties:
+      end_date:
+        description: 'format: 2006-01-02'
+        type: string
+      location_id:
+        type: string
+      notes:
+        type: string
+      shift_id:
+        type: string
+      start_date:
+        description: 'format: 2006-01-02'
+        type: string
+      status:
+        enum:
+        - active
+        - completed
+        - cancelled
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceCorrectionRequest:
+    properties:
+      checkin_time:
+        description: 'format: 15:04:05'
+        type: string
+      checkout_time:
+        description: 'format: 15:04:05'
+        type: string
+      correction_date:
+        description: 'format: 2006-01-02'
+        type: string
+      correction_type:
+        enum:
+        - checkin
+        - checkout
+        - both
+        type: string
+      reason:
+        type: string
+      supporting_document:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceRequest:
+    properties:
+      check_out:
+        type: string
+      check_out_latitude:
+        type: string
+      check_out_longitude:
+        type: string
+      check_out_photo:
+        type: string
+      notes:
+        type: string
+      status:
+        enum:
+        - present
+        - late
+        - permission
+        - sick
+        - absent
+        - leave
+        type: string
+      supporting_document:
+        type: string
+      work_duration:
+        type: integer
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateBujpRequest:
+    properties:
+      address:
+        example: Jl. Kebun Mas Blok Q147
+        type: string
+      bjb_account_number:
+        example: "0123456789"
+        type: string
+      code:
+        example: BUJP001
+        maxLength: 20
+        type: string
+      email:
+        example: info@bujp.com
+        type: string
+      name:
+        example: GARDA MUTIARA TIMUR
+        maxLength: 200
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      pic_name:
+        example: John Doe
+        type: string
+      pic_phone:
+        example: "081234567890"
+        type: string
+      pks_document:
+        example: bujps/pks/doc.pdf
+        type: string
+      pks_number:
+        example: PKS/BJB/2026/001
+        type: string
+      pks_validity_end:
+        description: 'format: 2006-01-02'
+        example: "2027-01-01"
+        type: string
+      pks_validity_start:
+        description: 'format: 2006-01-02'
+        example: "2026-01-01"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLeaveRequest:
+    properties:
+      end_date:
+        description: 'format: 2006-01-02'
+        type: string
+      reason:
+        type: string
+      start_date:
+        description: 'format: 2006-01-02'
+        type: string
+      supporting_document:
+        type: string
+      total_days:
+        type: integer
+      type:
+        enum:
+        - leave
+        - permission
+        - sick
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanProductRequest:
+    properties:
+      bujp_id:
+        type: string
+      description:
+        type: string
+      interest_rate:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      max_amount:
+        minimum: 0
+        type: number
+      max_tenor:
+        maximum: 120
+        minimum: 1
+        type: integer
+      min_amount:
+        minimum: 0
+        type: number
+      name:
+        maxLength: 100
+        type: string
+      require_collateral:
+        type: boolean
+      require_pks:
+        type: boolean
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanRequest:
+    properties:
+      collateral_document:
+        type: string
+      deduct_from_payroll:
+        type: boolean
+      ktp_document:
+        type: string
+      loan_amount:
+        type: number
+      npwp_document:
+        type: string
+      pks_document:
+        type: string
+      purpose:
+        type: string
+      selfie_document:
+        type: string
+      selfie_ktp_document:
+        type: string
+      tenor_months:
+        maximum: 120
+        minimum: 1
+        type: integer
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLocationRequest:
+    properties:
+      address:
+        example: Jl. Naripan No. 12-14, Bandung
+        type: string
+      attendance_radius:
+        example: 100
+        maximum: 1000
+        minimum: 10
+        type: integer
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      code:
+        example: LOC001
+        maxLength: 20
+        type: string
+      guards_needed:
+        example: 2
+        minimum: 1
+        type: integer
+      latitude:
+        example: -6.917464
+        type: number
+      longitude:
+        example: 107.60981
+        type: number
+      name:
+        example: Bank BJB Kantor Pusat
+        maxLength: 200
+        type: string
+      pic_name:
+        example: Jane Doe
+        type: string
+      pic_phone:
+        example: "081234567890"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateMonthlyReportRequest:
+    properties:
+      period:
+        type: string
+      report_file:
+        type: string
+      total_absent:
+        minimum: 0
+        type: integer
+      total_guards:
+        minimum: 0
+        type: integer
+      total_locations:
+        minimum: 0
+        type: integer
+      total_patrols:
+        minimum: 0
+        type: integer
+      total_payroll:
+        minimum: 0
+        type: number
+      total_permission:
+        minimum: 0
+        type: integer
+      total_present:
+        minimum: 0
+        type: integer
+      total_sick:
+        minimum: 0
+        type: integer
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePatrolRequest:
+    properties:
+      latitude:
+        type: number
+      longitude:
+        type: number
+      notes:
+        type: string
+      patrol_area:
+        type: string
+      photo:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePayrollRequest:
+    properties:
+      base_salary:
+        minimum: 0
+        type: number
+      payment_date:
+        description: YYYY-MM-DD
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        enum:
+        - pending
+        - paid
+        - cancelled
+        type: string
+      period:
+        type: string
+      total_absent:
+        minimum: 0
+        type: integer
+      total_permission:
+        minimum: 0
+        type: integer
+      total_present:
+        minimum: 0
+        type: integer
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePersonnelRequest:
+    properties:
+      account_number:
+        example: "0123456789"
+        type: string
+      address:
+        example: Jl. Merdeka No. 123, Bandung
+        type: string
+      bank_name:
+        example: Bank BJB
+        type: string
+      base_salary:
+        example: "5000000"
+        type: string
+      birth_date:
+        example: "1990-01-15"
+        type: string
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      contract_end_date:
+        example: "2025-01-01"
+        type: string
+      email:
+        example: ahmad@example.com
+        type: string
+      emergency_phone:
+        example: "081234567891"
+        type: string
+      full_name:
+        example: Ahmad Suryadi
+        maxLength: 100
+        type: string
+      gender:
+        enum:
+        - M
+        - F
+        example: M
+        type: string
+      id_number:
+        example: "3201234567890001"
+        maxLength: 16
+        type: string
+      join_date:
+        example: "2024-01-01"
+        type: string
+      license_number:
+        example: LIC123456
+        type: string
+      mother_maiden_name:
+        example: Siti Aminah
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: personnel/photo.jpg
+        type: string
+      photo_final_path:
+        example: PERSONNEL/PHOTOS/{personnel_id}/abc.jpg
+        type: string
+      photo_temp_path:
+        example: PERSONNEL/PHOTOS/temp/abc.jpg
+        type: string
+      status:
+        enum:
+        - active
+        - on_leave
+        - inactive
+        - resigned
+        example: active
+        type: string
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProductRequest:
     properties:
       description:
         example: Updated high performance gaming laptop
@@ -134,50 +1863,1132 @@ definitions:
         example: 30
         type: integer
     type: object
-  model.UpdateUserRequest:
-    properties:
-      email:
-        example: johnsmith@example.com
-        type: string
-      name:
-        example: John Smith
-        type: string
-      password:
-        example: newpassword123
-        type: string
-      role:
-        example: admin
-        type: string
-    type: object
-  model.UserResponse:
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProfileRequest:
     properties:
       email:
         example: john@example.com
         type: string
+      full_name:
+        example: John Doe
+        maxLength: 100
+        type: string
+      password:
+        example: newpassword123
+        minLength: 6
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: users/photo.jpg
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateSalaryComponentRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+      bujp_id:
+        type: string
+      calculation_method:
+        enum:
+        - fixed
+        - percentage
+        type: string
+      code:
+        maxLength: 20
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      type:
+        enum:
+        - allowance
+        - deduction
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateShiftRequest:
+    properties:
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      description:
+        example: Shift pagi dari pukul 07:00 hingga 15:00
+        type: string
+      duration_hours:
+        example: 8
+        type: number
+      end_time:
+        example: "15:00"
+        type: string
+      name:
+        example: Shift Pagi
+        maxLength: 50
+        type: string
+      start_time:
+        example: "07:00"
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateUserRequest:
+    properties:
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      full_name:
+        example: John Doe
+        maxLength: 100
+        type: string
+      password:
+        example: newpassword123
+        minLength: 6
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: users/photo.jpg
+        type: string
+      role:
+        enum:
+        - super_admin
+        - company_admin
+        - supervisor
+        - guard
+        example: guard
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        example: active
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.User:
+    properties:
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp'
+      bujp_id:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: string
+      last_login:
+        type: string
+      phone:
+        type: string
+      photo:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse:
+    properties:
+      bujp:
+        $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse'
+      bujp_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      created_at:
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      full_name:
+        example: John Doe
+        type: string
       id:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
-      name:
-        example: John Doe
+      last_login:
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: users/photo.jpg
         type: string
       role:
-        example: user
+        example: guard
+        type: string
+      status:
+        example: active
+        type: string
+      updated_at:
         type: string
     type: object
 host: localhost:4000
 info:
   contact:
-    email: gani@example.com
-    name: Gani Ramadhan
-  description: Ganipedia Backend API - Product Management
+    email: support@hrmis.com
+    name: API Support
+  description: HRMIS Backend API - Human Resource Management Information System
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Ganipedia API
+  title: HRMIS API
   version: "1.0"
 paths:
-  /api/v1/auth/login:
+  /api/v1/bujps:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all BUJPs
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by status (active/inactive)
+        in: query
+        name: status
+        type: string
+      - description: Search by code or name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all BUJPs
+      tags:
+      - Bujps
+    post:
+      consumes:
+      - application/json
+      description: Create a new BUJP with the provided data
+      parameters:
+      - description: BUJP data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateBujpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new BUJP
+      tags:
+      - Bujps
+  /api/v1/bujps/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a BUJP by ID
+      parameters:
+      - description: BUJP UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a BUJP
+      tags:
+      - Bujps
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single BUJP by its UUID
+      parameters:
+      - description: BUJP UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get BUJP by ID
+      tags:
+      - Bujps
+    put:
+      consumes:
+      - application/json
+      description: Update an existing BUJP by ID
+      parameters:
+      - description: BUJP UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated BUJP data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateBujpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a BUJP
+      tags:
+      - Bujps
+  /api/v1/dashboard/summary:
+    get:
+      consumes:
+      - application/json
+      description: Get comprehensive dashboard summary with statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get dashboard summary
+      tags:
+      - dashboard
+  /api/v1/loan-approvals/{id}/process:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Approval UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve or reject a pending approval
+      tags:
+      - LoanApprovals
+  /api/v1/loan-approvals/{loan_id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: loan_id
+        required: true
+        type: string
+      - description: Body (notes, approved_amount, approved_tenor)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve the next pending approval for a loan (convenience for admin)
+      tags:
+      - LoanApprovals
+  /api/v1/loan-approvals/{loan_id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: loan_id
+        required: true
+        type: string
+      - description: Body (notes)
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject the next pending approval for a loan (convenience for admin)
+      tags:
+      - LoanApprovals
+  /api/v1/loan-approvals/loan/{loan_id}:
+    get:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: loan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List approvals for a loan
+      tags:
+      - LoanApprovals
+  /api/v1/loan-approvals/loan/{loan_id}/disburse:
+    post:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: loan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      tags:
+      - LoanApprovals
+  /api/v1/loan-approvals/pending:
+    get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List pending approvals for current role
+      tags:
+      - LoanApprovals
+  /api/v1/loan-installments/{id}/pay:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Installment UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanInstallmentPaymentRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Record a payment for an installment
+      tags:
+      - LoanInstallments
+  /api/v1/loan-installments/mark-overdue:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark all overdue installments (cron-like manual trigger)
+      tags:
+      - LoanInstallments
+  /api/v1/loan-products:
+    get:
+      parameters:
+      - default: 1
+        description: Page
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Active filter
+        in: query
+        name: is_active
+        type: boolean
+      - description: Search by name/code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List loan products
+      tags:
+      - LoanProducts
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a loan product
+      tags:
+      - LoanProducts
+  /api/v1/loan-products/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a loan product
+      tags:
+      - LoanProducts
+    get:
+      parameters:
+      - description: Loan Product UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get loan product by ID
+      tags:
+      - LoanProducts
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a loan product
+      tags:
+      - LoanProducts
+  /api/v1/loan-products/active:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List active loan products available to current user
+      tags:
+      - LoanProducts
+  /api/v1/loans:
+    get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by BUJP
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by Personnel
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by Loan Product
+        in: query
+        name: loan_product_id
+        type: string
+      - description: Search by loan number
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List loans
+      tags:
+      - Loans
+    post:
+      consumes:
+      - multipart/form-data
+      - application/json
+      parameters:
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a loan (draft or submitted)
+      tags:
+      - Loans
+  /api/v1/loans/{id}:
+    delete:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a draft loan
+      tags:
+      - Loans
+    get:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get loan by ID
+      tags:
+      - Loans
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a draft loan
+      tags:
+      - Loans
+  /api/v1/loans/{id}/cancel:
+    post:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel a loan
+      tags:
+      - Loans
+  /api/v1/loans/{id}/submit:
+    post:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a draft loan for approval
+      tags:
+      - Loans
+  /api/v1/loans/{id}/user-confirmation:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanUserConfirmationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Borrower confirmation (accept/decline)
+      tags:
+      - Loans
+  /api/v1/loans/{loan_id}/installments:
+    get:
+      parameters:
+      - description: Loan UUID
+        in: path
+        name: loan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List installments for a loan with summary
+      tags:
+      - LoanInstallments
+  /api/v1/loans/history/{personnel_id}:
+    get:
+      description: If personnel_id is omitted, returns history for the authenticated
+        user's personnel.
+      parameters:
+      - description: Personnel UUID (optional)
+        in: path
+        name: personnel_id
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get loan history for a personnel
+      tags:
+      - Loans
+  /api/v1/loans/statistics:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Loan statistics by status
+      tags:
+      - Loans
+  /api/v1/locations:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all locations
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by status (active/inactive)
+        in: query
+        name: status
+        type: string
+      - description: Search by code, name, or address
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all locations
+      tags:
+      - Locations
+    post:
+      consumes:
+      - application/json
+      description: Create a new location with the provided data
+      parameters:
+      - description: Location data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new location
+      tags:
+      - Locations
+  /api/v1/locations/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a location by ID
+      parameters:
+      - description: Location UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a location
+      tags:
+      - Locations
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single location by its UUID
+      parameters:
+      - description: Location UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get location by ID
+      tags:
+      - Locations
+    put:
+      consumes:
+      - application/json
+      description: Update an existing location by ID
+      parameters:
+      - description: Location UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated location data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a location
+      tags:
+      - Locations
+  /api/v1/login:
     post:
       consumes:
       - application/json
@@ -188,7 +2999,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.LoginRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoginRequest'
       produces:
       - application/json
       responses:
@@ -196,34 +3007,78 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/model.APIResponse'
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.AuthResponse'
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       summary: User login
       tags:
       - Auth
-  /api/v1/auth/register:
+  /api/v1/monthly-reports:
+    get:
+      description: Get list of monthly reports with pagination and filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by period (YYYY-MM)
+        in: query
+        name: period
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all monthly reports
+      tags:
+      - monthly-reports
     post:
       consumes:
       - application/json
-      description: Register a new user account and returns JWT token
+      description: Create a new monthly report
       parameters:
-      - description: Registration data
+      - description: Monthly report data
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.RegisterRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateMonthlyReportRequest'
       produces:
       - application/json
       responses:
@@ -231,22 +3086,639 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/model.APIResponse'
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.AuthResponse'
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
-        "409":
-          description: Conflict
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
-      summary: User registration
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new monthly report
       tags:
-      - Auth
+      - monthly-reports
+  /api/v1/monthly-reports/{id}:
+    delete:
+      description: Delete monthly report by ID
+      parameters:
+      - description: Monthly Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete monthly report
+      tags:
+      - monthly-reports
+    get:
+      description: Get monthly report details by ID
+      parameters:
+      - description: Monthly Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get monthly report by ID
+      tags:
+      - monthly-reports
+    put:
+      consumes:
+      - application/json
+      description: Update monthly report by ID
+      parameters:
+      - description: Monthly Report ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Monthly report data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateMonthlyReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update monthly report
+      tags:
+      - monthly-reports
+  /api/v1/monthly-reports/generate:
+    post:
+      consumes:
+      - application/json
+      description: Calculate aggregated stats for a (BUJP, period) and persist a monthly
+        report. Non-superadmin callers are clamped to their own BUJP.
+      parameters:
+      - description: Generate request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.GenerateMonthlyReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate monthly report
+      tags:
+      - monthly-reports
+  /api/v1/payrolls:
+    get:
+      description: Get list of payrolls with pagination and filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by Personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by period (YYYY-MM)
+        in: query
+        name: period
+        type: string
+      - description: Filter by payment status
+        in: query
+        name: payment_status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all payrolls
+      tags:
+      - payrolls
+    post:
+      consumes:
+      - application/json
+      description: Create a new payroll with details
+      parameters:
+      - description: Payroll data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new payroll
+      tags:
+      - payrolls
+  /api/v1/payrolls/{id}:
+    delete:
+      description: Delete payroll by ID
+      parameters:
+      - description: Payroll ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete payroll
+      tags:
+      - payrolls
+    get:
+      description: Get payroll details by ID with details
+      parameters:
+      - description: Payroll ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payroll by ID
+      tags:
+      - payrolls
+    put:
+      consumes:
+      - application/json
+      description: Update payroll by ID
+      parameters:
+      - description: Payroll ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payroll data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePayrollRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update payroll
+      tags:
+      - payrolls
+  /api/v1/payrolls/generate:
+    post:
+      consumes:
+      - application/json
+      description: Pro-rates base salary by attendance and applies active salary components
+      parameters:
+      - description: Generate parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.GeneratePayrollRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Generate payrolls for a BUJP and period
+      tags:
+      - payrolls
+  /api/v1/personnel/bulk-import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Parses the uploaded .xlsx and creates personnel records, auto-creating
+        user accounts (role=guard, default password 123456) for unknown emails. Each
+        row is reported back individually.
+      parameters:
+      - description: Excel file (.xlsx, .xls)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: BUJP ID (optional for super_admin/admin; non-Pusat callers are
+          clamped to their own BUJP)
+        in: formData
+        name: bujp_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Bulk import personnel from Excel file
+      tags:
+      - Personnels
+  /api/v1/personnel/template/download:
+    get:
+      description: Returns a pre-formatted .xlsx template that can be filled and submitted
+        to the bulk import endpoint.
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Download personnel bulk-import Excel template
+      tags:
+      - Personnels
+  /api/v1/personnels:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all personnels
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Search by ID number, name, or phone
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all personnels
+      tags:
+      - Personnels
+    post:
+      consumes:
+      - application/json
+      description: Create a new personnel with the provided data
+      parameters:
+      - description: Personnel data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePersonnelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new personnel
+      tags:
+      - Personnels
+  /api/v1/personnels/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a personnel by ID
+      parameters:
+      - description: Personnel UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a personnel
+      tags:
+      - Personnels
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single personnel by its UUID
+      parameters:
+      - description: Personnel UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get personnel by ID
+      tags:
+      - Personnels
+    put:
+      consumes:
+      - application/json
+      description: Update an existing personnel by ID
+      parameters:
+      - description: Personnel UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated personnel data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePersonnelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a personnel
+      tags:
+      - Personnels
   /api/v1/products:
     get:
       consumes:
@@ -269,11 +3741,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       summary: Get all products
       tags:
       - Products
@@ -288,22 +3760,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.CreateProductRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateProductRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Create a new product
@@ -326,15 +3798,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete a product
@@ -356,15 +3828,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       summary: Get product by ID
       tags:
       - Products
@@ -383,26 +3855,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.UpdateProductRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProductRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Update a product
@@ -426,7 +3898,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/model.APIResponse'
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
             - properties:
                 data:
                   properties:
@@ -443,16 +3915,593 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Upload product image
       tags:
       - Products
+  /api/v1/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account and returns JWT token
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      summary: User registration
+      tags:
+      - Auth
+  /api/v1/salary-components:
+    get:
+      description: Get list of salary components with pagination and filters
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by type (allowance/deduction)
+        in: query
+        name: type
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all salary components
+      tags:
+      - salary-components
+    post:
+      consumes:
+      - application/json
+      description: Create a new salary component
+      parameters:
+      - description: Salary Component data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateSalaryComponentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new salary component
+      tags:
+      - salary-components
+  /api/v1/salary-components/{id}:
+    delete:
+      description: Delete salary component by ID
+      parameters:
+      - description: Salary Component ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete salary component
+      tags:
+      - salary-components
+    get:
+      description: Get salary component details by ID
+      parameters:
+      - description: Salary Component ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get salary component by ID
+      tags:
+      - salary-components
+    put:
+      consumes:
+      - application/json
+      description: Update salary component by ID
+      parameters:
+      - description: Salary Component ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Salary Component data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateSalaryComponentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update salary component
+      tags:
+      - salary-components
+  /api/v1/shifts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all shifts
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
+      - description: Filter by status (active/inactive)
+        in: query
+        name: status
+        type: string
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all shifts
+      tags:
+      - Shifts
+    post:
+      consumes:
+      - application/json
+      description: Create a new shift with the provided data
+      parameters:
+      - description: Shift data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateShiftRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new shift
+      tags:
+      - Shifts
+  /api/v1/shifts/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a shift by ID
+      parameters:
+      - description: Shift UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a shift
+      tags:
+      - Shifts
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single shift by its UUID
+      parameters:
+      - description: Shift UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get shift by ID
+      tags:
+      - Shifts
+    put:
+      consumes:
+      - application/json
+      description: Update an existing shift by ID
+      parameters:
+      - description: Shift UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated shift data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateShiftRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a shift
+      tags:
+      - Shifts
+  /api/v1/uploads:
+    delete:
+      consumes:
+      - application/json
+      description: Delete file from S3/MinIO
+      parameters:
+      - description: Delete request
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete file
+      tags:
+      - uploads
+  /api/v1/uploads/direct:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload file directly to S3/MinIO
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Upload folder
+        enum:
+        - temp
+        - users
+        - personnels
+        - products
+        - documents
+        in: formData
+        name: folder
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload file directly
+      tags:
+      - uploads
+  /api/v1/uploads/move:
+    post:
+      consumes:
+      - application/json
+      description: Move file from one location to another in S3/MinIO
+      parameters:
+      - description: Move request
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Move file
+      tags:
+      - uploads
+  /api/v1/uploads/presigned-download-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate presigned URL for downloading files from S3/MinIO
+      parameters:
+      - description: Download request
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get presigned URL for download
+      tags:
+      - uploads
+  /api/v1/uploads/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate presigned URL for uploading files directly to S3/MinIO
+      parameters:
+      - description: Upload request
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get presigned URL for upload
+      tags:
+      - uploads
   /api/v1/users:
     get:
       consumes:
@@ -469,17 +4518,33 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Search by name, email, or phone
+        in: query
+        name: search
+        type: string
+      - description: Filter by role
+        in: query
+        name: role
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by BUJP ID
+        in: query
+        name: bujp_id
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Get all users
@@ -495,22 +4560,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.CreateUserRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Create a new user
@@ -533,15 +4598,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete a user
@@ -563,15 +4628,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Get user by ID
@@ -592,31 +4657,1288 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.UpdateUserRequest'
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/model.APIResponse'
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
       security:
       - BearerAuth: []
       summary: Update a user
       tags:
       - Users
+  /api/v1/users/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change the current user's password
+      parameters:
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Users
+  /api/v1/users/profile:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the profile of the authenticated user with personnel and
+        assignment data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get authenticated user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the profile of the authenticated user
+      parameters:
+      - description: Profile data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update authenticated user profile
+      tags:
+      - Users
+  /assignments:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by location ID
+        in: query
+        name: location_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all assignments
+      tags:
+      - Assignments
+    post:
+      parameters:
+      - description: Assignment data
+        in: body
+        name: assignment
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAssignmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new assignment
+      tags:
+      - Assignments
+  /assignments/{id}:
+    delete:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete assignment
+      tags:
+      - Assignments
+    get:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get assignment by ID
+      tags:
+      - Assignments
+    put:
+      parameters:
+      - description: Assignment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignment data
+        in: body
+        name: assignment
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAssignmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update assignment
+      tags:
+      - Assignments
+  /attendance-corrections:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by location ID
+        in: query
+        name: location_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all attendance corrections
+      tags:
+      - Attendance Corrections
+    post:
+      consumes:
+      - multipart/form-data
+      - application/json
+      parameters:
+      - description: Attendance Correction data
+        in: body
+        name: correction
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceCorrectionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new attendance correction
+      tags:
+      - Attendance Corrections
+  /attendance-corrections/{id}:
+    delete:
+      parameters:
+      - description: Attendance Correction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete attendance correction
+      tags:
+      - Attendance Corrections
+    get:
+      parameters:
+      - description: Attendance Correction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get attendance correction by ID
+      tags:
+      - Attendance Corrections
+    put:
+      parameters:
+      - description: Attendance Correction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Attendance Correction data
+        in: body
+        name: correction
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceCorrectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update attendance correction
+      tags:
+      - Attendance Corrections
+  /attendance-corrections/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Attendance Correction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Approval payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an attendance correction request
+      tags:
+      - Attendance Corrections
+  /attendance-corrections/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Attendance Correction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject an attendance correction request
+      tags:
+      - Attendance Corrections
+  /attendance-corrections/pending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pending attendance corrections awaiting approval
+      tags:
+      - Attendance Corrections
+  /attendances:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by location ID
+        in: query
+        name: location_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all attendances
+      tags:
+      - Attendances
+    post:
+      parameters:
+      - description: Attendance data
+        in: body
+        name: attendance
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new attendance
+      tags:
+      - Attendances
+  /attendances/{id}:
+    delete:
+      parameters:
+      - description: Attendance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete attendance
+      tags:
+      - Attendances
+    get:
+      parameters:
+      - description: Attendance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get attendance by ID
+      tags:
+      - Attendances
+    put:
+      parameters:
+      - description: Attendance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Attendance data
+        in: body
+        name: attendance
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update attendance
+      tags:
+      - Attendances
+  /attendances/checkout:
+    put:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Check out for the current authenticated user (today's attendance)
+      tags:
+      - Attendances
+  /leaves:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by location ID
+        in: query
+        name: location_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all leaves
+      tags:
+      - Leaves
+    post:
+      consumes:
+      - multipart/form-data
+      - application/json
+      parameters:
+      - description: Leave data
+        in: body
+        name: leave
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLeaveRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new leave
+      tags:
+      - Leaves
+  /leaves/{id}:
+    delete:
+      parameters:
+      - description: Leave ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete leave
+      tags:
+      - Leaves
+    get:
+      parameters:
+      - description: Leave ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get leave by ID
+      tags:
+      - Leaves
+    put:
+      parameters:
+      - description: Leave ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Leave data
+        in: body
+        name: leave
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLeaveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update leave
+      tags:
+      - Leaves
+  /leaves/{id}/approve:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Leave ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Approval payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Approve or reject a leave request
+      tags:
+      - Leaves
+  /leaves/{id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Leave ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Rejection payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Reject a leave request
+      tags:
+      - Leaves
+  /leaves/pending:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get pending leaves awaiting approval
+      tags:
+      - Leaves
+  /patrols:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by personnel ID
+        in: query
+        name: personnel_id
+        type: string
+      - description: Filter by location ID
+        in: query
+        name: location_id
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol'
+                  type: array
+                meta:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all patrols
+      tags:
+      - Patrols
+    post:
+      parameters:
+      - description: Patrol data
+        in: body
+        name: patrol
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePatrolRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create new patrol
+      tags:
+      - Patrols
+  /patrols/{id}:
+    delete:
+      parameters:
+      - description: Patrol ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete patrol
+      tags:
+      - Patrols
+    get:
+      parameters:
+      - description: Patrol ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get patrol by ID
+      tags:
+      - Patrols
+    put:
+      parameters:
+      - description: Patrol ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patrol data
+        in: body
+        name: patrol
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePatrolRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update patrol
+      tags:
+      - Patrols
 schemes:
 - http
 - https
