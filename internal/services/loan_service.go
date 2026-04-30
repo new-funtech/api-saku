@@ -613,7 +613,8 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 	if len(l.Approvals) > 0 {
 		out := make([]model.LoanApprovalResponse, len(l.Approvals))
 		for i := range l.Approvals {
-			out[i] = ToLoanApprovalResponse(&l.Approvals[i])
+
+			out[i] = ToLoanApprovalResponse(context.Background(), &l.Approvals[i])
 		}
 		r.Approvals = out
 	}
@@ -623,6 +624,20 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 			out[i] = ToLoanInstallmentResponse(&l.Installments[i])
 		}
 		r.Installments = out
+	}
+	finalAmount := l.LoanAmount
+	if l.ApprovedAmount != nil && *l.ApprovedAmount > 0 {
+		finalAmount = *l.ApprovedAmount
+	}
+	finalTenor := l.TenorMonths
+	if l.ApprovedTenor != nil && *l.ApprovedTenor > 0 {
+		finalTenor = *l.ApprovedTenor
+	}
+	if finalAmount != l.LoanAmount || finalTenor != l.TenorMonths {
+		monthly, total := calculateLoanDetails(finalAmount, l.InterestRate, finalTenor)
+		r.MonthlyInstallment = monthly
+		r.TotalRepayment = total
+		r.TenorMonths = finalTenor
 	}
 	return r
 }

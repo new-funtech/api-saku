@@ -84,7 +84,7 @@ func (l *Loan) BeforeCreate(tx *gorm.DB) error {
 type CreateLoanRequest struct {
 	PersonnelID        *uuid.UUID `json:"personnel_id"` // optional - inferred from auth user if absent
 	LoanProductID      *uuid.UUID `json:"loan_product_id"`
-	Purpose            string     `json:"purpose" validate:"required"`
+	Purpose            string     `json:"purpose" validate:"omitempty,max=500"`
 	LoanAmount         float64    `json:"loan_amount" validate:"required,gt=0"`
 	InterestRate       *float64   `json:"interest_rate" validate:"omitempty,gte=0,lte=100"`
 	TenorMonths        int        `json:"tenor_months" validate:"required,gte=1,lte=120"`

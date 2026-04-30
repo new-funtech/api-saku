@@ -143,7 +143,7 @@ func main() {
 	bujpSvc := services.NewBujpService(bujpRepo)
 	locationSvc := services.NewLocationService(locationRepo)
 	shiftSvc := services.NewShiftService(shiftRepo)
-	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo)
+	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo, userRepo)
 	assignmentSvc := services.NewAssignmentService(assignmentRepo)
 	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
 	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo)

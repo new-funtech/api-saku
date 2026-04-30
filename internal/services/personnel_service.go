@@ -25,10 +25,11 @@ type PersonnelService interface {
 type personnelServiceImpl struct {
 	repo     repository.PersonnelRepository
 	loanRepo repository.LoanRepository
+	userRepo repository.UserRepository
 }
 
-func NewPersonnelService(repo repository.PersonnelRepository, loanRepo repository.LoanRepository) PersonnelService {
-	return &personnelServiceImpl{repo: repo, loanRepo: loanRepo}
+func NewPersonnelService(repo repository.PersonnelRepository, loanRepo repository.LoanRepository, userRepo repository.UserRepository) PersonnelService {
+	return &personnelServiceImpl{repo: repo, loanRepo: loanRepo, userRepo: userRepo}
 }
 
 func (s *personnelServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.PersonnelResponse, int64, error) {
@@ -77,6 +78,16 @@ func (s *personnelServiceImpl) Create(ctx context.Context, req *model.CreatePers
 	existing, _ := s.repo.FindByIDNumber(ctx, req.IDNumber)
 	if existing != nil {
 		return nil, fmt.Errorf("personnel with ID number %s already exists", req.IDNumber)
+	}
+
+	if req.UserID != nil && s.userRepo != nil {
+		if assigned, _ := s.repo.FindByUserID(ctx, *req.UserID); assigned != nil {
+			return nil, fmt.Errorf("user is already assigned to another personnel")
+		}
+		if user, _ := s.userRepo.FindByID(ctx, *req.UserID); user != nil {
+			email := user.Email
+			req.Email = &email
+		}
 	}
 
 	// Convert CustomDate to *time.Time
@@ -155,6 +166,17 @@ func (s *personnelServiceImpl) Update(ctx context.Context, id uuid.UUID, req *mo
 		personnel.BujpID = *req.BujpID
 	}
 	if req.UserID != nil {
+		if personnel.UserID == nil || *personnel.UserID != *req.UserID {
+			if assigned, _ := s.repo.FindByUserID(ctx, *req.UserID); assigned != nil && assigned.ID != id {
+				return nil, fmt.Errorf("user is already assigned to another personnel")
+			}
+			if s.userRepo != nil {
+				if user, _ := s.userRepo.FindByID(ctx, *req.UserID); user != nil {
+					email := user.Email
+					personnel.Email = &email
+				}
+			}
+		}
 		personnel.UserID = req.UserID
 	}
 	if req.FullName != nil {

@@ -74,6 +74,19 @@ func (h *LoanHandler) GetAll(c *fiber.Ctx) error {
 		} else {
 			filters["force_empty"] = true
 		}
+	case "super_admin", "admin":
+		if _, hasStatus := filters["status"]; !hasStatus {
+			filters["status_in"] = []string{
+				model.LoanStatusApprovedBujp,
+				model.LoanStatusApprovedPusat,
+				model.LoanStatusPendingUserConfirmation,
+				model.LoanStatusDisbursed,
+				model.LoanStatusActive,
+				model.LoanStatusCompleted,
+				model.LoanStatusRejected,
+				model.LoanStatusCancelled,
+			}
+		}
 	}
 
 	items, total, err := h.service.GetAll(c.Context(), page, limit, filters)
@@ -148,19 +161,21 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 
 	role, _ := c.Locals("role").(string)
 	uid, _ := c.Locals("userID").(uuid.UUID)
-
-	// Admin-style history query: anyone who is not a guard (and did not
-	// specify a personnel_id) gets a paginated, BUJP-scoped list of loans
-	// in terminal/history states (approved_pusat, rejected, completed,
-	// cancelled, active). Pusat may filter by bujp_id explicitly.
 	if personnelID == uuid.Nil && role != "guard" {
 		filters := make(map[string]interface{})
-
-		// Limit to history-relevant statuses unless caller narrows further.
 		status := c.Query("status", "")
 		switch status {
 		case "", "all":
-			filters["status_in"] = []string{"approved_pusat", "active", "completed", "rejected", "cancelled"}
+			filters["status_in"] = []string{
+				model.LoanStatusApprovedBujp,
+				model.LoanStatusApprovedPusat,
+				model.LoanStatusPendingUserConfirmation,
+				model.LoanStatusDisbursed,
+				model.LoanStatusActive,
+				model.LoanStatusCompleted,
+				model.LoanStatusRejected,
+				model.LoanStatusCancelled,
+			}
 		default:
 			filters["status"] = status
 		}
@@ -178,7 +193,6 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 			}
 		}
 
-		// Apply tenant scoping (Pusat = no-op).
 		utils.ApplyBujpScope(c, filters)
 
 		items, total, err := h.service.GetAll(c.Context(), page, limit, filters)
@@ -191,7 +205,6 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 		})
 	}
 
-	// When personnel_id missing, resolve via the authenticated user.
 	if personnelID == uuid.Nil {
 		if uid == uuid.Nil {
 			return utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")

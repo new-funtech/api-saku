@@ -47,8 +47,8 @@ func (li *LoanInstallment) BeforeCreate(tx *gorm.DB) error {
 }
 
 type LoanInstallmentPaymentRequest struct {
-	PaidAmount           float64 `json:"paid_amount" validate:"required,gt=0"`
-	PaymentDate          string  `json:"payment_date" validate:"required"` // YYYY-MM-DD
+	PaidAmount           float64 `json:"paid_amount"`
+	PaymentDate          string  `json:"payment_date"` // YYYY-MM-DD, optional
 	PaymentMethod        *string `json:"payment_method"`
 	TransactionReference *string `json:"transaction_reference"`
 	Notes                *string `json:"notes"`

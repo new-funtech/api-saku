@@ -66,6 +66,10 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 		q = q.Joins("JOIN loans ON loans.id = loan_approvals.loan_id").
 			Where("loans.bujp_id = ?", *bujpID)
 	}
+	if level == model.LoanApprovalLevelPusat {
+		q = q.Joins("JOIN loans ON loans.id = loan_approvals.loan_id").
+			Where("loans.status = ?", model.LoanStatusApprovedBujp)
+	}
 
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -77,8 +81,6 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 
 func (r *loanApprovalRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*model.LoanApproval, error) {
 	var a model.LoanApproval
-	// Preload nested Loan relations to avoid N+1 when callers access
-	// approval.Loan.Personnel / approval.Loan.Bujp / approval.Loan.LoanProduct.
 	if err := r.db.WithContext(ctx).
 		Preload("Loan.Personnel").
 		Preload("Loan.Bujp").

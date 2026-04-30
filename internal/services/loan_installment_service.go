@@ -50,13 +50,35 @@ func (s *loanInstallmentServiceImpl) Pay(ctx context.Context, id uuid.UUID, req 
 	if inst.Status == model.LoanInstallmentStatusPaid || inst.Status == model.LoanInstallmentStatusWaived {
 		return nil, errors.New("installment already settled")
 	}
-	paymentDate, err := time.Parse("2006-01-02", req.PaymentDate)
-	if err != nil {
-		return nil, errors.New("invalid payment_date format, expected YYYY-MM-DD")
+	remaining := inst.InstallmentAmount + inst.LateFee - inst.PaidAmount
+	amount := req.PaidAmount
+	if amount <= 0 {
+		amount = remaining
 	}
-	inst.PaidAmount += req.PaidAmount
+	if amount > remaining {
+		amount = remaining
+	}
+
+	var paymentDate time.Time
+	if req.PaymentDate == "" {
+		paymentDate = time.Now()
+	} else {
+		pd, perr := time.Parse("2006-01-02", req.PaymentDate)
+		if perr != nil {
+			return nil, errors.New("invalid payment_date format, expected YYYY-MM-DD")
+		}
+		paymentDate = pd
+	}
+
+	method := req.PaymentMethod
+	if method == nil || *method == "" {
+		defaultMethod := "payroll_deduction"
+		method = &defaultMethod
+	}
+
+	inst.PaidAmount += amount
 	inst.PaymentDate = &paymentDate
-	inst.PaymentMethod = req.PaymentMethod
+	inst.PaymentMethod = method
 	inst.TransactionReference = req.TransactionReference
 	inst.Notes = req.Notes
 	inst.RemainingAmount = inst.InstallmentAmount + inst.LateFee - inst.PaidAmount
@@ -67,7 +89,6 @@ func (s *loanInstallmentServiceImpl) Pay(ctx context.Context, id uuid.UUID, req 
 	if err := s.repo.Update(ctx, inst); err != nil {
 		return nil, err
 	}
-	// If all installments paid -> complete loan
 	all, _ := s.repo.FindByLoanID(ctx, inst.LoanID)
 	allPaid := true
 	for _, it := range all {

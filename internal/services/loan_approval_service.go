@@ -54,14 +54,11 @@ func (s *loanApprovalServiceImpl) GetPending(ctx context.Context, role string, b
 	}
 	out := make([]model.LoanApprovalResponse, len(items))
 	for i := range items {
-		out[i] = ToLoanApprovalResponse(&items[i])
+		out[i] = ToLoanApprovalResponse(ctx, &items[i])
 	}
 	return out, total, nil
 }
 
-// ResolveUserBujpID delegates to the underlying loan service so the handler
-// can scope pending approvals to the authenticated user's BUJP without
-// trusting client-supplied query parameters.
 func (s *loanApprovalServiceImpl) ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID {
 	if s.loanService == nil {
 		return uuid.Nil
@@ -69,7 +66,6 @@ func (s *loanApprovalServiceImpl) ResolveUserBujpID(ctx context.Context, userID 
 	return s.loanService.ResolveUserBujpID(ctx, userID)
 }
 
-// ResolveUserPersonnelID delegates to the underlying loan service.
 func (s *loanApprovalServiceImpl) ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID {
 	if s.loanService == nil {
 		return uuid.Nil
@@ -77,8 +73,6 @@ func (s *loanApprovalServiceImpl) ResolveUserPersonnelID(ctx context.Context, us
 	return s.loanService.ResolveUserPersonnelID(ctx, userID)
 }
 
-// LoadLoanScope returns the BUJP and personnel IDs for the loan so the
-// caller (typically a handler) can apply tenant-scope authorization.
 func (s *loanApprovalServiceImpl) LoadLoanScope(ctx context.Context, loanID uuid.UUID) (*uuid.UUID, uuid.UUID, error) {
 	loan, err := s.loanRepo.FindByID(ctx, loanID)
 	if err != nil {
@@ -97,7 +91,7 @@ func (s *loanApprovalServiceImpl) GetByLoan(ctx context.Context, loanID uuid.UUI
 	}
 	out := make([]model.LoanApprovalResponse, len(items))
 	for i := range items {
-		out[i] = ToLoanApprovalResponse(&items[i])
+		out[i] = ToLoanApprovalResponse(ctx, &items[i])
 	}
 	return out, nil
 }
@@ -156,12 +150,6 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 			loan.Status = model.LoanStatusApprovedBujp
 			loan.ApprovedAt = &now
 		} else {
-			// Pusat approval finalises the approval chain. We record the
-			// final approved amount/tenor and immediately move the loan to
-			// pending_user_confirmation (with a 24h deadline) — the
-			// approved_pusat status is a transient logical state captured
-			// only via approved_pusat_at, so the user-facing status reflects
-			// what they need to act on next.
 			loan.ApprovedPusatAt = &now
 			if req.ApprovedAmount != nil {
 				loan.ApprovedAmount = req.ApprovedAmount
@@ -169,6 +157,18 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 			if req.ApprovedTenor != nil {
 				loan.ApprovedTenor = req.ApprovedTenor
 			}
+			finalAmount := loan.LoanAmount
+			if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
+				finalAmount = *loan.ApprovedAmount
+			}
+			finalTenor := loan.TenorMonths
+			if loan.ApprovedTenor != nil && *loan.ApprovedTenor > 0 {
+				finalTenor = *loan.ApprovedTenor
+				loan.TenorMonths = *loan.ApprovedTenor
+			}
+			monthly, total := calculateLoanDetails(finalAmount, loan.InterestRate, finalTenor)
+			loan.MonthlyInstallment = monthly
+			loan.TotalRepayment = total
 			loan.Status = model.LoanStatusPendingUserConfirmation
 			deadline := now.Add(constants.LoanUserConfirmationWindow)
 			loan.UserConfirmationDeadline = &deadline
@@ -177,7 +177,7 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 			return nil, err
 		}
 	}
-	r := ToLoanApprovalResponse(approval)
+	r := ToLoanApprovalResponse(ctx, approval)
 	return &r, nil
 }
 
@@ -244,7 +244,7 @@ func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID
 
 // === Mappers ===
 
-func ToLoanApprovalResponse(a *model.LoanApproval) model.LoanApprovalResponse {
+func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.LoanApprovalResponse {
 	levelName := a.ApprovalLevelName
 	switch a.ApprovalLevel {
 	case model.LoanApprovalLevelBujp:
@@ -272,6 +272,11 @@ func ToLoanApprovalResponse(a *model.LoanApproval) model.LoanApprovalResponse {
 	}
 	if a.Loan != nil {
 		loan := ToLoanResponse(a.Loan)
+		// Presign loan document keys so admin clients (approvals queue)
+		// can render document thumbnails without falling back to raw
+		// object keys (which the browser then resolves against the
+		// current page URL — yielding 404s like /LOANS/{id}/...jpg).
+		presignLoanDocs(ctx, &loan)
 		r.Loan = &loan
 	}
 	return r
