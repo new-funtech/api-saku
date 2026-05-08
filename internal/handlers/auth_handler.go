@@ -10,12 +10,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthHandler handles authentication HTTP requests
 type AuthHandler struct {
 	service services.AuthService
 }
 
-// NewHandler creates a new auth handler
 func NewAuthHandler(service services.AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
@@ -91,5 +89,88 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		Code:    http.StatusCreated,
 		Message: constants.SuccessRegister,
 		Data:    result,
+	})
+}
+
+// ForgotPassword godoc
+// @Summary      Forgot password
+// @Description  Mengirim OTP 6-digit ke email user untuk reset password
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      model.ForgotPasswordRequest  true  "Email akun"
+// @Success      200      {object}  model.APIResponse
+// @Router       /api/v1/forgot-password [post]
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	var req model.ForgotPasswordRequest
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
+	}
+	if err := h.service.ForgotPassword(c.Context(), req); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusInternalServerError,
+			Message: constants.ErrInternalServer,
+		})
+	}
+	// Selalu return 200 (anti email-enumeration).
+	return c.Status(http.StatusOK).JSON(model.APIResponse{
+		Status: "success", Code: http.StatusOK,
+		Message: constants.SuccessForgotPasswordSent,
+	})
+}
+
+// VerifyResetOTP godoc
+// @Summary      Verify reset OTP
+// @Description  Cek OTP yang dikirim ke email, mengembalikan reset_token sementara
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      model.VerifyResetOTPRequest  true  "Email + OTP"
+// @Success      200      {object}  model.APIResponse{data=model.VerifyResetOTPResponse}
+// @Failure      400      {object}  model.APIResponse
+// @Router       /api/v1/verify-reset-otp [post]
+func (h *AuthHandler) VerifyResetOTP(c *fiber.Ctx) error {
+	var req model.VerifyResetOTPRequest
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
+	}
+	resp, err := h.service.VerifyResetOTP(c.Context(), req)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest,
+			Message: constants.ErrInvalidOTP,
+		})
+	}
+	return c.Status(http.StatusOK).JSON(model.APIResponse{
+		Status: "success", Code: http.StatusOK,
+		Message: constants.SuccessVerifyResetOTP,
+		Data:    resp,
+	})
+}
+
+// ResetPassword godoc
+// @Summary      Reset password
+// @Description  Set password baru menggunakan reset_token yang valid
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      model.ResetPasswordRequest  true  "Reset token + password baru"
+// @Success      200      {object}  model.APIResponse
+// @Failure      400      {object}  model.APIResponse
+// @Router       /api/v1/reset-password [post]
+func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	var req model.ResetPasswordRequest
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
+	}
+	if err := h.service.ResetPassword(c.Context(), req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest,
+			Message: constants.ErrInvalidResetToken,
+		})
+	}
+	return c.Status(http.StatusOK).JSON(model.APIResponse{
+		Status: "success", Code: http.StatusOK,
+		Message: constants.SuccessResetPassword,
 	})
 }

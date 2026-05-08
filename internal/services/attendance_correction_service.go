@@ -55,7 +55,7 @@ type AttendanceCorrectionService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.AttendanceCorrectionResponse, error)
 	GetByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error)
-	GetPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error)
+	GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error)
 	Create(ctx context.Context, req *model.CreateAttendanceCorrectionRequest) (*model.AttendanceCorrectionResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceCorrectionRequest) (*model.AttendanceCorrectionResponse, error)
 	Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status, notes string) (*model.AttendanceCorrectionResponse, error)
@@ -114,8 +114,8 @@ func (s *attendancecorrectionServiceImpl) GetByPersonnelID(ctx context.Context, 
 	return responses, total, nil
 }
 
-func (s *attendancecorrectionServiceImpl) GetPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error) {
-	corrections, total, err := s.repo.FindPending(ctx, page, limit)
+func (s *attendancecorrectionServiceImpl) GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error) {
+	corrections, total, err := s.repo.FindPending(ctx, page, limit, filters)
 	if err != nil {
 		return nil, 0, apperrors.Internal("Failed to retrieve pending corrections")
 	}

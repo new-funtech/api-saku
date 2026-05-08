@@ -63,6 +63,13 @@ func UploadBase64DataURL(ctx context.Context, value, folder string) (string, err
 		}
 	}
 
+	// Hard cap on decoded payload to prevent OOM / runaway uploads.
+	// 8MB covers high-quality phone selfies but rejects abusive payloads.
+	const maxBase64Bytes = 8 * 1024 * 1024
+	if len(data) > maxBase64Bytes {
+		return "", fmt.Errorf("ukuran gambar terlalu besar (maks 8 MB)")
+	}
+
 	key := fmt.Sprintf("%s/%s%s", folder, uuid.New().String(), ext)
 
 	if config.S3Client == nil {

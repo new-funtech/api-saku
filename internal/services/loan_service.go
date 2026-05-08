@@ -26,6 +26,7 @@ type LoanService interface {
 	Cancel(ctx context.Context, id uuid.UUID, reason *string) (*model.LoanResponse, error)
 	UserConfirm(ctx context.Context, id uuid.UUID, action string, reason *string) (*model.LoanResponse, error)
 	Statistics(ctx context.Context) (map[string]interface{}, error)
+	StatisticsScoped(ctx context.Context, role string, userID uuid.UUID) (map[string]interface{}, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID
 	ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID
@@ -352,6 +353,15 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 		return nil, errors.New("user confirmation deadline expired; loan cancelled")
 	}
 	now := time.Now()
+	// Normalize action: accept both short and past-tense forms used by clients.
+	switch action {
+	case "accept", "accepted":
+		action = "accept"
+	case "decline", "declined", "reject", "rejected":
+		action = "decline"
+	default:
+		return nil, errors.New("invalid action: must be 'accept' or 'decline'")
+	}
 	loan.UserConfirmedAt = &now
 	if action == "decline" {
 		loan.Status = model.LoanStatusCancelled
@@ -380,6 +390,53 @@ func (s *loanServiceImpl) Statistics(ctx context.Context) (map[string]interface{
 		stats[st] = c
 	}
 	return stats, nil
+}
+
+func (s *loanServiceImpl) StatisticsScoped(ctx context.Context, role string, userID uuid.UUID) (map[string]interface{}, error) {
+	var bujpID, personnelID uuid.UUID
+	switch role {
+	case "company_admin", "supervisor":
+		bujpID = s.ResolveUserBujpID(ctx, userID)
+		if bujpID == uuid.Nil {
+			// User is not bound to any BUJP → return all-zero stats
+			// instead of leaking global numbers.
+			return emptyLoanStats(), nil
+		}
+	case "guard":
+		personnelID = s.ResolveUserPersonnelID(ctx, userID)
+		if personnelID == uuid.Nil {
+			return emptyLoanStats(), nil
+		}
+	case "super_admin", "admin":
+		// no scoping
+	default:
+		// Unknown role: be safe — return zeros.
+		return emptyLoanStats(), nil
+	}
+
+	stats := map[string]interface{}{}
+	for _, st := range loanStatStatuses() {
+		c, _ := s.loanRepo.CountByStatusScoped(ctx, st, bujpID, personnelID)
+		stats[st] = c
+	}
+	return stats, nil
+}
+
+func loanStatStatuses() []string {
+	return []string{
+		model.LoanStatusDraft, model.LoanStatusSubmitted, model.LoanStatusApprovedBujp,
+		model.LoanStatusApprovedPusat, model.LoanStatusPendingUserConfirmation,
+		model.LoanStatusRejected, model.LoanStatusDisbursed, model.LoanStatusActive,
+		model.LoanStatusCompleted, model.LoanStatusCancelled,
+	}
+}
+
+func emptyLoanStats() map[string]interface{} {
+	m := map[string]interface{}{}
+	for _, st := range loanStatStatuses() {
+		m[st] = int64(0)
+	}
+	return m
 }
 
 func (s *loanServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {

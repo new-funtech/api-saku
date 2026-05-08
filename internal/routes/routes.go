@@ -65,6 +65,9 @@ func SetupRoutes(
 
 	v1.Post("/login", authLimiter, authHdl.Login)
 	v1.Post("/register", authLimiter, authHdl.Register)
+	v1.Post("/forgot-password", authLimiter, authHdl.ForgotPassword)
+	v1.Post("/verify-reset-otp", authLimiter, authHdl.VerifyResetOTP)
+	v1.Post("/reset-password", authLimiter, authHdl.ResetPassword)
 
 	// Upload routes (all protected)
 	uploadRoutes := v1.Group("/uploads", protected()...)
@@ -153,6 +156,7 @@ func SetupRoutes(
 	// Attendance routes (all protected)
 	attendanceRoutes := v1.Group("/attendances", protected()...)
 	attendanceRoutes.Get("/", attendanceHdl.GetAll)
+	attendanceRoutes.Get("/summary", attendanceHdl.Summary)
 	attendanceRoutes.Put("/checkout", attendanceHdl.Checkout)
 	attendanceRoutes.Get("/:id", attendanceHdl.GetByID)
 	attendanceRoutes.Post("/", attendanceHdl.Create)

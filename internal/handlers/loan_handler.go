@@ -264,10 +264,33 @@ func (h *LoanHandler) Create(c *fiber.Ctx) error {
 	for _, u := range uploads {
 		key, uerr := utils.UploadFormFile(c.Context(), c, u.field, folder)
 		if uerr != nil {
-			return utils.ErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("Failed to upload %s: %v", u.field, uerr))
+			return utils.UploadErrorResponse(c, u.field, uerr)
 		}
 		if key != nil {
 			*u.dest = key
+		}
+	}
+
+	if req.SubmitImmediately {
+		missing := []string{}
+		if req.KtpDocument == nil || *req.KtpDocument == "" {
+			missing = append(missing, "KTP")
+		}
+		if req.NpwpDocument == nil || *req.NpwpDocument == "" {
+			missing = append(missing, "NPWP")
+		}
+		if req.SelfieDocument == nil || *req.SelfieDocument == "" {
+			missing = append(missing, "Selfie")
+		}
+		if req.SelfieKtpDocument == nil || *req.SelfieKtpDocument == "" {
+			missing = append(missing, "Selfie + KTP")
+		}
+		if len(missing) > 0 {
+			return utils.ErrorResponse(
+				c,
+				http.StatusBadRequest,
+				"Dokumen wajib belum lengkap: "+strings.Join(missing, ", "),
+			)
 		}
 	}
 
@@ -428,12 +451,20 @@ func (h *LoanHandler) UserConfirm(c *fiber.Ctx) error {
 
 // Statistics godoc
 // @Summary      Loan statistics by status
+// @Description  Returns counts grouped by loan status. Numbers are scoped by
+//
+//	role: company_admin/supervisor see only their BUJP, guard
+//	sees only their own personnel, super_admin sees the whole
+//	tenant.
+//
 // @Tags         Loans
 // @Success      200 {object} model.APIResponse
 // @Security     BearerAuth
 // @Router       /api/v1/loans/statistics [get]
 func (h *LoanHandler) Statistics(c *fiber.Ctx) error {
-	stats, err := h.service.Statistics(c.Context())
+	role, _ := c.Locals("role").(string)
+	uid, _ := c.Locals("userID").(uuid.UUID)
+	stats, err := h.service.StatisticsScoped(c.Context(), role, uid)
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}

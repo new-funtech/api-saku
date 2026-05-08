@@ -27,7 +27,7 @@ type LeaveService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.LeaveResponse, error)
 	GetByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.LeaveResponse, int64, error)
-	GetPending(ctx context.Context, page, limit int) ([]model.LeaveResponse, int64, error)
+	GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error)
 	Create(ctx context.Context, req *model.CreateLeaveRequest) (*model.LeaveResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateLeaveRequest) (*model.LeaveResponse, error)
 	Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status, notes string) (*model.LeaveResponse, error)
@@ -83,8 +83,8 @@ func (s *leaveServiceImpl) GetByPersonnelID(ctx context.Context, personnelID uui
 	return responses, total, nil
 }
 
-func (s *leaveServiceImpl) GetPending(ctx context.Context, page, limit int) ([]model.LeaveResponse, int64, error) {
-	leaves, total, err := s.repo.FindPending(ctx, page, limit)
+func (s *leaveServiceImpl) GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error) {
+	leaves, total, err := s.repo.FindPending(ctx, page, limit, filters)
 	if err != nil {
 		return nil, 0, err
 	}

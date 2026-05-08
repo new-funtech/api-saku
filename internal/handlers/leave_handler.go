@@ -58,10 +58,12 @@ func (h *LeaveHandler) GetAll(c *fiber.Ctx) error {
 
 	filters := make(map[string]interface{})
 	if personnelID != "" {
-		filters["personnel_id"] = personnelID
+		if pid, err := uuid.Parse(personnelID); err == nil {
+			filters["personnel_id"] = pid
+		}
 	}
 	if leaveType != "" {
-		filters["leave_type"] = leaveType
+		filters["type"] = leaveType
 	}
 	if status != "" {
 		filters["status"] = status
@@ -168,11 +170,7 @@ func (h *LeaveHandler) Create(c *fiber.Ctx) error {
 	folder := fmt.Sprintf("LEAVES/%s", uid.String())
 	for _, field := range []string{"attachment", "supporting_document"} {
 		if key, uerr := utils.UploadFormFile(ctx, c, field, folder); uerr != nil {
-			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-				Status:  "error",
-				Code:    http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to upload attachment: %v", uerr),
-			})
+			return utils.UploadErrorResponse(c, field, uerr)
 		} else if key != nil {
 			req.SupportingDocument = key
 			break
@@ -334,7 +332,10 @@ func (h *LeaveHandler) Pending(c *fiber.Ctx) error {
 		limit = 10
 	}
 
-	leaves, total, err := h.service.GetPending(ctx, page, limit)
+	filters := make(map[string]interface{})
+	utils.ApplyBujpScope(c, filters)
+
+	leaves, total, err := h.service.GetPending(ctx, page, limit, filters)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status: "error", Code: http.StatusInternalServerError, Message: "Failed to retrieve pending leaves",

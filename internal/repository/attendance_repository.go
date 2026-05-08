@@ -42,7 +42,6 @@ func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int,
 
 	query := db.Model(&model.Attendance{})
 
-	// Tenant scoping (set by handler).
 	if v, ok := filters["force_empty"].(bool); ok && v {
 		return []model.Attendance{}, 0, nil
 	}
@@ -53,22 +52,22 @@ func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int,
 
 	// Apply filters
 	if personnelID, ok := filters["personnel_id"].(uuid.UUID); ok && personnelID != uuid.Nil {
-		query = query.Where("personnel_id = ?", personnelID)
+		query = query.Where("attendances.personnel_id = ?", personnelID)
 	}
 	if locationID, ok := filters["location_id"].(uuid.UUID); ok && locationID != uuid.Nil {
-		query = query.Where("location_id = ?", locationID)
+		query = query.Where("attendances.location_id = ?", locationID)
 	}
 	if status, ok := filters["status"].(string); ok && status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("attendances.status = ?", status)
 	}
 	if date, ok := filters["date"].(time.Time); ok && !date.IsZero() {
-		query = query.Where("date = ?", date)
+		query = query.Where("attendances.date = ?", date)
 	}
 	if startDate, ok := filters["start_date"].(time.Time); ok && !startDate.IsZero() {
-		query = query.Where("date >= ?", startDate)
+		query = query.Where("attendances.date >= ?", startDate)
 	}
 	if endDate, ok := filters["end_date"].(time.Time); ok && !endDate.IsZero() {
-		query = query.Where("date <= ?", endDate)
+		query = query.Where("attendances.date <= ?", endDate)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

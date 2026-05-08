@@ -18,8 +18,12 @@ type User struct {
 	Photo     *string    `json:"photo" gorm:"type:varchar(255)"`
 	Status    string     `json:"status" gorm:"type:varchar(20);default:'active';index"`
 	LastLogin *time.Time `json:"last_login"`
-	CreatedAt time.Time  `json:"created_at" gorm:"index"`
-	UpdatedAt time.Time  `json:"updated_at"`
+
+	ResetOTP          *string    `json:"-" gorm:"type:varchar(100)"`
+	ResetOTPExpiresAt *time.Time `json:"-"`
+
+	CreatedAt time.Time `json:"created_at" gorm:"index"`
+	UpdatedAt time.Time `json:"updated_at"`
 
 	Bujp *Bujp `json:"bujp,omitempty" gorm:"foreignKey:BujpID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
 }

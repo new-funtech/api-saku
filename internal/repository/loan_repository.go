@@ -19,6 +19,7 @@ type LoanRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountThisMonth(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status string) (int64, error)
+	CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error)
 	GetActiveByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.Loan, error)
 	CountByPersonnelID(ctx context.Context, personnelID uuid.UUID) (int64, error)
 }
@@ -130,6 +131,19 @@ func (r *loanRepositoryImpl) CountByStatus(ctx context.Context, status string) (
 	return c, err
 }
 
+func (r *loanRepositoryImpl) CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error) {
+	var c int64
+	q := r.db.WithContext(ctx).Model(&model.Loan{}).Where("status = ?", status)
+	if bujpID != uuid.Nil {
+		q = q.Where("bujp_id = ?", bujpID)
+	}
+	if personnelID != uuid.Nil {
+		q = q.Where("personnel_id = ?", personnelID)
+	}
+	err := q.Count(&c).Error
+	return c, err
+}
+
 func (r *loanRepositoryImpl) GetActiveByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.Loan, error) {
 	var loans []model.Loan
 	err := r.db.WithContext(ctx).Where("personnel_id = ? AND status IN ?", personnelID, []string{
@@ -138,9 +152,6 @@ func (r *loanRepositoryImpl) GetActiveByPersonnel(ctx context.Context, personnel
 	return loans, err
 }
 
-// CountByPersonnelID returns the total number of loans (regardless of status)
-// associated with the given personnel. Used to block deletion of personnel/users
-// that still have any loan history attached.
 func (r *loanRepositoryImpl) CountByPersonnelID(ctx context.Context, personnelID uuid.UUID) (int64, error) {
 	var c int64
 	err := r.db.WithContext(ctx).Model(&model.Loan{}).

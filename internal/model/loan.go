@@ -167,8 +167,7 @@ type LoanResponse struct {
 	UpdatedAt                time.Time                 `json:"updated_at"`
 }
 
-// UserConfirmationRequest is sent by the borrower to accept/decline.
 type LoanUserConfirmationRequest struct {
-	Action string  `json:"action" validate:"required,oneof=accept decline"`
+	Action string  `json:"action" validate:"required,oneof=accept accepted decline declined reject rejected"`
 	Reason *string `json:"reason"`
 }
