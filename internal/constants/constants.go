@@ -18,11 +18,13 @@ const (
 	SuccessLogin    = "Login successful"
 	SuccessRegister = "Registration successful"
 
-	SuccessForgotPasswordSent = "Jika email terdaftar, kode OTP telah dikirim"
+	SuccessForgotPasswordSent = "Kode OTP telah dikirim ke email Anda"
 	SuccessVerifyResetOTP     = "OTP valid, silakan atur password baru"
 	SuccessResetPassword      = "Password berhasil direset, silakan login"
 	ErrInvalidOTP             = "OTP tidak valid atau sudah kedaluwarsa"
 	ErrInvalidResetToken      = "Token reset tidak valid atau sudah kedaluwarsa"
+	ErrEmailNotRegistered     = "Email tidak terdaftar"
+	ErrEmailQueueFailed       = "Gagal mengantrikan email, silakan coba lagi"
 
 	ErrInvalidRequest = "Invalid request body"
 	ErrInternalServer = "Internal server error"

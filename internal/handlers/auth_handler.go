@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
@@ -107,12 +108,24 @@ func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
 		return err
 	}
 	if err := h.service.ForgotPassword(c.Context(), req); err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: constants.ErrInternalServer,
-		})
+		switch {
+		case errors.Is(err, services.ErrEmailNotRegistered):
+			return c.Status(http.StatusNotFound).JSON(model.APIResponse{
+				Status: "error", Code: http.StatusNotFound,
+				Message: constants.ErrEmailNotRegistered,
+			})
+		case errors.Is(err, services.ErrEmailQueueFailed):
+			return c.Status(http.StatusServiceUnavailable).JSON(model.APIResponse{
+				Status: "error", Code: http.StatusServiceUnavailable,
+				Message: constants.ErrEmailQueueFailed,
+			})
+		default:
+			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
+				Status: "error", Code: http.StatusInternalServerError,
+				Message: constants.ErrInternalServer,
+			})
+		}
 	}
-	// Selalu return 200 (anti email-enumeration).
 	return c.Status(http.StatusOK).JSON(model.APIResponse{
 		Status: "success", Code: http.StatusOK,
 		Message: constants.SuccessForgotPasswordSent,

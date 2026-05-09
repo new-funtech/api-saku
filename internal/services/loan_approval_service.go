@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
@@ -12,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrRejectNotesRequired = errors.New("rejection notes are required")
+
 type LoanApprovalService interface {
 	GetPending(ctx context.Context, role string, bujpID *uuid.UUID, page, limit int) ([]model.LoanApprovalResponse, int64, error)
 	GetByLoan(ctx context.Context, loanID uuid.UUID) ([]model.LoanApprovalResponse, error)
@@ -20,8 +23,6 @@ type LoanApprovalService interface {
 	Disburse(ctx context.Context, loanID uuid.UUID) (*model.LoanResponse, error)
 	ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID
 	ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID
-	// LoadLoanScope returns the (BujpID, PersonnelID) pair of a loan so the
-	// handler can authorize before exposing approvals or mutating state.
 	LoadLoanScope(ctx context.Context, loanID uuid.UUID) (bujpID *uuid.UUID, personnelID uuid.UUID, err error)
 }
 
@@ -97,6 +98,13 @@ func (s *loanApprovalServiceImpl) GetByLoan(ctx context.Context, loanID uuid.UUI
 }
 
 func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.UUID, approverID uuid.UUID, req *model.LoanApprovalRequest) (*model.LoanApprovalResponse, error) {
+	// Reject must always carry a reason (audit-trail requirement). The struct
+	// validator can't enforce this conditionally on Action, so we check here.
+	if req.Action == "reject" {
+		if req.Notes == nil || strings.TrimSpace(*req.Notes) == "" {
+			return nil, ErrRejectNotesRequired
+		}
+	}
 	approval, err := s.approvalRepo.FindByID(ctx, approvalID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

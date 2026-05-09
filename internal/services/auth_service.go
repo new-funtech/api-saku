@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -11,14 +12,20 @@ import (
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/emailworker"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/broker/rabbitmq"
 	jwtutil "github.com/ganiramadhan/ganipedia/backend/pkg/jwt"
-	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	resetOTPLength = 6
 	resetOTPTTL    = 10 * time.Minute
+)
+
+var (
+	ErrEmailNotRegistered = errors.New("email not registered")
+	ErrEmailQueueFailed   = errors.New("email queue failed")
 )
 
 type AuthService interface {
@@ -30,14 +37,19 @@ type AuthService interface {
 }
 
 type authServiceImpl struct {
-	userRepo  repository.UserRepository
-	mailerCfg mailer.Config
+	userRepo   repository.UserRepository
+	broker     *rabbitmq.Client
+	emailQueue string
 }
 
-func NewAuthService(repo repository.UserRepository) AuthService {
+func NewAuthService(repo repository.UserRepository, broker *rabbitmq.Client, emailQueue string) AuthService {
+	if emailQueue == "" {
+		emailQueue = "email.send"
+	}
 	return &authServiceImpl{
-		userRepo:  repo,
-		mailerCfg: mailer.LoadConfig(),
+		userRepo:   repo,
+		broker:     broker,
+		emailQueue: emailQueue,
 	}
 }
 
@@ -126,10 +138,10 @@ func (s *authServiceImpl) Register(ctx context.Context, req model.RegisterReques
 //                                             invalidate OTP.
 
 func (s *authServiceImpl) ForgotPassword(ctx context.Context, req model.ForgotPasswordRequest) error {
-	user, err := s.userRepo.FindByEmail(ctx, strings.ToLower(strings.TrimSpace(req.Email)))
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil || user == nil {
-		// Tidak bocorkan eksistensi email (anti enumeration).
-		return nil
+		return ErrEmailNotRegistered
 	}
 
 	otp, err := generateNumericOTP(resetOTPLength)
@@ -148,15 +160,25 @@ func (s *authServiceImpl) ForgotPassword(ctx context.Context, req model.ForgotPa
 		return err
 	}
 
-	subject := "Kode Reset Password SAKU"
-	body := buildResetOTPHTML(user.FullName, otp, int(resetOTPTTL.Minutes()))
-	go func() {
-		_ = mailer.Send(s.mailerCfg, mailer.Message{
-			To:       []string{user.Email},
-			Subject:  subject,
-			HTMLBody: body,
-		})
-	}()
+	job := emailworker.EmailJob{
+		To:       []string{user.Email},
+		Subject:  "Kode Reset Password SAKU",
+		HTMLBody: buildResetOTPHTML(user.FullName, otp, int(resetOTPTTL.Minutes())),
+	}
+	payload, err := json.Marshal(job)
+	if err != nil {
+		return err
+	}
+
+	if s.broker == nil {
+		return ErrEmailQueueFailed
+	}
+
+	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err := s.broker.Publish(pubCtx, s.emailQueue, payload); err != nil {
+		return fmt.Errorf("%w: %v", ErrEmailQueueFailed, err)
+	}
 	return nil
 }
 

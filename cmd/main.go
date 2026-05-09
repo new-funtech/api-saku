@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -13,6 +14,8 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/routes"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	cleanupSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/cleanup"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/emailworker"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
 
 	_ "github.com/ganiramadhan/ganipedia/backend/docs"
 
@@ -62,6 +65,9 @@ func main() {
 
 	// Connect to S3/MinIO
 	config.ConnectS3()
+
+	// Connect to RabbitMQ
+	config.ConnectRabbitMQ()
 
 	// Ensure graceful shutdown
 	defer config.CloseConnections()
@@ -139,7 +145,7 @@ func main() {
 	// Initialize services
 	productSvc := services.NewProductService(productRepo)
 	userSvc := services.NewUserService(userRepo, personnelRepo, assignmentRepo, loanRepo)
-	authSvc := services.NewAuthService(userRepo)
+	authSvc := services.NewAuthService(userRepo, config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"))
 	bujpSvc := services.NewBujpService(bujpRepo)
 	locationSvc := services.NewLocationService(locationRepo)
 	shiftSvc := services.NewShiftService(shiftRepo)
@@ -188,6 +194,15 @@ func main() {
 	cleanup := cleanupSvc.NewService()
 	cleanup.Start()
 	defer cleanup.Stop()
+
+	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	defer cancelWorker()
+	go emailworker.Run(
+		workerCtx,
+		config.RabbitClient,
+		config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"),
+		mailer.LoadConfig(),
+	)
 
 	// Setup routes
 	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, userRepo, personnelRepo)
