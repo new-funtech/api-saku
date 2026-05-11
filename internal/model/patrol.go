@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Patrol represents security patrol logs
 type Patrol struct {
 	ID               uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID      uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null"`
@@ -26,7 +25,6 @@ type Patrol struct {
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
 
-	// Relations
 	Personnel  *Personnel  `json:"personnel,omitempty" gorm:"foreignKey:PersonnelID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Location   *Location   `json:"location,omitempty" gorm:"foreignKey:LocationID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Attendance *Attendance `json:"attendance,omitempty" gorm:"foreignKey:AttendanceID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
@@ -40,7 +38,6 @@ func (p *Patrol) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreatePatrolRequest struct {
 	PersonnelID  uuid.UUID  `json:"personnel_id" validate:"required"`
 	LocationID   uuid.UUID  `json:"location_id" validate:"required"`

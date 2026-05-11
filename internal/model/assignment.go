@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Assignment represents personnel work assignment to location
 type Assignment struct {
 	ID          uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null"`
@@ -35,7 +34,6 @@ func (a *Assignment) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateAssignmentRequest struct {
 	PersonnelID uuid.UUID  `json:"personnel_id" validate:"required"`
 	LocationID  uuid.UUID  `json:"location_id" validate:"required"`

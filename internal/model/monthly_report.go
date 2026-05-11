@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// MonthlyReport represents monthly summary report per BUJP
 type MonthlyReport struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID          uuid.UUID  `json:"bujp_id" gorm:"type:uuid;not null"`
@@ -25,7 +24,6 @@ type MonthlyReport struct {
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 
-	// Relations
 	Bujp    *Bujp `json:"bujp,omitempty" gorm:"foreignKey:BujpID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Creator *User `json:"creator,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
 }
@@ -37,7 +35,6 @@ func (mr *MonthlyReport) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateMonthlyReportRequest struct {
 	BujpID          uuid.UUID `json:"bujp_id" validate:"required"`
 	Period          string    `json:"period" validate:"required"` // YYYY-MM
@@ -52,8 +49,6 @@ type CreateMonthlyReportRequest struct {
 	ReportFile      *string   `json:"report_file"`
 }
 
-// GenerateMonthlyReportRequest is the payload for POST /monthly-reports/generate.
-// Force=true means an existing (bujp, period) report will be recomputed and overwritten.
 type GenerateMonthlyReportRequest struct {
 	BujpID uuid.UUID `json:"bujp_id"`
 	Period string    `json:"period" validate:"required"` // YYYY-MM

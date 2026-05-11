@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// AttendanceCorrection represents requests to correct attendance data
 type AttendanceCorrection struct {
 	ID                 uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID        uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null"`
@@ -36,7 +35,6 @@ func (ac *AttendanceCorrection) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateAttendanceCorrectionRequest struct {
 	PersonnelID        uuid.UUID `json:"personnel_id" validate:"required"`
 	CorrectionDate     string    `json:"correction_date" validate:"required"` // format: 2006-01-02

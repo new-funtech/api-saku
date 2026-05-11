@@ -15,6 +15,8 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	cleanupSvc "github.com/ganiramadhan/ganipedia/backend/internal/services/cleanup"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/emailworker"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
+	payrollScheduler "github.com/ganiramadhan/ganipedia/backend/internal/services/payroll"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
 
 	_ "github.com/ganiramadhan/ganipedia/backend/docs"
@@ -98,7 +100,6 @@ func main() {
 		MaxAge:           300, // 5 minutes
 	}))
 
-	// Global rate limiter: 300 req/min per IP. Skips successful health checks.
 	app.Use(limiter.New(limiter.Config{
 		Max:        300,
 		Expiration: 1 * time.Minute,
@@ -146,21 +147,24 @@ func main() {
 	productSvc := services.NewProductService(productRepo)
 	userSvc := services.NewUserService(userRepo, personnelRepo, assignmentRepo, loanRepo)
 	authSvc := services.NewAuthService(userRepo, config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"))
+	// Centralized notifier — all transactional emails for loans/leave/attendance
+	// corrections funnel through this service onto the broker queue.
+	notifierSvc := notifier.New(config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"), userRepo)
 	bujpSvc := services.NewBujpService(bujpRepo)
 	locationSvc := services.NewLocationService(locationRepo)
 	shiftSvc := services.NewShiftService(shiftRepo)
 	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo, userRepo)
 	assignmentSvc := services.NewAssignmentService(assignmentRepo)
 	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
-	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo)
+	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo, notifierSvc)
 	patrolSvc := services.NewPatrolService(patrolRepo, attendanceRepo)
-	leaveSvc := services.NewLeaveService(leaveRepo)
+	leaveSvc := services.NewLeaveService(leaveRepo, notifierSvc)
 	salaryComponentSvc := services.NewSalaryComponentService(salaryComponentRepo)
-	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, salaryComponentRepo)
+	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, attendanceCorrectionRepo, salaryComponentRepo, notifierSvc)
 	monthlyReportSvc := services.NewMonthlyReportService(monthlyReportRepo)
 	loanProductSvc := services.NewLoanProductService(loanProductRepo)
-	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo)
-	loanApprovalSvc := services.NewLoanApprovalService(loanApprovalRepo, loanRepo, loanInstallmentRepo, loanSvc)
+	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo, notifierSvc)
+	loanApprovalSvc := services.NewLoanApprovalService(loanApprovalRepo, loanRepo, loanInstallmentRepo, loanSvc, notifierSvc)
 	loanInstallmentSvc := services.NewLoanInstallmentService(loanInstallmentRepo, loanRepo)
 	// notificationSvc := services.NewNotificationService(notificationRepo) // Notification feature disabled
 	dashboardSvc := services.NewDashboardService(userRepo, bujpRepo, locationRepo, personnelRepo, assignmentRepo, attendanceRepo, leaveRepo)
@@ -194,6 +198,11 @@ func main() {
 	cleanup := cleanupSvc.NewService()
 	cleanup.Start()
 	defer cleanup.Stop()
+
+	// Start payroll auto-generate scheduler (configurable, opt-in via PAYROLL_CRON_ENABLED).
+	payrollCron := payrollScheduler.NewScheduler(payrollSvc, bujpRepo)
+	payrollCron.Start()
+	defer payrollCron.Stop()
 
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
 	defer cancelWorker()

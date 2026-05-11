@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Location represents a work location/site
 type Location struct {
 	ID               uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID           uuid.UUID `json:"bujp_id" gorm:"type:uuid;not null;index"`
@@ -35,7 +34,6 @@ func (l *Location) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateLocationRequest struct {
 	BujpID           uuid.UUID `json:"bujp_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Code             string    `json:"code" validate:"required,max=20" example:"LOC001"`

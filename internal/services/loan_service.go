@@ -10,6 +10,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -45,6 +46,7 @@ type loanServiceImpl struct {
 	installmentRepo repository.LoanInstallmentRepository
 	personnelRepo   repository.PersonnelRepository
 	userRepo        repository.UserRepository
+	notifier        *notifier.Notifier
 }
 
 func NewLoanService(
@@ -54,6 +56,7 @@ func NewLoanService(
 	installmentRepo repository.LoanInstallmentRepository,
 	personnelRepo repository.PersonnelRepository,
 	userRepo repository.UserRepository,
+	notif *notifier.Notifier,
 ) LoanService {
 	return &loanServiceImpl{
 		loanRepo:        loanRepo,
@@ -62,6 +65,7 @@ func NewLoanService(
 		installmentRepo: installmentRepo,
 		personnelRepo:   personnelRepo,
 		userRepo:        userRepo,
+		notifier:        notif,
 	}
 }
 
@@ -145,10 +149,7 @@ func (s *loanServiceImpl) GetMyHistoryByUser(ctx context.Context, userID uuid.UU
 	return &MyHistoryResult{Items: items, Total: total}, nil
 }
 
-// === Write ===
-
 func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanRequest, actorUserID uuid.UUID, actorRole string) (*model.LoanResponse, error) {
-	// Enforce business limits ported from laravel-backend (LoanController@store).
 	if req.LoanAmount < constants.LoanMinAmount {
 		return nil, fmt.Errorf("jumlah pinjaman minimal Rp %.0f", constants.LoanMinAmount)
 	}
@@ -169,8 +170,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		return nil, errors.New("personnel not found")
 	}
 
-	// Resolve interest rate. Optional product lookup (legacy) — otherwise use the
-	// rate from the request, defaulting to the flat default per BE business rule.
 	interestRate := constants.LoanDefaultInterestRatePct
 	var productID *uuid.UUID
 	if req.InterestRate != nil {
@@ -197,7 +196,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		productID = &pid
 	}
 
-	// Calculate financial terms (FLAT INTEREST)
 	monthly, total := calculateLoanDetails(req.LoanAmount, interestRate, req.TenorMonths)
 
 	loanNumber, err := s.generateLoanNumber(ctx)
@@ -315,6 +313,9 @@ func (s *loanServiceImpl) Submit(ctx context.Context, id uuid.UUID) (*model.Loan
 	if err := s.createApprovalRecords(ctx, loan.ID); err != nil {
 		return nil, err
 	}
+	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
+		s.notifier.LoanSubmitted(ctx, fresh)
+	}
 	return s.GetByID(ctx, loan.ID)
 }
 
@@ -353,7 +354,6 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 		return nil, errors.New("user confirmation deadline expired; loan cancelled")
 	}
 	now := time.Now()
-	// Normalize action: accept both short and past-tense forms used by clients.
 	switch action {
 	case "accept", "accepted":
 		action = "accept"
@@ -367,13 +367,15 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 		loan.Status = model.LoanStatusCancelled
 		loan.RejectionReason = reason
 	} else {
-		// Accept -> proceed to disbursement
 		if err := s.processDisbursement(ctx, loan); err != nil {
 			return nil, err
 		}
 	}
 	if err := s.loanRepo.Update(ctx, loan); err != nil {
 		return nil, err
+	}
+	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
+		s.notifier.LoanUserConfirmed(ctx, fresh, action == "accept", reason)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
@@ -475,8 +477,6 @@ func (s *loanServiceImpl) ResolveUserPersonnelID(ctx context.Context, userID uui
 	return personnel.ID
 }
 
-// === Internal helpers (also used by approval service) ===
-
 func (s *loanServiceImpl) resolvePersonnelID(ctx context.Context, requested *uuid.UUID, actorUserID uuid.UUID) (uuid.UUID, error) {
 	if requested != nil && *requested != uuid.Nil {
 		return *requested, nil
@@ -485,7 +485,6 @@ func (s *loanServiceImpl) resolvePersonnelID(ctx context.Context, requested *uui
 	if err != nil {
 		return uuid.Nil, errors.New("authenticated user not found")
 	}
-	// Try find personnel via user_id linkage
 	personnel, err := s.personnelRepo.FindByUserID(ctx, user.ID)
 	if err != nil || personnel == nil {
 		return uuid.Nil, errors.New("personnel_id is required")
@@ -507,20 +506,19 @@ func (s *loanServiceImpl) createApprovalRecords(ctx context.Context, loanID uuid
 		{
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelBujp,
-			ApprovalLevelName: "Admin BUJP",
+			ApprovalLevelName: "Admin Perusahaan",
 			Status:            model.LoanApprovalStatusPending,
 		},
 		{
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelPusat,
-			ApprovalLevelName: "Admin BUJP Pusat",
+			ApprovalLevelName: "Admin Pusat",
 			Status:            model.LoanApprovalStatusPending,
 		},
 	}
 	return s.approvalRepo.CreateMany(ctx, approvals)
 }
 
-// processDisbursement transitions a confirmed loan to disbursed/active and generates installments.
 func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan) error {
 	now := time.Now()
 	loan.DisbursementDate = &now
@@ -537,7 +535,6 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 	}
 
 	monthlyPrincipal := round2(approvedAmount / float64(approvedTenor))
-	// InterestRate is monthly flat (percent). Total interest = principal × rate × months.
 	totalInterest := approvedAmount * (loan.InterestRate / 100) * float64(approvedTenor)
 	monthlyInterest := round2(totalInterest / float64(approvedTenor))
 
@@ -563,12 +560,6 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 	return nil
 }
 
-// === Math ===
-
-// calculateLoanDetails uses FLAT INTEREST with a MONTHLY rate.
-// Total Interest = Principal × (MonthlyRate/100) × Tenor
-// Total Repayment = Principal + Total Interest
-// Monthly Installment = Total Repayment / Tenor
 func calculateLoanDetails(principal, monthlyRatePct float64, tenorMonths int) (monthly, total float64) {
 	if tenorMonths <= 0 {
 		return 0, 0
@@ -583,10 +574,6 @@ func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
 
-// === Mappers ===
-
-// presignLoanDocs fills *DocumentURL fields by presigning the stored object keys.
-// Errors are silently ignored — the raw key field remains for fallback.
 func presignLoanDocs(ctx context.Context, r *model.LoanResponse) {
 	if r == nil {
 		return

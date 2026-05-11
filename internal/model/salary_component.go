@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// SalaryComponent represents salary component (allowance/deduction)
 type SalaryComponent struct {
 	ID                uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID            *uuid.UUID `json:"bujp_id" gorm:"type:uuid"`
@@ -21,7 +20,6 @@ type SalaryComponent struct {
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 
-	// Relations
 	Bujp *Bujp `json:"bujp,omitempty" gorm:"foreignKey:BujpID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
 }
 
@@ -32,7 +30,6 @@ func (s *SalaryComponent) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateSalaryComponentRequest struct {
 	BujpID            *uuid.UUID `json:"bujp_id"`
 	Code              string     `json:"code" validate:"required,max=20"`

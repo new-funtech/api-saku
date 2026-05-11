@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Loan status constants
 const (
 	LoanStatusDraft                   = "draft"
 	LoanStatusSubmitted               = "submitted"
@@ -21,7 +20,6 @@ const (
 	LoanStatusCancelled               = "cancelled"
 )
 
-// Loan represents a loan submitted by a personnel.
 type Loan struct {
 	ID                       uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	LoanNumber               string     `json:"loan_number" gorm:"type:varchar(30);uniqueIndex;not null"`
@@ -78,8 +76,6 @@ func (l *Loan) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
-
-// === DTOs ===
 
 type CreateLoanRequest struct {
 	PersonnelID        *uuid.UUID `json:"personnel_id"` // optional - inferred from auth user if absent

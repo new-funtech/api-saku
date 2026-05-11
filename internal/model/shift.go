@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Shift represents work shift schedule
 type Shift struct {
 	ID            uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID        *uuid.UUID `json:"bujp_id" gorm:"type:uuid;index"`
@@ -31,7 +30,6 @@ func (s *Shift) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateShiftRequest struct {
 	BujpID        *uuid.UUID `json:"bujp_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Name          string     `json:"name" validate:"required,max=50" example:"Shift Pagi"`

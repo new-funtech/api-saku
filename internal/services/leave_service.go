@@ -8,11 +8,11 @@ import (
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 )
 
-// presignLeaveDoc fills SupportingDocumentURL from the stored object key.
 func presignLeaveDoc(ctx context.Context, r *model.LeaveResponse) {
 	if r == nil || r.SupportingDocument == nil || *r.SupportingDocument == "" {
 		return
@@ -35,11 +35,12 @@ type LeaveService interface {
 }
 
 type leaveServiceImpl struct {
-	repo repository.LeaveRepository
+	repo     repository.LeaveRepository
+	notifier *notifier.Notifier
 }
 
-func NewLeaveService(repo repository.LeaveRepository) LeaveService {
-	return &leaveServiceImpl{repo: repo}
+func NewLeaveService(repo repository.LeaveRepository, notif *notifier.Notifier) LeaveService {
+	return &leaveServiceImpl{repo: repo, notifier: notif}
 }
 
 func (s *leaveServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error) {
@@ -105,23 +106,17 @@ func (s *leaveServiceImpl) Create(ctx context.Context, req *model.CreateLeaveReq
 		return nil, errors.New("invalid start_date format, expected YYYY-MM-DD")
 	}
 
-	// Parse end date
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
 		return nil, errors.New("invalid end_date format, expected YYYY-MM-DD")
 	}
 
-	// Validate date range
 	if endDate.Before(startDate) {
 		return nil, errors.New("end_date cannot be before start_date")
 	}
 
-	// Calculate total days (inclusive)
 	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1
 
-	// Check for overlapping leaves for the same personnel. Only ACTIVE
-	// requests (pending / approved) block — rejected/cancelled ones are
-	// ignored so the user can resubmit after a rejection.
 	overlapping, err := s.repo.FindByDateRange(ctx, startDate, endDate, req.PersonnelID)
 	if err == nil && len(overlapping) > 0 {
 		for _, leave := range overlapping {
@@ -141,7 +136,6 @@ func (s *leaveServiceImpl) Create(ctx context.Context, req *model.CreateLeaveReq
 		}
 	}
 
-	// Override total_days from request if provided, otherwise use calculated
 	if req.TotalDays != nil {
 		totalDays = *req.TotalDays
 	}
@@ -173,18 +167,15 @@ func (s *leaveServiceImpl) Create(ctx context.Context, req *model.CreateLeaveReq
 }
 
 func (s *leaveServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.UpdateLeaveRequest) (*model.LeaveResponse, error) {
-	// Find existing leave
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only allow update if status is pending
 	if existing.Status != "pending" {
 		return nil, errors.New("can only update pending leave requests")
 	}
 
-	// Parse start date if provided
 	if req.StartDate != nil && *req.StartDate != "" {
 		startDate, err := time.Parse("2006-01-02", *req.StartDate)
 		if err != nil {
@@ -193,7 +184,6 @@ func (s *leaveServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.
 		existing.StartDate = startDate
 	}
 
-	// Parse end date if provided
 	if req.EndDate != nil && *req.EndDate != "" {
 		endDate, err := time.Parse("2006-01-02", *req.EndDate)
 		if err != nil {
@@ -202,21 +192,17 @@ func (s *leaveServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.
 		existing.EndDate = endDate
 	}
 
-	// Validate date range
 	if existing.EndDate.Before(existing.StartDate) {
 		return nil, errors.New("end_date cannot be before start_date")
 	}
 
-	// Recalculate total days
 	totalDays := int(existing.EndDate.Sub(existing.StartDate).Hours()/24) + 1
 	existing.TotalDays = &totalDays
 
-	// Override with provided total_days if specified
 	if req.TotalDays != nil {
 		existing.TotalDays = req.TotalDays
 	}
 
-	// Check for overlapping leaves (excluding current leave)
 	overlapping, err := s.repo.FindByDateRange(ctx, existing.StartDate, existing.EndDate, existing.PersonnelID)
 	if err == nil && len(overlapping) > 0 {
 		for _, leave := range overlapping {
@@ -286,6 +272,7 @@ func (s *leaveServiceImpl) Approve(ctx context.Context, id uuid.UUID, approverID
 
 	response := toLeaveResponse(updated)
 	presignLeaveDoc(ctx, &response)
+	s.notifier.LeaveDecision(ctx, updated, status)
 	return &response, nil
 }
 
@@ -296,15 +283,12 @@ func (s *leaveServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	// Only allow deletion if status is pending or rejected
 	if existing.Status == "approved" {
 		return errors.New("cannot delete approved leave requests")
 	}
 
 	return s.repo.Delete(ctx, id)
 }
-
-// Helper functions
 
 func toLeaveResponse(leave *model.Leave) model.LeaveResponse {
 	response := model.LeaveResponse{

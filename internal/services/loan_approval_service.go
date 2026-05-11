@@ -9,6 +9,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -31,6 +32,7 @@ type loanApprovalServiceImpl struct {
 	loanRepo        repository.LoanRepository
 	installmentRepo repository.LoanInstallmentRepository
 	loanService     *loanServiceImpl
+	notifier        *notifier.Notifier
 }
 
 func NewLoanApprovalService(
@@ -38,6 +40,7 @@ func NewLoanApprovalService(
 	loanRepo repository.LoanRepository,
 	installmentRepo repository.LoanInstallmentRepository,
 	loanSvc LoanService,
+	notif *notifier.Notifier,
 ) LoanApprovalService {
 	impl, _ := loanSvc.(*loanServiceImpl)
 	return &loanApprovalServiceImpl{
@@ -45,6 +48,7 @@ func NewLoanApprovalService(
 		loanRepo:        loanRepo,
 		installmentRepo: installmentRepo,
 		loanService:     impl,
+		notifier:        notif,
 	}
 }
 
@@ -98,8 +102,7 @@ func (s *loanApprovalServiceImpl) GetByLoan(ctx context.Context, loanID uuid.UUI
 }
 
 func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.UUID, approverID uuid.UUID, req *model.LoanApprovalRequest) (*model.LoanApprovalResponse, error) {
-	// Reject must always carry a reason (audit-trail requirement). The struct
-	// validator can't enforce this conditionally on Action, so we check here.
+
 	if req.Action == "reject" {
 		if req.Notes == nil || strings.TrimSpace(*req.Notes) == "" {
 			return nil, ErrRejectNotesRequired
@@ -120,7 +123,6 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		return nil, errors.New("loan not found")
 	}
 
-	// Ensure sequential processing (lower level first)
 	if approval.ApprovalLevel == model.LoanApprovalLevelPusat {
 		approvals, _ := s.approvalRepo.FindByLoanID(ctx, loan.ID)
 		for _, a := range approvals {
@@ -186,13 +188,19 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		}
 	}
 	r := ToLoanApprovalResponse(ctx, approval)
+	notifyLoan := loan
+	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
+		notifyLoan = fresh
+	}
+	switch approval.ApprovalLevel {
+	case model.LoanApprovalLevelBujp:
+		s.notifier.LoanBujpDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
+	case model.LoanApprovalLevelPusat:
+		s.notifier.LoanPusatDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
+	}
 	return &r, nil
 }
 
-// ProcessByLoan resolves the next pending approval for a loan that matches the
-// caller's role and processes it. This lets the admin client call
-// /loan-approvals/{loan_id}/approve|reject without having to know the
-// approval row UUID.
 func (s *loanApprovalServiceImpl) ProcessByLoan(ctx context.Context, loanID uuid.UUID, approverID uuid.UUID, role string, req *model.LoanApprovalRequest) (*model.LoanApprovalResponse, error) {
 	approvals, err := s.approvalRepo.FindByLoanID(ctx, loanID)
 	if err != nil {
@@ -250,15 +258,13 @@ func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID
 	return &r, nil
 }
 
-// === Mappers ===
-
 func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.LoanApprovalResponse {
 	levelName := a.ApprovalLevelName
 	switch a.ApprovalLevel {
 	case model.LoanApprovalLevelBujp:
-		levelName = "Admin BUJP"
+		levelName = "Admin Perusahaan"
 	case model.LoanApprovalLevelPusat:
-		levelName = "Admin BUJP Pusat"
+		levelName = "Admin Pusat"
 	}
 	r := model.LoanApprovalResponse{
 		ID:                a.ID,
@@ -280,10 +286,6 @@ func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.Lo
 	}
 	if a.Loan != nil {
 		loan := ToLoanResponse(a.Loan)
-		// Presign loan document keys so admin clients (approvals queue)
-		// can render document thumbnails without falling back to raw
-		// object keys (which the browser then resolves against the
-		// current page URL — yielding 404s like /LOANS/{id}/...jpg).
 		presignLoanDocs(ctx, &loan)
 		r.Loan = &loan
 	}

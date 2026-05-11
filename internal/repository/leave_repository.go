@@ -59,7 +59,7 @@ func (r *leaveRepositoryImpl) FindAll(ctx context.Context, page, limit int, filt
 		query = query.Where("type = ?", leaveType)
 	}
 	if status, ok := filters["status"].(string); ok && status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("leaves.status = ?", status)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
