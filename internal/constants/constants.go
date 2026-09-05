@@ -65,6 +65,7 @@ const (
 	RoleCompanyAdmin = "company_admin"
 	RoleSupervisor   = "supervisor"
 	RoleGuard        = "guard"
+	RoleBprks        = "bprks"
 )
 
 // User Status

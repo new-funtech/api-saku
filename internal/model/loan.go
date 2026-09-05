@@ -53,6 +53,7 @@ type Loan struct {
 	SubmittedAt              *time.Time `json:"submitted_at"`
 	ApprovedAt               *time.Time `json:"approved_at"`
 	ApprovedPusatAt          *time.Time `json:"approved_pusat_at"`
+	ApprovedBprksAt          *time.Time `json:"approved_bprks_at"`
 	RejectedAt               *time.Time `json:"rejected_at"`
 	RejectionReason          *string    `json:"rejection_reason" gorm:"type:text"`
 	UserConfirmationDeadline *time.Time `json:"user_confirmation_deadline"`
@@ -148,6 +149,7 @@ type LoanResponse struct {
 	SubmittedAt              *time.Time                `json:"submitted_at,omitempty"`
 	ApprovedAt               *time.Time                `json:"approved_at,omitempty"`
 	ApprovedPusatAt          *time.Time                `json:"approved_pusat_at,omitempty"`
+	ApprovedBprksAt          *time.Time                `json:"approved_bprks_at,omitempty"`
 	RejectedAt               *time.Time                `json:"rejected_at,omitempty"`
 	RejectionReason          *string                   `json:"rejection_reason,omitempty"`
 	UserConfirmationDeadline *time.Time                `json:"user_confirmation_deadline,omitempty"`

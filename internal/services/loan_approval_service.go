@@ -123,11 +123,11 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		return nil, errors.New("loan not found")
 	}
 
-	if approval.ApprovalLevel == model.LoanApprovalLevelPusat {
+	if approval.ApprovalLevel > model.LoanApprovalLevelBujp {
 		approvals, _ := s.approvalRepo.FindByLoanID(ctx, loan.ID)
 		for _, a := range approvals {
-			if a.ApprovalLevel == model.LoanApprovalLevelBujp && a.Status != model.LoanApprovalStatusApproved {
-				return nil, errors.New("BUJP approval must be completed first")
+			if a.ApprovalLevel < approval.ApprovalLevel && a.Status != model.LoanApprovalStatusApproved {
+				return nil, errors.New("previous approval level must be completed first")
 			}
 		}
 	}
@@ -138,12 +138,21 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 	approval.Notes = req.Notes
 	approval.ApprovedAmount = req.ApprovedAmount
 	approval.ApprovedTenor = req.ApprovedTenor
-
 	if req.Action == "reject" {
 		approval.Status = model.LoanApprovalStatusRejected
-		if err := s.approvalRepo.Update(ctx, approval); err != nil {
-			return nil, err
-		}
+	} else {
+		approval.Status = model.LoanApprovalStatusApproved
+	}
+
+	claimed, err := s.approvalRepo.ClaimAndUpdate(ctx, approval)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
+		return nil, errors.New("approval already processed")
+	}
+
+	if req.Action == "reject" {
 		loan.Status = model.LoanStatusRejected
 		loan.RejectedAt = &now
 		loan.RejectionReason = req.Notes
@@ -151,35 +160,33 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 			return nil, err
 		}
 	} else {
-		approval.Status = model.LoanApprovalStatusApproved
-		if err := s.approvalRepo.Update(ctx, approval); err != nil {
-			return nil, err
+		if req.ApprovedAmount != nil {
+			loan.ApprovedAmount = req.ApprovedAmount
 		}
-		// Update loan status
-		if approval.ApprovalLevel == model.LoanApprovalLevelBujp {
+		if approval.ApprovalLevel == model.LoanApprovalLevelBprks && req.ApprovedTenor != nil {
+			loan.ApprovedTenor = req.ApprovedTenor
+		}
+		finalAmount := loan.LoanAmount
+		if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
+			finalAmount = *loan.ApprovedAmount
+		}
+		finalTenor := loan.TenorMonths
+		if loan.ApprovedTenor != nil && *loan.ApprovedTenor > 0 {
+			finalTenor = *loan.ApprovedTenor
+		}
+		monthly, total := calculateLoanDetails(finalAmount, loan.InterestRate, finalTenor)
+		loan.MonthlyInstallment = monthly
+		loan.TotalRepayment = total
+		switch approval.ApprovalLevel {
+		case model.LoanApprovalLevelBujp:
 			loan.Status = model.LoanStatusApprovedBujp
 			loan.ApprovedAt = &now
-		} else {
+		case model.LoanApprovalLevelPusat:
+			loan.Status = model.LoanStatusApprovedPusat
 			loan.ApprovedPusatAt = &now
-			if req.ApprovedAmount != nil {
-				loan.ApprovedAmount = req.ApprovedAmount
-			}
-			if req.ApprovedTenor != nil {
-				loan.ApprovedTenor = req.ApprovedTenor
-			}
-			finalAmount := loan.LoanAmount
-			if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
-				finalAmount = *loan.ApprovedAmount
-			}
-			finalTenor := loan.TenorMonths
-			if loan.ApprovedTenor != nil && *loan.ApprovedTenor > 0 {
-				finalTenor = *loan.ApprovedTenor
-				loan.TenorMonths = *loan.ApprovedTenor
-			}
-			monthly, total := calculateLoanDetails(finalAmount, loan.InterestRate, finalTenor)
-			loan.MonthlyInstallment = monthly
-			loan.TotalRepayment = total
+		default: // LoanApprovalLevelBprks
 			loan.Status = model.LoanStatusPendingUserConfirmation
+			loan.ApprovedBprksAt = &now
 			deadline := now.Add(constants.LoanUserConfirmationWindow)
 			loan.UserConfirmationDeadline = &deadline
 		}
@@ -197,6 +204,8 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		s.notifier.LoanBujpDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
 	case model.LoanApprovalLevelPusat:
 		s.notifier.LoanPusatDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
+	case model.LoanApprovalLevelBprks:
+		s.notifier.LoanBprksDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
 	}
 	return &r, nil
 }
@@ -210,11 +219,13 @@ func (s *loanApprovalServiceImpl) ProcessByLoan(ctx context.Context, loanID uuid
 		return nil, errors.New("no approval records for this loan")
 	}
 	expectedLevel := model.LoanApprovalLevelBujp
-	if role == "admin" || role == "super_admin" {
+	switch role {
+	case "admin", "super_admin":
 		expectedLevel = model.LoanApprovalLevelPusat
+	case "bprks":
+		expectedLevel = model.LoanApprovalLevelBprks
 	}
 	var target *model.LoanApproval
-	// Prefer the pending one matching role; fall back to first pending.
 	for i := range approvals {
 		a := &approvals[i]
 		if a.Status == model.LoanApprovalStatusPending && a.ApprovalLevel == expectedLevel {
@@ -265,6 +276,8 @@ func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.Lo
 		levelName = "Admin Perusahaan"
 	case model.LoanApprovalLevelPusat:
 		levelName = "Admin Pusat"
+	case model.LoanApprovalLevelBprks:
+		levelName = "BPRKS"
 	}
 	r := model.LoanApprovalResponse{
 		ID:                a.ID,

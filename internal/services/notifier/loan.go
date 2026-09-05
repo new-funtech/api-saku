@@ -81,25 +81,26 @@ func (n *Notifier) LoanPusatDecision(ctx context.Context, loan *model.Loan, appr
 	}
 	fullName := personnelName(loan.Personnel)
 	noteStr := derefStr(notes)
-	to := append(n.adminCompanyEmails(ctx, loan.BujpID), personnelEmail(loan.Personnel)...)
 
 	if approved {
-		body := paragraph(fmt.Sprintf("Pengajuan pinjaman dari <strong>%s</strong> telah <strong style=\"color:#047857\">disetujui oleh admin pusat</strong>.", htmlEscape(fullName)))
+		to := n.adminBprksEmails(ctx)
+		body := paragraph(fmt.Sprintf("Pengajuan pinjaman dari <strong>%s</strong> telah <strong style=\"color:#047857\">disetujui oleh admin pusat</strong> dan dilanjutkan ke BPRKS untuk peninjauan akhir.", htmlEscape(fullName)))
 		body += loanDetailsCard(loan)
 		if noteStr != "" {
 			body += noticeBox(toneInfo, "Catatan Admin Pusat", htmlEscape(noteStr))
 		}
-		body += noticeBox(toneWarn, "Konfirmasi Pemohon Diperlukan",
-			"Pemohon perlu melakukan konfirmasi penerimaan dana melalui aplikasi SAKU sebelum proses pencairan dapat dilanjutkan.")
+		body += noticeBox(toneInfo, "Langkah Selanjutnya",
+			"BPRKS akan melakukan peninjauan akhir sebelum pengajuan diteruskan ke pemohon untuk konfirmasi.")
 		html := wrapEmail("Pinjaman Disetujui Admin Pusat",
-			fmt.Sprintf("Pengajuan %s menunggu konfirmasi pemohon.", loan.LoanNumber),
+			fmt.Sprintf("Pengajuan %s diteruskan ke BPRKS.", loan.LoanNumber),
 			"Disetujui Pusat", toneSuccess,
-			fmt.Sprintf("Pinjaman %s disetujui admin pusat.", loan.LoanNumber),
+			fmt.Sprintf("Pinjaman %s disetujui admin pusat — menunggu BPRKS.", loan.LoanNumber),
 			body)
 		n.dispatch(ctx, to, fmt.Sprintf("[SAKU] Pinjaman Disetujui Admin Pusat — %s", loan.LoanNumber), html)
 		return
 	}
 
+	to := append(n.adminCompanyEmails(ctx, loan.BujpID), personnelEmail(loan.Personnel)...)
 	body := paragraph(fmt.Sprintf("Pengajuan pinjaman dari <strong>%s</strong> telah <strong style=\"color:#b91c1c\">ditolak oleh admin pusat</strong>.", htmlEscape(fullName)))
 	body += loanDetailsCard(loan)
 	if noteStr != "" {
@@ -113,6 +114,47 @@ func (n *Notifier) LoanPusatDecision(ctx context.Context, loan *model.Loan, appr
 		fmt.Sprintf("Pinjaman %s ditolak oleh admin pusat.", loan.LoanNumber),
 		body)
 	n.dispatch(ctx, to, fmt.Sprintf("[SAKU] Pinjaman Ditolak Admin Pusat — %s", loan.LoanNumber), html)
+}
+
+func (n *Notifier) LoanBprksDecision(ctx context.Context, loan *model.Loan, approved bool, notes *string) {
+	if n == nil || loan == nil {
+		return
+	}
+	fullName := personnelName(loan.Personnel)
+	noteStr := derefStr(notes)
+	to := append(n.adminCompanyEmails(ctx, loan.BujpID), n.adminPusatEmails(ctx)...)
+	to = append(to, personnelEmail(loan.Personnel)...)
+
+	if approved {
+		body := paragraph(fmt.Sprintf("Pengajuan pinjaman dari <strong>%s</strong> telah <strong style=\"color:#047857\">disetujui oleh BPRKS</strong>.", htmlEscape(fullName)))
+		body += loanDetailsCard(loan)
+		if noteStr != "" {
+			body += noticeBox(toneInfo, "Catatan BPRKS", htmlEscape(noteStr))
+		}
+		body += noticeBox(toneWarn, "Konfirmasi Pemohon Diperlukan",
+			"Pemohon perlu melakukan konfirmasi penerimaan dana melalui aplikasi SAKU sebelum proses pencairan dapat dilanjutkan.")
+		html := wrapEmail("Pinjaman Disetujui BPRKS",
+			fmt.Sprintf("Pengajuan %s menunggu konfirmasi pemohon.", loan.LoanNumber),
+			"Disetujui BPRKS", toneSuccess,
+			fmt.Sprintf("Pinjaman %s disetujui BPRKS.", loan.LoanNumber),
+			body)
+		n.dispatch(ctx, to, fmt.Sprintf("[SAKU] Pinjaman Disetujui BPRKS — %s", loan.LoanNumber), html)
+		return
+	}
+
+	body := paragraph(fmt.Sprintf("Pengajuan pinjaman dari <strong>%s</strong> telah <strong style=\"color:#b91c1c\">ditolak oleh BPRKS</strong>.", htmlEscape(fullName)))
+	body += loanDetailsCard(loan)
+	if noteStr != "" {
+		body += noticeBox(toneDanger, "Alasan Penolakan", htmlEscape(noteStr))
+	}
+	body += noticeBox(toneInfo, "Informasi",
+		"Pemohon dapat menghubungi admin perusahaan untuk informasi lebih lanjut atau mengajukan kembali sesuai prosedur.")
+	html := wrapEmail("Pinjaman Ditolak BPRKS",
+		"Pengajuan tidak dapat dilanjutkan oleh BPRKS.",
+		"Ditolak BPRKS", toneDanger,
+		fmt.Sprintf("Pinjaman %s ditolak oleh BPRKS.", loan.LoanNumber),
+		body)
+	n.dispatch(ctx, to, fmt.Sprintf("[SAKU] Pinjaman Ditolak BPRKS — %s", loan.LoanNumber), html)
 }
 
 func (n *Notifier) LoanUserConfirmed(ctx context.Context, loan *model.Loan, accepted bool, reason *string) {

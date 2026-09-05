@@ -42,19 +42,10 @@ func NewLeaveHandler(service services.LeaveService) *LeaveHandler {
 func (h *LeaveHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
+	page, limit := utils.ParsePagination(c)
 	personnelID := c.Query("personnel_id")
 	leaveType := c.Query("leave_type")
 	status := c.Query("status")
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
 
 	filters := make(map[string]interface{})
 	if personnelID != "" {
@@ -323,14 +314,7 @@ func (h *LeaveHandler) Pending(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := utils.ParsePagination(c)
 
 	filters := make(map[string]interface{})
 	utils.ApplyBujpScope(c, filters)

@@ -111,7 +111,7 @@ func (r *attendanceRepositoryImpl) FindByPersonnelAndDate(ctx context.Context, p
 		Where("personnel_id = ? AND date = ?", personnelID, date).
 		Preload("Personnel").
 		Preload("Location").
-		Preload("Assignment").
+		Preload("Assignment.Shift").
 		First(&attendance).Error
 
 	if err != nil {

@@ -44,18 +44,10 @@ func (h *PatrolHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
+	page, limit := utils.ParsePagination(c)
 	personnelID := c.Query("personnel_id")
 	locationID := c.Query("location_id")
 	status := c.Query("status")
-
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
 
 	filters := make(map[string]interface{})
 	if personnelID != "" {

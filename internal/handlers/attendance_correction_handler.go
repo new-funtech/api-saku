@@ -45,11 +45,7 @@ func (h *AttendanceCorrectionHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), defaultTimeout)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-
-	// Validate and normalize pagination
-	page, limit = utils.ValidatePagination(page, limit)
+	page, limit := utils.ParsePagination(c)
 
 	filters := make(map[string]interface{})
 	if personnelID := c.Query("personnel_id"); personnelID != "" {
@@ -257,9 +253,7 @@ func (h *AttendanceCorrectionHandler) Pending(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), defaultTimeout)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-	page, limit = utils.ValidatePagination(page, limit)
+	page, limit := utils.ParsePagination(c)
 
 	filters := make(map[string]interface{})
 	utils.ApplyBujpScope(c, filters)

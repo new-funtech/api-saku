@@ -19,8 +19,8 @@ import (
 type LoanService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.LoanResponse, error)
-	GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.LoanResponse, int64, error)
-	GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int) (*MyHistoryResult, error)
+	GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error)
+	GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int, filters map[string]interface{}) (*MyHistoryResult, error)
 	Create(ctx context.Context, req *model.CreateLoanRequest, actorUserID uuid.UUID, actorRole string) (*model.LoanResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateLoanRequest) (*model.LoanResponse, error)
 	Submit(ctx context.Context, id uuid.UUID) (*model.LoanResponse, error)
@@ -99,10 +99,6 @@ func (s *loanServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (*model.Loa
 	return &r, nil
 }
 
-// expireIfDeadlinePassed performs lazy auto-cancel for loans stuck in
-// pending_user_confirmation past their 24h confirmation deadline. Mutates
-// the loan in-place when it transitions so callers see the new status.
-// Best-effort: persistence errors are ignored to avoid blocking reads.
 func (s *loanServiceImpl) expireIfDeadlinePassed(ctx context.Context, loan *model.Loan) {
 	if loan == nil {
 		return
@@ -124,25 +120,20 @@ func (s *loanServiceImpl) expireIfDeadlinePassed(ctx context.Context, loan *mode
 	_ = s.loanRepo.Update(ctx, loan)
 }
 
-func (s *loanServiceImpl) GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.LoanResponse, int64, error) {
-	loans, total, err := s.loanRepo.FindByPersonnelID(ctx, personnelID, page, limit)
-	if err != nil {
-		return nil, 0, err
+func (s *loanServiceImpl) GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error) {
+	if filters == nil {
+		filters = map[string]interface{}{}
 	}
-	out := make([]model.LoanResponse, len(loans))
-	for i := range loans {
-		out[i] = ToLoanResponse(&loans[i])
-		presignLoanDocs(ctx, &out[i])
-	}
-	return out, total, nil
+	filters["personnel_id"] = personnelID
+	return s.GetAll(ctx, page, limit, filters)
 }
 
-func (s *loanServiceImpl) GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int) (*MyHistoryResult, error) {
+func (s *loanServiceImpl) GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int, filters map[string]interface{}) (*MyHistoryResult, error) {
 	personnel, err := s.personnelRepo.FindByUserID(ctx, userID)
 	if err != nil || personnel == nil {
 		return nil, errors.New("personnel not found for current user")
 	}
-	items, total, err := s.GetMyHistory(ctx, personnel.ID, page, limit)
+	items, total, err := s.GetMyHistory(ctx, personnel.ID, page, limit, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -305,10 +296,12 @@ func (s *loanServiceImpl) Submit(ctx context.Context, id uuid.UUID) (*model.Loan
 		return nil, errors.New("only draft loans can be submitted")
 	}
 	now := time.Now()
-	loan.Status = model.LoanStatusSubmitted
-	loan.SubmittedAt = &now
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
+	claimed, err := s.loanRepo.ClaimSubmission(ctx, loan.ID, now)
+	if err != nil {
 		return nil, err
+	}
+	if !claimed {
+		return nil, errors.New("only draft loans can be submitted")
 	}
 	if err := s.createApprovalRecords(ctx, loan.ID); err != nil {
 		return nil, err
@@ -338,22 +331,6 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 }
 
 func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action string, reason *string) (*model.LoanResponse, error) {
-	loan, err := s.loanRepo.FindByID(ctx, id)
-	if err != nil {
-		return nil, errors.New("loan not found")
-	}
-	if loan.Status != model.LoanStatusPendingUserConfirmation {
-		return nil, errors.New("loan is not pending user confirmation")
-	}
-	if loan.UserConfirmationDeadline != nil && time.Now().After(*loan.UserConfirmationDeadline) {
-		// Auto cancel
-		loan.Status = model.LoanStatusCancelled
-		r := "User confirmation deadline expired"
-		loan.RejectionReason = &r
-		_ = s.loanRepo.Update(ctx, loan)
-		return nil, errors.New("user confirmation deadline expired; loan cancelled")
-	}
-	now := time.Now()
 	switch action {
 	case "accept", "accepted":
 		action = "accept"
@@ -362,7 +339,34 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 	default:
 		return nil, errors.New("invalid action: must be 'accept' or 'decline'")
 	}
+
+	loan, err := s.loanRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, errors.New("loan not found")
+	}
+	if loan.Status != model.LoanStatusPendingUserConfirmation {
+		return nil, errors.New("loan is not pending user confirmation")
+	}
+	now := time.Now()
+	expired := loan.UserConfirmationDeadline != nil && now.After(*loan.UserConfirmationDeadline)
+
+	claimed, err := s.loanRepo.ClaimUserConfirmation(ctx, loan.ID, now)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
+		return nil, errors.New("loan is not pending user confirmation")
+	}
 	loan.UserConfirmedAt = &now
+
+	if expired {
+		loan.Status = model.LoanStatusCancelled
+		r := "User confirmation deadline expired"
+		loan.RejectionReason = &r
+		_ = s.loanRepo.Update(ctx, loan)
+		return nil, errors.New("user confirmation deadline expired; loan cancelled")
+	}
+
 	if action == "decline" {
 		loan.Status = model.LoanStatusCancelled
 		loan.RejectionReason = reason
@@ -409,7 +413,7 @@ func (s *loanServiceImpl) StatisticsScoped(ctx context.Context, role string, use
 		if personnelID == uuid.Nil {
 			return emptyLoanStats(), nil
 		}
-	case "super_admin", "admin":
+	case "super_admin", "admin", "bprks":
 		// no scoping
 	default:
 		// Unknown role: be safe — return zeros.
@@ -451,9 +455,6 @@ func (s *loanServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return s.loanRepo.Delete(ctx, id)
 }
-
-// ResolveUserBujpID returns the BUJP UUID for a given user, or uuid.Nil when
-// the user is not bound to any BUJP. Used by handlers to scope merchant data.
 func (s *loanServiceImpl) ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID {
 	if userID == uuid.Nil {
 		return uuid.Nil
@@ -513,6 +514,12 @@ func (s *loanServiceImpl) createApprovalRecords(ctx context.Context, loanID uuid
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelPusat,
 			ApprovalLevelName: "Admin Pusat",
+			Status:            model.LoanApprovalStatusPending,
+		},
+		{
+			LoanID:            loanID,
+			ApprovalLevel:     model.LoanApprovalLevelBprks,
+			ApprovalLevelName: "BPRKS",
 			Status:            model.LoanApprovalStatusPending,
 		},
 	}
@@ -633,6 +640,7 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 		SubmittedAt:              l.SubmittedAt,
 		ApprovedAt:               l.ApprovedAt,
 		ApprovedPusatAt:          l.ApprovedPusatAt,
+		ApprovedBprksAt:          l.ApprovedBprksAt,
 		RejectedAt:               l.RejectedAt,
 		RejectionReason:          l.RejectionReason,
 		UserConfirmationDeadline: l.UserConfirmationDeadline,
@@ -677,11 +685,11 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 	if l.ApprovedTenor != nil && *l.ApprovedTenor > 0 {
 		finalTenor = *l.ApprovedTenor
 	}
+
 	if finalAmount != l.LoanAmount || finalTenor != l.TenorMonths {
 		monthly, total := calculateLoanDetails(finalAmount, l.InterestRate, finalTenor)
 		r.MonthlyInstallment = monthly
 		r.TotalRepayment = total
-		r.TenorMonths = finalTenor
 	}
 	return r
 }

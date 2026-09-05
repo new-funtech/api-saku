@@ -39,7 +39,7 @@ type CreateUserRequest struct {
 	BujpID   *uuid.UUID `json:"bujp_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Email    string     `json:"email" validate:"required,email" example:"john@example.com"`
 	Password string     `json:"password" validate:"required,min=8,max=72" example:"password123"`
-	Role     string     `json:"role" validate:"required,oneof=super_admin company_admin supervisor guard" example:"guard"`
+	Role     string     `json:"role" validate:"required,oneof=super_admin company_admin supervisor guard bprks" example:"guard"`
 	FullName string     `json:"full_name" validate:"required,max=100" example:"John Doe"`
 	Phone    *string    `json:"phone" example:"081234567890"`
 	Photo    *string    `json:"photo" example:"users/photo.jpg"`
@@ -50,7 +50,7 @@ type UpdateUserRequest struct {
 	BujpID   *uuid.UUID `json:"bujp_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Email    *string    `json:"email" validate:"omitempty,email" example:"john@example.com"`
 	Password *string    `json:"password,omitempty" validate:"omitempty,min=8,max=72" example:"newpassword123"`
-	Role     *string    `json:"role" validate:"omitempty,oneof=super_admin company_admin supervisor guard" example:"guard"`
+	Role     *string    `json:"role" validate:"omitempty,oneof=super_admin company_admin supervisor guard bprks" example:"guard"`
 	FullName *string    `json:"full_name" validate:"omitempty,max=100" example:"John Doe"`
 	Phone    *string    `json:"phone" example:"081234567890"`
 	Photo    *string    `json:"photo" example:"users/photo.jpg"`

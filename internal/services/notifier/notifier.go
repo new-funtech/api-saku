@@ -18,6 +18,7 @@ import (
 const (
 	roleSuperAdmin   = "super_admin"
 	roleCompanyAdmin = "company_admin"
+	roleBprks        = "bprks"
 )
 
 type Notifier struct {
@@ -99,6 +100,27 @@ func (n *Notifier) adminPusatEmails(ctx context.Context) []string {
 	})
 	if err != nil {
 		log.Printf("[notifier] adminPusatEmails lookup failed: %v", err)
+		return nil
+	}
+	out := make([]string, 0, len(users))
+	for _, u := range users {
+		if u.Email != "" {
+			out = append(out, u.Email)
+		}
+	}
+	return out
+}
+
+func (n *Notifier) adminBprksEmails(ctx context.Context) []string {
+	if n == nil || n.userRepo == nil {
+		return nil
+	}
+	users, _, err := n.userRepo.FindAll(ctx, 1, 999, map[string]interface{}{
+		"role":   roleBprks,
+		"status": "active",
+	})
+	if err != nil {
+		log.Printf("[notifier] adminBprksEmails lookup failed: %v", err)
 		return nil
 	}
 	out := make([]string, 0, len(users))
