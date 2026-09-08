@@ -158,7 +158,14 @@ Alias       : ${NETWORK_ALIAS}:${CONTAINER_PORT}
                         # is not a secret, and the app already falls back to "*" when
                         # it is unset/empty (see config.GetEnv in cmd/main.go), so an
                         # empty value here is valid configuration, not a broken one.
-                        for name in APP_PORT APP_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME DB_SSLMODE DB_MAX_OPEN_CONNS DB_MAX_IDLE_CONNS DB_CONN_MAX_LIFETIME REDIS_HOST REDIS_PORT REDIS_DB REDIS_POOL_SIZE JWT_SECRET JWT_EXPIRATION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET; do
+                        #
+                        # JWT_EXPIRATION is intentionally NOT in this required list either:
+                        # unlike JWT_SECRET (read via config.GetEnvRequired in pkg/jwt/jwt.go),
+                        # no Go code reads JWT_EXPIRATION at all — token TTL is hardcoded to
+                        # 24h in pkg/jwt/jwt.go's GenerateToken. It only exists as leftover
+                        # documentation in envs/.env.example and the compose files, so
+                        # requiring it here was validating a variable the app never consumes.
+                        for name in APP_PORT APP_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME DB_SSLMODE DB_MAX_OPEN_CONNS DB_MAX_IDLE_CONNS DB_CONN_MAX_LIFETIME REDIS_HOST REDIS_PORT REDIS_DB REDIS_POOL_SIZE JWT_SECRET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET; do
                             value="$(get_env_value "$name")"
                             if [ -z "$value" ]; then
                                 echo "ERROR: required API env $name is missing in $API_ENV_FILE_CREDENTIALS_ID." >&2
@@ -168,6 +175,10 @@ Alias       : ${NETWORK_ALIAS}:${CONTAINER_PORT}
 
                         if [ -z "$(get_env_value CORS_ORIGINS)" ]; then
                             echo "NOTE: CORS_ORIGINS not set in $API_ENV_FILE_CREDENTIALS_ID; app will default to '*'."
+                        fi
+
+                        if [ -z "$(get_env_value JWT_EXPIRATION)" ]; then
+                            echo "NOTE: JWT_EXPIRATION not set in $API_ENV_FILE_CREDENTIALS_ID; this has no effect on the app (token TTL is hardcoded to 24h)."
                         fi
 
                         APP_PORT_VALUE="$(get_env_value APP_PORT)"
