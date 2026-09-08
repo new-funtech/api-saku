@@ -14,7 +14,7 @@ type LeaveRepository interface {
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Leave, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Leave, error)
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Leave, int64, error)
-	FindPending(ctx context.Context, page, limit int) ([]model.Leave, int64, error)
+	FindPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Leave, int64, error)
 	FindByDateRange(ctx context.Context, startDate, endDate time.Time, personnelID uuid.UUID) ([]model.Leave, error)
 	Create(ctx context.Context, leave *model.Leave) error
 	Update(ctx context.Context, leave *model.Leave) error
@@ -59,7 +59,7 @@ func (r *leaveRepositoryImpl) FindAll(ctx context.Context, page, limit int, filt
 		query = query.Where("type = ?", leaveType)
 	}
 	if status, ok := filters["status"].(string); ok && status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("leaves.status = ?", status)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -117,13 +117,23 @@ func (r *leaveRepositoryImpl) FindByPersonnelID(ctx context.Context, personnelID
 	return leaves, total, err
 }
 
-func (r *leaveRepositoryImpl) FindPending(ctx context.Context, page, limit int) ([]model.Leave, int64, error) {
+func (r *leaveRepositoryImpl) FindPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Leave, int64, error) {
 	db := r.withContext(ctx)
 
 	var leaves []model.Leave
 	var total int64
 
-	query := db.Model(&model.Leave{}).Where("status = ?", "pending")
+	if forceEmpty, _ := filters["force_empty"].(bool); forceEmpty {
+		return leaves, 0, nil
+	}
+
+	query := db.Model(&model.Leave{}).Where("leaves.status = ?", "pending")
+
+	if bujpID, ok := filters["bujp_id"].(uuid.UUID); ok && bujpID != uuid.Nil {
+		query = query.
+			Joins("JOIN personnels ON personnels.id = leaves.personnel_id").
+			Where("personnels.bujp_id = ?", bujpID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -132,7 +142,7 @@ func (r *leaveRepositoryImpl) FindPending(ctx context.Context, page, limit int) 
 	offset := (page - 1) * limit
 	err := query.
 		Preload("Personnel").
-		Order("created_at ASC").
+		Order("leaves.created_at ASC").
 		Offset(offset).
 		Limit(limit).
 		Find(&leaves).Error

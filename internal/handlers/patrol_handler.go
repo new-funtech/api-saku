@@ -44,25 +44,21 @@ func (h *PatrolHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
+	page, limit := utils.ParsePagination(c)
 	personnelID := c.Query("personnel_id")
 	locationID := c.Query("location_id")
 	status := c.Query("status")
 
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
-
 	filters := make(map[string]interface{})
 	if personnelID != "" {
-		filters["personnel_id"] = personnelID
+		if pid, err := uuid.Parse(personnelID); err == nil {
+			filters["personnel_id"] = pid
+		}
 	}
 	if locationID != "" {
-		filters["location_id"] = locationID
+		if lid, err := uuid.Parse(locationID); err == nil {
+			filters["location_id"] = lid
+		}
 	}
 	if status != "" {
 		filters["status"] = status
@@ -166,10 +162,7 @@ func (h *PatrolHandler) Create(c *fiber.Ctx) error {
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("PATROLS/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "photo", folder); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload patrol photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "photo", uerr)
 	} else if key != nil {
 		req.Photo = key
 	}
@@ -351,6 +344,18 @@ func (h *PatrolHandler) Validate(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
 			Status: "error", Code: http.StatusBadRequest, Message: "Invalid request body",
+		})
+	}
+	switch strings.ToLower(strings.TrimSpace(req.ValidationStatus)) {
+	case "validated", "approve":
+		req.ValidationStatus = "approved"
+	case "reject":
+		req.ValidationStatus = "rejected"
+	}
+	if req.ValidationStatus != "approved" && req.ValidationStatus != "rejected" {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest,
+			Message: "validation_status harus 'approved' atau 'rejected'",
 		})
 	}
 

@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// LoanProduct represents a loan product offered by the company / a BUJP.
 type LoanProduct struct {
 	ID                uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID            *uuid.UUID `json:"bujp_id" gorm:"type:uuid;index"`

@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Attendance represents daily attendance records
 type Attendance struct {
 	ID                 uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID        uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null;uniqueIndex:idx_personnel_date"`
@@ -42,7 +41,6 @@ func (a *Attendance) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateAttendanceRequest struct {
 	PersonnelID        uuid.UUID    `json:"personnel_id" validate:"required"`
 	LocationID         uuid.UUID    `json:"location_id" validate:"required"`

@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"mime/multipart"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -112,14 +114,88 @@ func FormUUID(c *fiber.Ctx, key string) uuid.UUID {
 
 // UploadFormFile uploads a single multipart file (if present) to S3/MinIO under the given folder.
 // Returns nil pointer (and no error) when the file isn't included in the request.
+//
+// Validates file size and extension based on the field name pattern:
+//   - "*photo*" / "*image*" / "*selfie*" / "*ktp*" / "*npwp*" → image rules (max 5MB, jpg/jpeg/png/webp)
+//   - "*document*" / "*pks*" / "*collateral*" / "*supporting*" → document rules (max 10MB, pdf/doc/docx/jpg/jpeg/png)
+//   - others (e.g. "file") → permissive document rules
+//
+// Returns a fiber.Error (with proper HTTP status) when validation fails so callers
+// can surface a 400/413 response without wrapping.
 func UploadFormFile(ctx context.Context, c *fiber.Ctx, field, folder string) (*string, error) {
 	fh, err := c.FormFile(field)
 	if err != nil || fh == nil {
 		return nil, nil
 	}
+
+	if verr := ValidateUploadByField(field, fh); verr != nil {
+		return nil, verr
+	}
+
 	key, err := UploadFileToS3(ctx, fh, folder)
 	if err != nil {
 		return nil, err
 	}
 	return &key, nil
+}
+
+// Upload size limits (bytes).
+const (
+	MaxImageUploadSize    int64 = 5 * 1024 * 1024  // 5 MB
+	MaxDocumentUploadSize int64 = 10 * 1024 * 1024 // 10 MB
+)
+
+// Allowed extensions (lowercase, with leading dot).
+var (
+	allowedImageExts    = []string{".jpg", ".jpeg", ".png", ".webp"}
+	allowedDocumentExts = []string{".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".webp"}
+)
+
+// ValidateUploadByField inspects the form field name to decide whether image
+// or document rules apply, then validates size + extension.
+func ValidateUploadByField(field string, fh *multipart.FileHeader) error {
+	lower := strings.ToLower(field)
+	imageHints := []string{"photo", "image", "selfie", "ktp", "npwp", "foto"}
+	for _, h := range imageHints {
+		if strings.Contains(lower, h) {
+			return ValidateUpload(fh, MaxImageUploadSize, allowedImageExts, "gambar")
+		}
+	}
+	return ValidateUpload(fh, MaxDocumentUploadSize, allowedDocumentExts, "dokumen")
+}
+
+// ValidateUpload enforces max size + extension allowlist.
+func ValidateUpload(fh *multipart.FileHeader, maxSize int64, allowedExts []string, kind string) error {
+	if fh.Size <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "file "+kind+" kosong")
+	}
+	if fh.Size > maxSize {
+		return fiber.NewError(
+			fiber.StatusRequestEntityTooLarge,
+			"ukuran "+kind+" melebihi batas "+humanSize(maxSize),
+		)
+	}
+	ext := strings.ToLower(filepath.Ext(fh.Filename))
+	if ext == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "format "+kind+" tidak dikenali")
+	}
+	for _, allowed := range allowedExts {
+		if ext == allowed {
+			return nil
+		}
+	}
+	return fiber.NewError(
+		fiber.StatusBadRequest,
+		"format "+kind+" tidak diizinkan ("+ext+")",
+	)
+}
+
+func humanSize(n int64) string {
+	if n >= 1024*1024 {
+		return strconv.FormatInt(n/(1024*1024), 10) + " MB"
+	}
+	if n >= 1024 {
+		return strconv.FormatInt(n/1024, 10) + " KB"
+	}
+	return strconv.FormatInt(n, 10) + " B"
 }

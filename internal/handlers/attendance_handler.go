@@ -121,6 +121,9 @@ func NewAttendanceHandler(service services.AttendanceService) *AttendanceHandler
 // @Param personnel_id query string false "Filter by personnel ID"
 // @Param location_id query string false "Filter by location ID"
 // @Param status query string false "Filter by status"
+// @Param date query string false "Filter by date (YYYY-MM-DD)"
+// @Param start_date query string false "Filter from date (YYYY-MM-DD), inclusive"
+// @Param end_date query string false "Filter until date (YYYY-MM-DD), inclusive"
 // @Success 200 {object} model.APIResponse{data=[]model.Attendance,meta=model.PaginationMeta}
 // @Failure 400 {object} model.APIResponse
 // @Failure 500 {object} model.APIResponse
@@ -135,6 +138,7 @@ func (h *AttendanceHandler) GetAll(c *fiber.Ctx) error {
 	personnelID := c.Query("personnel_id")
 	locationID := c.Query("location_id")
 	status := c.Query("status")
+	dateStr := c.Query("date")
 
 	if page < 1 {
 		page = 1
@@ -144,14 +148,35 @@ func (h *AttendanceHandler) GetAll(c *fiber.Ctx) error {
 	}
 
 	filters := make(map[string]interface{})
+	// Repository expects uuid.UUID for ID filters — parse before storing so the
+	// type assertion in repo doesn't silently drop the filter.
 	if personnelID != "" {
-		filters["personnel_id"] = personnelID
+		if pid, err := uuid.Parse(personnelID); err == nil {
+			filters["personnel_id"] = pid
+		}
 	}
 	if locationID != "" {
-		filters["location_id"] = locationID
+		if lid, err := uuid.Parse(locationID); err == nil {
+			filters["location_id"] = lid
+		}
 	}
 	if status != "" {
 		filters["status"] = status
+	}
+	if dateStr != "" {
+		if d, err := time.Parse("2006-01-02", dateStr); err == nil {
+			filters["date"] = d
+		}
+	}
+	if startDateStr := c.Query("start_date"); startDateStr != "" {
+		if d, err := time.Parse("2006-01-02", startDateStr); err == nil {
+			filters["start_date"] = d
+		}
+	}
+	if endDateStr := c.Query("end_date"); endDateStr != "" {
+		if d, err := time.Parse("2006-01-02", endDateStr); err == nil {
+			filters["end_date"] = d
+		}
 	}
 
 	utils.ApplyBujpScope(c, filters)
@@ -181,6 +206,91 @@ func (h *AttendanceHandler) GetAll(c *fiber.Ctx) error {
 			TotalPages:  int(totalPages),
 			HasNext:     hasNext,
 			HasPrevious: hasPrevious,
+		},
+	})
+}
+
+// Summary godoc
+// @Summary Attendance summary (hadir/telat/izin)
+// @Description Returns attendance counts grouped by status, scoped by role.
+//
+//	period=today (default) → counts for the current date.
+//	period=this_month → counts for the current calendar month.
+//
+//	For guards (`role=guard`) the personnel filter is locked to themselves.
+//	For company admins / supervisors the BUJP scope is applied automatically.
+//
+// @Tags Attendances
+// @Produce json
+// @Param period query string false "today | this_month" default(today)
+// @Success 200 {object} model.APIResponse
+// @Failure 500 {object} model.APIResponse
+// @Router /attendances/summary [get]
+// @Security BearerAuth
+func (h *AttendanceHandler) Summary(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	period := strings.ToLower(strings.TrimSpace(c.Query("period", "today")))
+
+	now := time.Now()
+	var startDate, endDate time.Time
+	switch period {
+	case "this_month", "month":
+		startDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		endDate = startDate.AddDate(0, 1, -1)
+	default:
+		// today
+		startDate = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		endDate = startDate
+		period = "today"
+	}
+
+	baseFilters := map[string]interface{}{
+		"start_date": startDate,
+		"end_date":   endDate,
+	}
+
+	// Personnel scoping for guard.
+	role, _ := c.Locals("role").(string)
+	if role == "guard" {
+		if pid, ok := c.Locals("personnelID").(uuid.UUID); ok && pid != uuid.Nil {
+			baseFilters["personnel_id"] = pid
+		}
+	}
+
+	utils.ApplyBujpScope(c, baseFilters)
+
+	count := func(status string) int64 {
+		f := make(map[string]interface{}, len(baseFilters)+1)
+		for k, v := range baseFilters {
+			f[k] = v
+		}
+		if status != "" {
+			f["status"] = status
+		}
+		_, total, err := h.service.GetAll(ctx, 1, 1, f)
+		if err != nil {
+			return 0
+		}
+		return total
+	}
+
+	hadir := count("present")
+	telat := count("late")
+	izin := count("permission") + count("sick") + count("leave")
+	total := count("")
+
+	return c.Status(http.StatusOK).JSON(model.APIResponse{
+		Status:  "success",
+		Code:    http.StatusOK,
+		Message: "Attendance summary",
+		Data: fiber.Map{
+			"period": period,
+			"hadir":  hadir,
+			"telat":  telat,
+			"izin":   izin,
+			"total":  total,
 		},
 	})
 }
@@ -252,28 +362,19 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_in_photo", folder); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload check_in_photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "check_in_photo", uerr)
 	} else if key != nil {
 		req.CheckInPhoto = key
 	}
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_out_photo", folder); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload check_out_photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "check_out_photo", uerr)
 	} else if key != nil {
 		req.CheckOutPhoto = key
 	}
 	for _, field := range []string{"supporting_document", "attachment", "document"} {
 		key, uerr := utils.UploadFormFile(ctx, c, field, folder)
 		if uerr != nil {
-			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-				Status: "error", Code: http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to upload supporting document: %v", uerr),
-			})
+			return utils.UploadErrorResponse(c, field, uerr)
 		}
 		if key != nil {
 			req.SupportingDocument = key
@@ -400,20 +501,14 @@ func (h *AttendanceHandler) Update(c *fiber.Ctx) error {
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_out_photo", folder); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload check_out_photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "check_out_photo", uerr)
 	} else if key != nil {
 		req.CheckOutPhoto = key
 	}
 	for _, field := range []string{"supporting_document", "attachment", "document"} {
 		key, uerr := utils.UploadFormFile(ctx, c, field, folder)
 		if uerr != nil {
-			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-				Status: "error", Code: http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to upload supporting document: %v", uerr),
-			})
+			return utils.UploadErrorResponse(c, field, uerr)
 		}
 		if key != nil {
 			req.SupportingDocument = key
@@ -469,20 +564,14 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_out_photo", folder); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status: "error", Code: http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload check_out_photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "check_out_photo", uerr)
 	} else if key != nil {
 		req.CheckOutPhoto = key
 	}
 	for _, field := range []string{"supporting_document", "attachment", "document"} {
 		key, uerr := utils.UploadFormFile(ctx, c, field, folder)
 		if uerr != nil {
-			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-				Status: "error", Code: http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to upload supporting document: %v", uerr),
-			})
+			return utils.UploadErrorResponse(c, field, uerr)
 		}
 		if key != nil {
 			req.SupportingDocument = key

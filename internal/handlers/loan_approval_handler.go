@@ -60,9 +60,6 @@ func (h *LoanApprovalHandler) Pending(c *fiber.Ctx) error {
 	})
 }
 
-// canAccessLoan applies the same scope rules used by the loan list/get-by-id
-// to ensure approvals can only be inspected/processed by the loan's owner
-// (guard) or the BUJP it belongs to (company_admin/supervisor); Pusat passes.
 func (h *LoanApprovalHandler) canAccessLoan(c *fiber.Ctx, loanID uuid.UUID) bool {
 	bujpID, personnelID, err := h.service.LoadLoanScope(c.Context(), loanID)
 	if err != nil {
@@ -71,7 +68,7 @@ func (h *LoanApprovalHandler) canAccessLoan(c *fiber.Ctx, loanID uuid.UUID) bool
 	role, _ := c.Locals("role").(string)
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	switch role {
-	case "super_admin", "admin":
+	case "super_admin", "admin", "bprks":
 		return true
 	case "company_admin", "supervisor":
 		bid := h.service.ResolveUserBujpID(c.Context(), uid)

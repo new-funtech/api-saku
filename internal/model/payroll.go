@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Payroll represents monthly payroll/slip gaji
 type Payroll struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID     uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null"`
@@ -27,7 +26,6 @@ type Payroll struct {
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 
-	// Relations
 	Personnel      *Personnel      `json:"personnel,omitempty" gorm:"foreignKey:PersonnelID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Bujp           *Bujp           `json:"bujp,omitempty" gorm:"foreignKey:BujpID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Creator        *User           `json:"creator,omitempty" gorm:"foreignKey:CreatedBy;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
@@ -41,7 +39,6 @@ func (p *Payroll) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreatePayrollRequest struct {
 	PersonnelID     uuid.UUID                    `json:"personnel_id" validate:"required"`
 	BujpID          uuid.UUID                    `json:"bujp_id" validate:"required"`
@@ -91,14 +88,12 @@ type PayrollResponse struct {
 	UpdatedAt       time.Time               `json:"updated_at"`
 }
 
-// GeneratePayrollRequest mirrors laravel-backend PayrollController@generate.
 type GeneratePayrollRequest struct {
 	Period string    `json:"period" validate:"required"` // YYYY-MM
 	BujpID uuid.UUID `json:"bujp_id" validate:"required"`
 	Force  bool      `json:"force"`
 }
 
-// GeneratePayrollResult summarises which personnel were processed.
 type GeneratePayrollResult struct {
 	Generated []string          `json:"generated"`
 	Skipped   []string          `json:"skipped"`

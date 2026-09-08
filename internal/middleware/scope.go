@@ -6,15 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// LoadCallerScope resolves the authenticated user's BUJP and Personnel IDs
-// once per request and stores them in c.Locals so downstream handlers can
-// enforce tenant scoping without repeating DB lookups.
-//
-// Locals set:
-//   - "bujpID"      uuid.UUID (uuid.Nil if user is unbound)
-//   - "personnelID" uuid.UUID (uuid.Nil if user has no personnel record)
-//
-// Must run AFTER AuthRequired.
 func LoadCallerScope(userRepo repository.UserRepository, personnelRepo repository.PersonnelRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		uid, _ := c.Locals("userID").(uuid.UUID)

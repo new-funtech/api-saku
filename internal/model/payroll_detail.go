@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// PayrollDetail represents detail of salary components in payroll
 type PayrollDetail struct {
 	ID                uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	PayrollID         uuid.UUID `json:"payroll_id" gorm:"type:uuid;not null"`
@@ -28,7 +27,6 @@ func (pd *PayrollDetail) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreatePayrollDetailRequest struct {
 	SalaryComponentID uuid.UUID `json:"salary_component_id" validate:"required"`
 	Amount            float64   `json:"amount" validate:"required"`

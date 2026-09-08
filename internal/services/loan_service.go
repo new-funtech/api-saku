@@ -10,6 +10,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -18,14 +19,15 @@ import (
 type LoanService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.LoanResponse, error)
-	GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.LoanResponse, int64, error)
-	GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int) (*MyHistoryResult, error)
+	GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error)
+	GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int, filters map[string]interface{}) (*MyHistoryResult, error)
 	Create(ctx context.Context, req *model.CreateLoanRequest, actorUserID uuid.UUID, actorRole string) (*model.LoanResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateLoanRequest) (*model.LoanResponse, error)
 	Submit(ctx context.Context, id uuid.UUID) (*model.LoanResponse, error)
 	Cancel(ctx context.Context, id uuid.UUID, reason *string) (*model.LoanResponse, error)
 	UserConfirm(ctx context.Context, id uuid.UUID, action string, reason *string) (*model.LoanResponse, error)
 	Statistics(ctx context.Context) (map[string]interface{}, error)
+	StatisticsScoped(ctx context.Context, role string, userID uuid.UUID) (map[string]interface{}, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID
 	ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID
@@ -44,6 +46,8 @@ type loanServiceImpl struct {
 	installmentRepo repository.LoanInstallmentRepository
 	personnelRepo   repository.PersonnelRepository
 	userRepo        repository.UserRepository
+	notifier        *notifier.Notifier
+	notificationSvc NotificationService
 }
 
 func NewLoanService(
@@ -53,6 +57,8 @@ func NewLoanService(
 	installmentRepo repository.LoanInstallmentRepository,
 	personnelRepo repository.PersonnelRepository,
 	userRepo repository.UserRepository,
+	notif *notifier.Notifier,
+	notificationSvc NotificationService,
 ) LoanService {
 	return &loanServiceImpl{
 		loanRepo:        loanRepo,
@@ -61,6 +67,8 @@ func NewLoanService(
 		installmentRepo: installmentRepo,
 		personnelRepo:   personnelRepo,
 		userRepo:        userRepo,
+		notifier:        notif,
+		notificationSvc: notificationSvc,
 	}
 }
 
@@ -94,10 +102,6 @@ func (s *loanServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (*model.Loa
 	return &r, nil
 }
 
-// expireIfDeadlinePassed performs lazy auto-cancel for loans stuck in
-// pending_user_confirmation past their 24h confirmation deadline. Mutates
-// the loan in-place when it transitions so callers see the new status.
-// Best-effort: persistence errors are ignored to avoid blocking reads.
 func (s *loanServiceImpl) expireIfDeadlinePassed(ctx context.Context, loan *model.Loan) {
 	if loan == nil {
 		return
@@ -119,35 +123,27 @@ func (s *loanServiceImpl) expireIfDeadlinePassed(ctx context.Context, loan *mode
 	_ = s.loanRepo.Update(ctx, loan)
 }
 
-func (s *loanServiceImpl) GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.LoanResponse, int64, error) {
-	loans, total, err := s.loanRepo.FindByPersonnelID(ctx, personnelID, page, limit)
-	if err != nil {
-		return nil, 0, err
+func (s *loanServiceImpl) GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error) {
+	if filters == nil {
+		filters = map[string]interface{}{}
 	}
-	out := make([]model.LoanResponse, len(loans))
-	for i := range loans {
-		out[i] = ToLoanResponse(&loans[i])
-		presignLoanDocs(ctx, &out[i])
-	}
-	return out, total, nil
+	filters["personnel_id"] = personnelID
+	return s.GetAll(ctx, page, limit, filters)
 }
 
-func (s *loanServiceImpl) GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int) (*MyHistoryResult, error) {
+func (s *loanServiceImpl) GetMyHistoryByUser(ctx context.Context, userID uuid.UUID, page, limit int, filters map[string]interface{}) (*MyHistoryResult, error) {
 	personnel, err := s.personnelRepo.FindByUserID(ctx, userID)
 	if err != nil || personnel == nil {
 		return nil, errors.New("personnel not found for current user")
 	}
-	items, total, err := s.GetMyHistory(ctx, personnel.ID, page, limit)
+	items, total, err := s.GetMyHistory(ctx, personnel.ID, page, limit, filters)
 	if err != nil {
 		return nil, err
 	}
 	return &MyHistoryResult{Items: items, Total: total}, nil
 }
 
-// === Write ===
-
 func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanRequest, actorUserID uuid.UUID, actorRole string) (*model.LoanResponse, error) {
-	// Enforce business limits ported from laravel-backend (LoanController@store).
 	if req.LoanAmount < constants.LoanMinAmount {
 		return nil, fmt.Errorf("jumlah pinjaman minimal Rp %.0f", constants.LoanMinAmount)
 	}
@@ -168,8 +164,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		return nil, errors.New("personnel not found")
 	}
 
-	// Resolve interest rate. Optional product lookup (legacy) — otherwise use the
-	// rate from the request, defaulting to the flat default per BE business rule.
 	interestRate := constants.LoanDefaultInterestRatePct
 	var productID *uuid.UUID
 	if req.InterestRate != nil {
@@ -196,7 +190,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		productID = &pid
 	}
 
-	// Calculate financial terms (FLAT INTEREST)
 	monthly, total := calculateLoanDetails(req.LoanAmount, interestRate, req.TenorMonths)
 
 	loanNumber, err := s.generateLoanNumber(ctx)
@@ -306,13 +299,40 @@ func (s *loanServiceImpl) Submit(ctx context.Context, id uuid.UUID) (*model.Loan
 		return nil, errors.New("only draft loans can be submitted")
 	}
 	now := time.Now()
-	loan.Status = model.LoanStatusSubmitted
-	loan.SubmittedAt = &now
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
-		return nil, err
+
+	var createdNotifications []model.Notification
+	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txLoanRepo := s.loanRepo.WithTx(tx)
+		txApprovalRepo := s.approvalRepo.WithTx(tx)
+
+		claimed, cerr := txLoanRepo.ClaimSubmission(ctx, loan.ID, now)
+		if cerr != nil {
+			return cerr
+		}
+		if !claimed {
+			return errors.New("only draft loans can be submitted")
+		}
+		if cerr := txApprovalRepo.CreateMany(ctx, buildInitialApprovals(loan.ID)); cerr != nil {
+			return cerr
+		}
+		if s.notificationSvc != nil {
+			rows, nerr := s.notificationSvc.NotifyLoanSubmitted(ctx, tx, loan)
+			if nerr != nil {
+				return nerr
+			}
+			createdNotifications = rows
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
 	}
-	if err := s.createApprovalRecords(ctx, loan.ID); err != nil {
-		return nil, err
+
+	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
+		s.notifier.LoanSubmitted(ctx, fresh)
+	}
+	if s.notificationSvc != nil {
+		s.notificationSvc.PushRealtime(createdNotifications)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
@@ -329,13 +349,40 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 	}
 	loan.Status = model.LoanStatusCancelled
 	loan.RejectionReason = reason
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
-		return nil, err
+
+	var createdNotifications []model.Notification
+	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		if cerr := s.loanRepo.WithTx(tx).Update(ctx, loan); cerr != nil {
+			return cerr
+		}
+		if s.notificationSvc != nil {
+			rows, nerr := s.notificationSvc.NotifyLoanCancelled(ctx, tx, loan)
+			if nerr != nil {
+				return nerr
+			}
+			createdNotifications = rows
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+	if s.notificationSvc != nil {
+		s.notificationSvc.PushRealtime(createdNotifications)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
 
 func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action string, reason *string) (*model.LoanResponse, error) {
+	switch action {
+	case "accept", "accepted":
+		action = "accept"
+	case "decline", "declined", "reject", "rejected":
+		action = "decline"
+	default:
+		return nil, errors.New("invalid action: must be 'accept' or 'decline'")
+	}
+
 	loan, err := s.loanRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("loan not found")
@@ -343,27 +390,39 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 	if loan.Status != model.LoanStatusPendingUserConfirmation {
 		return nil, errors.New("loan is not pending user confirmation")
 	}
-	if loan.UserConfirmationDeadline != nil && time.Now().After(*loan.UserConfirmationDeadline) {
-		// Auto cancel
+	now := time.Now()
+	expired := loan.UserConfirmationDeadline != nil && now.After(*loan.UserConfirmationDeadline)
+
+	claimed, err := s.loanRepo.ClaimUserConfirmation(ctx, loan.ID, now)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
+		return nil, errors.New("loan is not pending user confirmation")
+	}
+	loan.UserConfirmedAt = &now
+
+	if expired {
 		loan.Status = model.LoanStatusCancelled
 		r := "User confirmation deadline expired"
 		loan.RejectionReason = &r
 		_ = s.loanRepo.Update(ctx, loan)
 		return nil, errors.New("user confirmation deadline expired; loan cancelled")
 	}
-	now := time.Now()
-	loan.UserConfirmedAt = &now
+
 	if action == "decline" {
 		loan.Status = model.LoanStatusCancelled
 		loan.RejectionReason = reason
 	} else {
-		// Accept -> proceed to disbursement
 		if err := s.processDisbursement(ctx, loan); err != nil {
 			return nil, err
 		}
 	}
 	if err := s.loanRepo.Update(ctx, loan); err != nil {
 		return nil, err
+	}
+	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
+		s.notifier.LoanUserConfirmed(ctx, fresh, action == "accept", reason)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
@@ -382,6 +441,53 @@ func (s *loanServiceImpl) Statistics(ctx context.Context) (map[string]interface{
 	return stats, nil
 }
 
+func (s *loanServiceImpl) StatisticsScoped(ctx context.Context, role string, userID uuid.UUID) (map[string]interface{}, error) {
+	var bujpID, personnelID uuid.UUID
+	switch role {
+	case "company_admin", "supervisor":
+		bujpID = s.ResolveUserBujpID(ctx, userID)
+		if bujpID == uuid.Nil {
+			// User is not bound to any BUJP → return all-zero stats
+			// instead of leaking global numbers.
+			return emptyLoanStats(), nil
+		}
+	case "guard":
+		personnelID = s.ResolveUserPersonnelID(ctx, userID)
+		if personnelID == uuid.Nil {
+			return emptyLoanStats(), nil
+		}
+	case "super_admin", "admin", "bprks":
+		// no scoping
+	default:
+		// Unknown role: be safe — return zeros.
+		return emptyLoanStats(), nil
+	}
+
+	stats := map[string]interface{}{}
+	for _, st := range loanStatStatuses() {
+		c, _ := s.loanRepo.CountByStatusScoped(ctx, st, bujpID, personnelID)
+		stats[st] = c
+	}
+	return stats, nil
+}
+
+func loanStatStatuses() []string {
+	return []string{
+		model.LoanStatusDraft, model.LoanStatusSubmitted, model.LoanStatusApprovedBujp,
+		model.LoanStatusApprovedPusat, model.LoanStatusPendingUserConfirmation,
+		model.LoanStatusRejected, model.LoanStatusDisbursed, model.LoanStatusActive,
+		model.LoanStatusCompleted, model.LoanStatusCancelled,
+	}
+}
+
+func emptyLoanStats() map[string]interface{} {
+	m := map[string]interface{}{}
+	for _, st := range loanStatStatuses() {
+		m[st] = int64(0)
+	}
+	return m
+}
+
 func (s *loanServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	loan, err := s.loanRepo.FindByID(ctx, id)
 	if err != nil {
@@ -392,9 +498,6 @@ func (s *loanServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return s.loanRepo.Delete(ctx, id)
 }
-
-// ResolveUserBujpID returns the BUJP UUID for a given user, or uuid.Nil when
-// the user is not bound to any BUJP. Used by handlers to scope merchant data.
 func (s *loanServiceImpl) ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID {
 	if userID == uuid.Nil {
 		return uuid.Nil
@@ -418,8 +521,6 @@ func (s *loanServiceImpl) ResolveUserPersonnelID(ctx context.Context, userID uui
 	return personnel.ID
 }
 
-// === Internal helpers (also used by approval service) ===
-
 func (s *loanServiceImpl) resolvePersonnelID(ctx context.Context, requested *uuid.UUID, actorUserID uuid.UUID) (uuid.UUID, error) {
 	if requested != nil && *requested != uuid.Nil {
 		return *requested, nil
@@ -428,7 +529,6 @@ func (s *loanServiceImpl) resolvePersonnelID(ctx context.Context, requested *uui
 	if err != nil {
 		return uuid.Nil, errors.New("authenticated user not found")
 	}
-	// Try find personnel via user_id linkage
 	personnel, err := s.personnelRepo.FindByUserID(ctx, user.ID)
 	if err != nil || personnel == nil {
 		return uuid.Nil, errors.New("personnel_id is required")
@@ -445,25 +545,32 @@ func (s *loanServiceImpl) generateLoanNumber(ctx context.Context) (string, error
 	return fmt.Sprintf("LN-%04d-%02d-%04d", now.Year(), now.Month(), count+1), nil
 }
 
-func (s *loanServiceImpl) createApprovalRecords(ctx context.Context, loanID uuid.UUID) error {
-	approvals := []model.LoanApproval{
+// buildInitialApprovals is a pure builder (no repo call) so it can be used
+// both outside a transaction (none left to, but kept generic) and — as it is
+// now — inside Submit's db.Transaction via a tx-bound repository.
+func buildInitialApprovals(loanID uuid.UUID) []model.LoanApproval {
+	return []model.LoanApproval{
 		{
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelBujp,
-			ApprovalLevelName: "Admin BUJP",
+			ApprovalLevelName: "Admin Perusahaan",
 			Status:            model.LoanApprovalStatusPending,
 		},
 		{
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelPusat,
-			ApprovalLevelName: "Admin BUJP Pusat",
+			ApprovalLevelName: "Admin Pusat",
+			Status:            model.LoanApprovalStatusPending,
+		},
+		{
+			LoanID:            loanID,
+			ApprovalLevel:     model.LoanApprovalLevelBprks,
+			ApprovalLevelName: "BPRKS",
 			Status:            model.LoanApprovalStatusPending,
 		},
 	}
-	return s.approvalRepo.CreateMany(ctx, approvals)
 }
 
-// processDisbursement transitions a confirmed loan to disbursed/active and generates installments.
 func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan) error {
 	now := time.Now()
 	loan.DisbursementDate = &now
@@ -480,7 +587,6 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 	}
 
 	monthlyPrincipal := round2(approvedAmount / float64(approvedTenor))
-	// InterestRate is monthly flat (percent). Total interest = principal × rate × months.
 	totalInterest := approvedAmount * (loan.InterestRate / 100) * float64(approvedTenor)
 	monthlyInterest := round2(totalInterest / float64(approvedTenor))
 
@@ -506,12 +612,6 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 	return nil
 }
 
-// === Math ===
-
-// calculateLoanDetails uses FLAT INTEREST with a MONTHLY rate.
-// Total Interest = Principal × (MonthlyRate/100) × Tenor
-// Total Repayment = Principal + Total Interest
-// Monthly Installment = Total Repayment / Tenor
 func calculateLoanDetails(principal, monthlyRatePct float64, tenorMonths int) (monthly, total float64) {
 	if tenorMonths <= 0 {
 		return 0, 0
@@ -526,10 +626,6 @@ func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
 
-// === Mappers ===
-
-// presignLoanDocs fills *DocumentURL fields by presigning the stored object keys.
-// Errors are silently ignored — the raw key field remains for fallback.
 func presignLoanDocs(ctx context.Context, r *model.LoanResponse) {
 	if r == nil {
 		return
@@ -589,6 +685,7 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 		SubmittedAt:              l.SubmittedAt,
 		ApprovedAt:               l.ApprovedAt,
 		ApprovedPusatAt:          l.ApprovedPusatAt,
+		ApprovedBprksAt:          l.ApprovedBprksAt,
 		RejectedAt:               l.RejectedAt,
 		RejectionReason:          l.RejectionReason,
 		UserConfirmationDeadline: l.UserConfirmationDeadline,
@@ -633,11 +730,11 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 	if l.ApprovedTenor != nil && *l.ApprovedTenor > 0 {
 		finalTenor = *l.ApprovedTenor
 	}
+
 	if finalAmount != l.LoanAmount || finalTenor != l.TenorMonths {
 		monthly, total := calculateLoanDetails(finalAmount, l.InterestRate, finalTenor)
 		r.MonthlyInstallment = monthly
 		r.TotalRepayment = total
-		r.TenorMonths = finalTenor
 	}
 	return r
 }

@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Personnel represents security guards/personnel
 type Personnel struct {
 	ID               uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	BujpID           uuid.UUID  `json:"bujp_id" gorm:"type:uuid;not null;index"`
@@ -33,7 +32,6 @@ type Personnel struct {
 	CreatedAt        time.Time  `json:"created_at" gorm:"index"`
 	UpdatedAt        time.Time  `json:"updated_at"`
 
-	// Relations
 	Bujp *Bujp `json:"bujp,omitempty" gorm:"foreignKey:BujpID;constraint:OnDelete:RESTRICT,OnUpdate:CASCADE"`
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
 }
@@ -45,7 +43,6 @@ func (p *Personnel) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreatePersonnelRequest struct {
 	BujpID           uuid.UUID   `json:"bujp_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	UserID           *uuid.UUID  `json:"user_id" example:"550e8400-e29b-41d4-a716-446655440000"`
@@ -124,7 +121,6 @@ type PersonnelResponse struct {
 	UpdatedAt        time.Time     `json:"updated_at"`
 }
 
-// Personnel Import DTOs
 type PersonnelImportRow struct {
 	Row              int
 	Email            string

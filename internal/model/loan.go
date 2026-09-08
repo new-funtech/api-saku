@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Loan status constants
 const (
 	LoanStatusDraft                   = "draft"
 	LoanStatusSubmitted               = "submitted"
@@ -21,7 +20,6 @@ const (
 	LoanStatusCancelled               = "cancelled"
 )
 
-// Loan represents a loan submitted by a personnel.
 type Loan struct {
 	ID                       uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	LoanNumber               string     `json:"loan_number" gorm:"type:varchar(30);uniqueIndex;not null"`
@@ -55,6 +53,7 @@ type Loan struct {
 	SubmittedAt              *time.Time `json:"submitted_at"`
 	ApprovedAt               *time.Time `json:"approved_at"`
 	ApprovedPusatAt          *time.Time `json:"approved_pusat_at"`
+	ApprovedBprksAt          *time.Time `json:"approved_bprks_at"`
 	RejectedAt               *time.Time `json:"rejected_at"`
 	RejectionReason          *string    `json:"rejection_reason" gorm:"type:text"`
 	UserConfirmationDeadline *time.Time `json:"user_confirmation_deadline"`
@@ -78,8 +77,6 @@ func (l *Loan) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
-
-// === DTOs ===
 
 type CreateLoanRequest struct {
 	PersonnelID        *uuid.UUID `json:"personnel_id"` // optional - inferred from auth user if absent
@@ -152,6 +149,7 @@ type LoanResponse struct {
 	SubmittedAt              *time.Time                `json:"submitted_at,omitempty"`
 	ApprovedAt               *time.Time                `json:"approved_at,omitempty"`
 	ApprovedPusatAt          *time.Time                `json:"approved_pusat_at,omitempty"`
+	ApprovedBprksAt          *time.Time                `json:"approved_bprks_at,omitempty"`
 	RejectedAt               *time.Time                `json:"rejected_at,omitempty"`
 	RejectionReason          *string                   `json:"rejection_reason,omitempty"`
 	UserConfirmationDeadline *time.Time                `json:"user_confirmation_deadline,omitempty"`
@@ -167,8 +165,7 @@ type LoanResponse struct {
 	UpdatedAt                time.Time                 `json:"updated_at"`
 }
 
-// UserConfirmationRequest is sent by the borrower to accept/decline.
 type LoanUserConfirmationRequest struct {
-	Action string  `json:"action" validate:"required,oneof=accept decline"`
+	Action string  `json:"action" validate:"required,oneof=accept accepted decline declined reject rejected"`
 	Reason *string `json:"reason"`
 }

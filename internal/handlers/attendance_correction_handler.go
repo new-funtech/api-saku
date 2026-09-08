@@ -45,11 +45,7 @@ func (h *AttendanceCorrectionHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), defaultTimeout)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-
-	// Validate and normalize pagination
-	page, limit = utils.ValidatePagination(page, limit)
+	page, limit := utils.ParsePagination(c)
 
 	filters := make(map[string]interface{})
 	if personnelID := c.Query("personnel_id"); personnelID != "" {
@@ -133,9 +129,16 @@ func (h *AttendanceCorrectionHandler) Create(c *fiber.Ctx) error {
 
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCE_CORRECTIONS/%s", uid.String())
+
+	if req.PersonnelID == uuid.Nil {
+		if pid, ok := c.Locals("personnelID").(uuid.UUID); ok && pid != uuid.Nil {
+			req.PersonnelID = pid
+		}
+	}
+
 	for _, field := range []string{"attachment", "supporting_document"} {
 		if key, uerr := utils.UploadFormFile(ctx, c, field, folder); uerr != nil {
-			return utils.ErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("Failed to upload attachment: %v", uerr))
+			return utils.UploadErrorResponse(c, field, uerr)
 		} else if key != nil {
 			req.SupportingDocument = key
 			break
@@ -150,7 +153,6 @@ func (h *AttendanceCorrectionHandler) Create(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, http.StatusCreated, "Attendance correction created successfully", correction)
 }
 
-// bindCreateAttendanceCorrectionRequest accepts both JSON and multipart payloads.
 func bindCreateAttendanceCorrectionRequest(c *fiber.Ctx) (*model.CreateAttendanceCorrectionRequest, error) {
 	contentType := strings.ToLower(c.Get("Content-Type"))
 	if strings.HasPrefix(contentType, "multipart/form-data") || strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
@@ -251,11 +253,12 @@ func (h *AttendanceCorrectionHandler) Pending(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), defaultTimeout)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-	page, limit = utils.ValidatePagination(page, limit)
+	page, limit := utils.ParsePagination(c)
 
-	items, total, err := h.service.GetPending(ctx, page, limit)
+	filters := make(map[string]interface{})
+	utils.ApplyBujpScope(c, filters)
+
+	items, total, err := h.service.GetPending(ctx, page, limit, filters)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}

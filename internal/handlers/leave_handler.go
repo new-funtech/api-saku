@@ -42,26 +42,19 @@ func NewLeaveHandler(service services.LeaveService) *LeaveHandler {
 func (h *LeaveHandler) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
+	page, limit := utils.ParsePagination(c)
 	personnelID := c.Query("personnel_id")
 	leaveType := c.Query("leave_type")
 	status := c.Query("status")
 
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
-
 	filters := make(map[string]interface{})
 	if personnelID != "" {
-		filters["personnel_id"] = personnelID
+		if pid, err := uuid.Parse(personnelID); err == nil {
+			filters["personnel_id"] = pid
+		}
 	}
 	if leaveType != "" {
-		filters["leave_type"] = leaveType
+		filters["type"] = leaveType
 	}
 	if status != "" {
 		filters["status"] = status
@@ -168,11 +161,7 @@ func (h *LeaveHandler) Create(c *fiber.Ctx) error {
 	folder := fmt.Sprintf("LEAVES/%s", uid.String())
 	for _, field := range []string{"attachment", "supporting_document"} {
 		if key, uerr := utils.UploadFormFile(ctx, c, field, folder); uerr != nil {
-			return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-				Status:  "error",
-				Code:    http.StatusInternalServerError,
-				Message: fmt.Sprintf("Failed to upload attachment: %v", uerr),
-			})
+			return utils.UploadErrorResponse(c, field, uerr)
 		} else if key != nil {
 			req.SupportingDocument = key
 			break
@@ -325,16 +314,12 @@ func (h *LeaveHandler) Pending(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 10
-	}
+	page, limit := utils.ParsePagination(c)
 
-	leaves, total, err := h.service.GetPending(ctx, page, limit)
+	filters := make(map[string]interface{})
+	utils.ApplyBujpScope(c, filters)
+
+	leaves, total, err := h.service.GetPending(ctx, page, limit, filters)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status: "error", Code: http.StatusInternalServerError, Message: "Failed to retrieve pending leaves",

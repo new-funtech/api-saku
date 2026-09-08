@@ -41,7 +41,9 @@ func statusForServiceError(err error) int {
 	case strings.Contains(msg, "invalid"),
 		strings.Contains(msg, "required"),
 		strings.Contains(msg, "must be"),
-		strings.Contains(msg, "cannot be"):
+		strings.Contains(msg, "cannot be"),
+		strings.Contains(msg, "belum waktunya"),
+		strings.Contains(msg, "belum boleh"):
 		return http.StatusBadRequest
 	case strings.Contains(msg, "forbidden"),
 		strings.Contains(msg, "not allowed"),

@@ -32,12 +32,14 @@ dist/
 # Docker files (not needed in image)
 Dockerfile*
 docker-compose*.yml
+docker-compose.prod.yaml
 .dockerignore
 
 # CI/CD
 .github/
 .gitlab-ci.yml
 .travis.yml
+Jenkinsfile
 Makefile
 
 # Logs

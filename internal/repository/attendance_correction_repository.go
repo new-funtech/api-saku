@@ -15,7 +15,8 @@ type AttendanceCorrectionRepository interface {
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrection, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.AttendanceCorrection, error)
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.AttendanceCorrection, int64, error)
-	FindPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrection, int64, error)
+	FindPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrection, int64, error)
+	FindApprovedByDateRange(ctx context.Context, bujpID uuid.UUID, start, end time.Time) ([]model.AttendanceCorrection, error)
 	Create(ctx context.Context, correction *model.AttendanceCorrection) error
 	Update(ctx context.Context, correction *model.AttendanceCorrection) error
 	Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status, notes string) error
@@ -129,13 +130,23 @@ func (r *attendanceCorrectionRepositoryImpl) FindByPersonnelID(ctx context.Conte
 	return corrections, total, nil
 }
 
-func (r *attendanceCorrectionRepositoryImpl) FindPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrection, int64, error) {
+func (r *attendanceCorrectionRepositoryImpl) FindPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrection, int64, error) {
 	db := r.withContext(ctx)
 
 	var corrections []model.AttendanceCorrection
 	var total int64
 
-	query := db.Model(&model.AttendanceCorrection{}).Where("status = ?", "pending")
+	if forceEmpty, _ := filters["force_empty"].(bool); forceEmpty {
+		return corrections, 0, nil
+	}
+
+	query := db.Model(&model.AttendanceCorrection{}).Where("attendance_corrections.status = ?", "pending")
+
+	if bujpID, ok := filters["bujp_id"].(uuid.UUID); ok && bujpID != uuid.Nil {
+		query = query.
+			Joins("JOIN personnels ON personnels.id = attendance_corrections.personnel_id").
+			Where("personnels.bujp_id = ?", bujpID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, apperrors.Internal("Failed to count pending corrections")
@@ -144,7 +155,7 @@ func (r *attendanceCorrectionRepositoryImpl) FindPending(ctx context.Context, pa
 	offset := (page - 1) * limit
 	err := query.
 		Preload("Personnel").
-		Order("created_at ASC").
+		Order("attendance_corrections.created_at ASC").
 		Offset(offset).
 		Limit(limit).
 		Find(&corrections).Error
@@ -154,6 +165,29 @@ func (r *attendanceCorrectionRepositoryImpl) FindPending(ctx context.Context, pa
 	}
 
 	return corrections, total, nil
+}
+
+func (r *attendanceCorrectionRepositoryImpl) FindApprovedByDateRange(ctx context.Context, bujpID uuid.UUID, start, end time.Time) ([]model.AttendanceCorrection, error) {
+	db := r.withContext(ctx)
+
+	var corrections []model.AttendanceCorrection
+	query := db.Model(&model.AttendanceCorrection{}).
+		Where("attendance_corrections.status = ?", "approved").
+		Where("attendance_corrections.correction_date BETWEEN ? AND ?", start, end)
+
+	if bujpID != uuid.Nil {
+		query = query.
+			Joins("JOIN personnels ON personnels.id = attendance_corrections.personnel_id").
+			Where("personnels.bujp_id = ?", bujpID)
+	}
+
+	if err := query.
+		Order("attendance_corrections.correction_date ASC").
+		Find(&corrections).Error; err != nil {
+		return nil, apperrors.Internal("Failed to retrieve approved corrections")
+	}
+
+	return corrections, nil
 }
 
 func (r *attendanceCorrectionRepositoryImpl) Create(ctx context.Context, correction *model.AttendanceCorrection) error {

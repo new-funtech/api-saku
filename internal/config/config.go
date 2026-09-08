@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/broker/rabbitmq"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
@@ -20,10 +21,11 @@ import (
 )
 
 var (
-	DB          *gorm.DB
-	RedisClient *redis.Client
-	S3Client    *s3.Client
-	S3Bucket    string
+	DB           *gorm.DB
+	RedisClient  *redis.Client
+	S3Client     *s3.Client
+	S3Bucket     string
+	RabbitClient *rabbitmq.Client
 )
 
 func findProjectRoot() string {
@@ -219,7 +221,34 @@ func IsRedisConnected() bool {
 	return RedisClient.Ping(ctx).Err() == nil
 }
 
+func ConnectRabbitMQ() {
+	cfg := rabbitmq.Config{
+		Host:     GetEnv("RABBITMQ_HOST", ""),
+		Port:     GetEnv("RABBITMQ_PORT", "5672"),
+		User:     GetEnv("RABBITMQ_USER", ""),
+		Password: GetEnv("RABBITMQ_PASSWORD", ""),
+		VHost:    GetEnv("RABBITMQ_VHOST", "/"),
+	}
+	if !cfg.IsConfigured() {
+		log.Println("RabbitMQ not configured; background email worker disabled")
+		return
+	}
+	client, err := rabbitmq.NewClient(cfg)
+	if err != nil {
+		log.Printf("Warning: RabbitMQ unreachable (%v); will retry on first publish", err)
+	} else {
+		log.Println("RabbitMQ connected successfully")
+	}
+	RabbitClient = client
+}
+
 func CloseConnections() {
+	if RabbitClient != nil {
+		if err := RabbitClient.Close(); err != nil {
+			log.Printf("Error closing RabbitMQ connection: %v", err)
+		}
+	}
+
 	if RedisClient != nil {
 		if err := RedisClient.Close(); err != nil {
 			log.Printf("Error closing Redis connection: %v", err)

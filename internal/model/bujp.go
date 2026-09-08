@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Bujp represents the BUJP (security provider company) entity
 type Bujp struct {
 	ID               uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	Code             string     `json:"code" gorm:"type:varchar(20);not null"`
@@ -40,7 +39,6 @@ func (b *Bujp) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateBujpRequest struct {
 	Code             string  `json:"code" validate:"required,max=20" example:"BUJP001"`
 	Name             string  `json:"name" validate:"required,max=200" example:"GARDA MUTIARA TIMUR"`

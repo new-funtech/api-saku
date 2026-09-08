@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -11,8 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// presignAttendancePhotos fills check_in_photo_url / check_out_photo_url /
-// supporting_document_url with presigned GET URLs (1h) for the stored S3 keys.
 func presignAttendancePhotos(ctx context.Context, r *model.AttendanceResponse) {
 	if r == nil {
 		return
@@ -293,10 +292,6 @@ func (s *attendanceServiceImpl) Delete(ctx context.Context, id uuid.UUID) error 
 	return s.repo.Delete(ctx, id)
 }
 
-// CreateForUser auto-fills personnel/assignment/location from the authenticated
-// user's identity. Used by mobile/web check-in flows that only send lat/lng,
-// photo, and an optional date — the rest is derived server-side so we cannot
-// receive a nil personnel_id (which would violate the FK).
 func (s *attendanceServiceImpl) CreateForUser(ctx context.Context, userID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error) {
 	if userID == uuid.Nil {
 		return nil, errors.New("unauthenticated")
@@ -307,7 +302,6 @@ func (s *attendanceServiceImpl) CreateForUser(ctx context.Context, userID uuid.U
 	}
 	req.PersonnelID = personnel.ID
 
-	// Resolve assignment + location only if the client did not supply them.
 	if req.AssignmentID == nil || *req.AssignmentID == uuid.Nil || req.LocationID == uuid.Nil {
 		assignment, aerr := s.assignmentRepo.FindActiveByPersonnelID(ctx, personnel.ID)
 		if aerr != nil || assignment == nil {
@@ -322,7 +316,6 @@ func (s *attendanceServiceImpl) CreateForUser(ctx context.Context, userID uuid.U
 		}
 	}
 
-	// Default date = today, default check_in = now (RFC3339) when omitted.
 	if req.Date == "" {
 		req.Date = time.Now().Format("2006-01-02")
 	}
@@ -346,8 +339,37 @@ func (s *attendanceServiceImpl) CheckoutForUser(ctx context.Context, userID uuid
 	if err != nil || att == nil {
 		return nil, errors.New("no attendance record for today; please check-in first")
 	}
+
+	checkOutTime := time.Now()
+	if req.CheckOut != nil && *req.CheckOut != "" {
+		if parsed, perr := time.Parse(time.RFC3339, *req.CheckOut); perr == nil {
+			checkOutTime = parsed
+		}
+	}
+
+	if att.Assignment != nil && att.Assignment.Shift != nil {
+		shiftEnd := att.Assignment.Shift.EndTime.Time
+		shiftStart := att.Assignment.Shift.StartTime.Time
+		if !shiftEnd.IsZero() {
+			end := time.Date(
+				att.Date.Year(), att.Date.Month(), att.Date.Day(),
+				shiftEnd.Hour(), shiftEnd.Minute(), shiftEnd.Second(), 0,
+				checkOutTime.Location(),
+			)
+			if !shiftStart.IsZero() && !shiftEnd.After(shiftStart) {
+				end = end.Add(24 * time.Hour)
+			}
+			if checkOutTime.Before(end) {
+				return nil, fmt.Errorf(
+					"belum waktunya checkout, shift Anda berakhir pukul %s",
+					shiftEnd.Format("15:04"),
+				)
+			}
+		}
+	}
+
 	if req.CheckOut == nil || *req.CheckOut == "" {
-		now := time.Now().Format(time.RFC3339)
+		now := checkOutTime.Format(time.RFC3339)
 		req.CheckOut = &now
 	}
 	return s.Update(ctx, att.ID, req)

@@ -7,10 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// Loan approval levels
 const (
 	LoanApprovalLevelBujp  = 1
 	LoanApprovalLevelPusat = 2
+	LoanApprovalLevelBprks = 3
 
 	LoanApprovalStatusPending  = "pending"
 	LoanApprovalStatusApproved = "approved"

@@ -10,15 +10,20 @@ import (
 )
 
 type LoanRepository interface {
+	DB() *gorm.DB
+	WithTx(tx *gorm.DB) LoanRepository
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Loan, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Loan, error)
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Loan, int64, error)
 	Create(ctx context.Context, l *model.Loan) error
 	Update(ctx context.Context, l *model.Loan) error
 	UpdateColumns(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error
+	ClaimUserConfirmation(ctx context.Context, id uuid.UUID, confirmedAt time.Time) (bool, error)
+	ClaimSubmission(ctx context.Context, id uuid.UUID, submittedAt time.Time) (bool, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountThisMonth(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status string) (int64, error)
+	CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error)
 	GetActiveByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.Loan, error)
 	CountByPersonnelID(ctx context.Context, personnelID uuid.UUID) (int64, error)
 }
@@ -31,12 +36,23 @@ func NewLoanRepository(db *gorm.DB) LoanRepository {
 	return &loanRepositoryImpl{db: db}
 }
 
+func (r *loanRepositoryImpl) DB() *gorm.DB {
+	return r.db
+}
+
+func (r *loanRepositoryImpl) WithTx(tx *gorm.DB) LoanRepository {
+	return &loanRepositoryImpl{db: tx}
+}
+
 func (r *loanRepositoryImpl) baseQuery(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx).Model(&model.Loan{}).
 		Preload("Personnel").
 		Preload("Bujp").
 		Preload("LoanProduct").
-		Preload("Approvals.Approver")
+		Preload("Approvals.Approver").
+		Preload("Installments", func(db *gorm.DB) *gorm.DB {
+			return db.Order("installment_number ASC")
+		})
 }
 
 func (r *loanRepositoryImpl) FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Loan, int64, error) {
@@ -77,10 +93,6 @@ func (r *loanRepositoryImpl) FindAll(ctx context.Context, page, limit int, filte
 func (r *loanRepositoryImpl) FindByID(ctx context.Context, id uuid.UUID) (*model.Loan, error) {
 	var l model.Loan
 	if err := r.baseQuery(ctx).
-		Preload("Approvals.Approver").
-		Preload("Installments", func(db *gorm.DB) *gorm.DB {
-			return db.Order("installment_number ASC")
-		}).
 		First(&l, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
@@ -111,6 +123,29 @@ func (r *loanRepositoryImpl) UpdateColumns(ctx context.Context, id uuid.UUID, up
 	return r.db.WithContext(ctx).Model(&model.Loan{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (r *loanRepositoryImpl) ClaimUserConfirmation(ctx context.Context, id uuid.UUID, confirmedAt time.Time) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Where("id = ? AND status = ? AND user_confirmed_at IS NULL", id, model.LoanStatusPendingUserConfirmation).
+		Update("user_confirmed_at", confirmedAt)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
+func (r *loanRepositoryImpl) ClaimSubmission(ctx context.Context, id uuid.UUID, submittedAt time.Time) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Where("id = ? AND status = ?", id, model.LoanStatusDraft).
+		Updates(map[string]interface{}{
+			"status":       model.LoanStatusSubmitted,
+			"submitted_at": submittedAt,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 func (r *loanRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&model.Loan{}, "id = ?", id).Error
 }
@@ -130,6 +165,19 @@ func (r *loanRepositoryImpl) CountByStatus(ctx context.Context, status string) (
 	return c, err
 }
 
+func (r *loanRepositoryImpl) CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error) {
+	var c int64
+	q := r.db.WithContext(ctx).Model(&model.Loan{}).Where("status = ?", status)
+	if bujpID != uuid.Nil {
+		q = q.Where("bujp_id = ?", bujpID)
+	}
+	if personnelID != uuid.Nil {
+		q = q.Where("personnel_id = ?", personnelID)
+	}
+	err := q.Count(&c).Error
+	return c, err
+}
+
 func (r *loanRepositoryImpl) GetActiveByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.Loan, error) {
 	var loans []model.Loan
 	err := r.db.WithContext(ctx).Where("personnel_id = ? AND status IN ?", personnelID, []string{
@@ -138,9 +186,6 @@ func (r *loanRepositoryImpl) GetActiveByPersonnel(ctx context.Context, personnel
 	return loans, err
 }
 
-// CountByPersonnelID returns the total number of loans (regardless of status)
-// associated with the given personnel. Used to block deletion of personnel/users
-// that still have any loan history attached.
 func (r *loanRepositoryImpl) CountByPersonnelID(ctx context.Context, personnelID uuid.UUID) (int64, error) {
 	var c int64
 	err := r.db.WithContext(ctx).Model(&model.Loan{}).

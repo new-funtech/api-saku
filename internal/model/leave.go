@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Leave represents leave/permission requests
 type Leave struct {
 	ID                 uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`
 	PersonnelID        uuid.UUID  `json:"personnel_id" gorm:"type:uuid;not null"`
@@ -24,7 +23,6 @@ type Leave struct {
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 
-	// Relations
 	Personnel *Personnel `json:"personnel,omitempty" gorm:"foreignKey:PersonnelID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Approver  *User      `json:"approver,omitempty" gorm:"foreignKey:ApproverID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE"`
 }
@@ -36,7 +34,6 @@ func (l *Leave) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Request/Response DTOs
 type CreateLeaveRequest struct {
 	PersonnelID        uuid.UUID `json:"personnel_id" validate:"required"`
 	Type               string    `json:"type" validate:"required,oneof=leave permission sick"`

@@ -9,6 +9,7 @@ import (
 )
 
 type LoanApprovalRepository interface {
+	WithTx(tx *gorm.DB) LoanApprovalRepository
 	FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanApproval, error)
 	FindCurrentPendingForLoan(ctx context.Context, loanID uuid.UUID) (*model.LoanApproval, error)
 	FindPendingForRole(ctx context.Context, role string, bujpID *uuid.UUID, page, limit int) ([]model.LoanApproval, int64, error)
@@ -16,6 +17,7 @@ type LoanApprovalRepository interface {
 	Create(ctx context.Context, a *model.LoanApproval) error
 	CreateMany(ctx context.Context, items []model.LoanApproval) error
 	Update(ctx context.Context, a *model.LoanApproval) error
+	ClaimAndUpdate(ctx context.Context, a *model.LoanApproval) (bool, error)
 }
 
 type loanApprovalRepositoryImpl struct {
@@ -24,6 +26,10 @@ type loanApprovalRepositoryImpl struct {
 
 func NewLoanApprovalRepository(db *gorm.DB) LoanApprovalRepository {
 	return &loanApprovalRepositoryImpl{db: db}
+}
+
+func (r *loanApprovalRepositoryImpl) WithTx(tx *gorm.DB) LoanApprovalRepository {
+	return &loanApprovalRepositoryImpl{db: tx}
 }
 
 func (r *loanApprovalRepositoryImpl) FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanApproval, error) {
@@ -52,8 +58,11 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 	var total int64
 
 	level := model.LoanApprovalLevelBujp
-	if role == "admin" || role == "super_admin" {
+	switch role {
+	case "admin", "super_admin":
 		level = model.LoanApprovalLevelPusat
+	case "bprks":
+		level = model.LoanApprovalLevelBprks
 	}
 
 	q := r.db.WithContext(ctx).Model(&model.LoanApproval{}).
@@ -62,13 +71,20 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 		Preload("Loan.LoanProduct").
 		Where("loan_approvals.approval_level = ? AND loan_approvals.status = ?", level, model.LoanApprovalStatusPending)
 
+	needsLoanJoin := (level == model.LoanApprovalLevelBujp && bujpID != nil) ||
+		level == model.LoanApprovalLevelPusat ||
+		level == model.LoanApprovalLevelBprks
+	if needsLoanJoin {
+		q = q.Joins("JOIN loans ON loans.id = loan_approvals.loan_id")
+	}
 	if level == model.LoanApprovalLevelBujp && bujpID != nil {
-		q = q.Joins("JOIN loans ON loans.id = loan_approvals.loan_id").
-			Where("loans.bujp_id = ?", *bujpID)
+		q = q.Where("loans.bujp_id = ?", *bujpID)
 	}
 	if level == model.LoanApprovalLevelPusat {
-		q = q.Joins("JOIN loans ON loans.id = loan_approvals.loan_id").
-			Where("loans.status = ?", model.LoanStatusApprovedBujp)
+		q = q.Where("loans.status = ?", model.LoanStatusApprovedBujp)
+	}
+	if level == model.LoanApprovalLevelBprks {
+		q = q.Where("loans.status = ?", model.LoanStatusApprovedPusat)
 	}
 
 	if err := q.Count(&total).Error; err != nil {
@@ -105,4 +121,20 @@ func (r *loanApprovalRepositoryImpl) CreateMany(ctx context.Context, items []mod
 
 func (r *loanApprovalRepositoryImpl) Update(ctx context.Context, a *model.LoanApproval) error {
 	return r.db.WithContext(ctx).Save(a).Error
+}
+func (r *loanApprovalRepositoryImpl) ClaimAndUpdate(ctx context.Context, a *model.LoanApproval) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.LoanApproval{}).
+		Where("id = ? AND status = ?", a.ID, model.LoanApprovalStatusPending).
+		Updates(map[string]interface{}{
+			"status":          a.Status,
+			"approver_id":     a.ApproverID,
+			"reviewed_at":     a.ReviewedAt,
+			"notes":           a.Notes,
+			"approved_amount": a.ApprovedAmount,
+			"approved_tenor":  a.ApprovedTenor,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
 }

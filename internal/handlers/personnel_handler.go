@@ -172,11 +172,7 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 
 	// Upload photo if provided as multipart file
 	if key, uerr := utils.UploadFormFile(ctx, c, "photo", "PERSONNEL/PHOTOS"); uerr != nil {
-		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
-			Status:  "error",
-			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Failed to upload photo: %v", uerr),
-		})
+		return utils.UploadErrorResponse(c, "photo", uerr)
 	} else if key != nil {
 		req.Photo = key
 	}
@@ -198,11 +194,6 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 		})
 	}
 
-	// If the client uploaded the photo to a temporary location and supplied a
-	// templated final path, move the object now that we know the personnel ID
-	// and patch the photo column. Failures here are non-fatal: the personnel
-	// row is already persisted, so we surface a warning instead of rolling
-	// back the create.
 	if req.PhotoTempPath != nil && req.PhotoFinalPath != nil && *req.PhotoTempPath != "" && *req.PhotoFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.PhotoFinalPath, "{personnel_id}", personnel.ID.String())
 		if merr := utils.MoveFileInS3(ctx, *req.PhotoTempPath, finalKey); merr == nil {
@@ -376,9 +367,6 @@ func bindCreatePersonnelRequest(c *fiber.Ctx) (*model.CreatePersonnelRequest, er
 	return req, nil
 }
 
-// bindUpdatePersonnelRequest mirrors the create binder but for the partial
-// UpdatePersonnelRequest; only fields actually present on the form (or in the
-// JSON body) are populated so unknown fields stay at their existing DB values.
 func bindUpdatePersonnelRequest(c *fiber.Ctx) (*model.UpdatePersonnelRequest, error) {
 	contentType := strings.ToLower(c.Get("Content-Type"))
 	if !(strings.HasPrefix(contentType, "multipart/form-data") || strings.HasPrefix(contentType, "application/x-www-form-urlencoded")) {
@@ -486,7 +474,6 @@ func (h *PersonnelHandler) DeletePersonnel(c *fiber.Ctx) error {
 		})
 	}
 
-	// Tenant ownership check before delete to prevent cross-BUJP destruction.
 	existing, gerr := h.service.GetByID(c.Context(), id)
 	if gerr != nil || existing == nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -556,8 +543,6 @@ func (h *PersonnelHandler) BulkImport(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 120*time.Second)
 	defer cancel()
 
-	// Resolve effective BUJP. Non-Pusat callers are forced to their own BUJP
-	// regardless of what they posted in the form (anti-tampering).
 	bujpID, err := uuid.Parse(strings.TrimSpace(c.FormValue("bujp_id")))
 	role, _ := c.Locals("role").(string)
 	if role != "super_admin" && role != "admin" {

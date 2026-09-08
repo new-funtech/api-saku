@@ -39,6 +39,8 @@ func (h *LoanHandler) GetAll(c *fiber.Ctx) error {
 	filters := map[string]interface{}{}
 	if v := c.Query("status"); v != "" {
 		filters["status"] = v
+	} else if v := c.Query("status_in"); v != "" {
+		filters["status_in"] = strings.Split(v, ",")
 	}
 	if v := c.Query("search"); v != "" {
 		filters["search"] = v
@@ -74,8 +76,10 @@ func (h *LoanHandler) GetAll(c *fiber.Ctx) error {
 		} else {
 			filters["force_empty"] = true
 		}
-	case "super_admin", "admin":
-		if _, hasStatus := filters["status"]; !hasStatus {
+	case "super_admin", "admin", "bprks":
+		_, hasStatus := filters["status"]
+		_, hasStatusIn := filters["status_in"]
+		if !hasStatus && !hasStatusIn {
 			filters["status_in"] = []string{
 				model.LoanStatusApprovedBujp,
 				model.LoanStatusApprovedPusat,
@@ -117,8 +121,6 @@ func (h *LoanHandler) GetByID(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, http.StatusNotFound, err.Error())
 	}
 
-	// Tenant scoping: prevent IDOR. company_admin/supervisor may only access
-	// loans within their own BUJP; guard may only access their own loans.
 	role, _ := c.Locals("role").(string)
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	switch role {
@@ -162,26 +164,7 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 	role, _ := c.Locals("role").(string)
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	if personnelID == uuid.Nil && role != "guard" {
-		filters := make(map[string]interface{})
-		status := c.Query("status", "")
-		switch status {
-		case "", "all":
-			filters["status_in"] = []string{
-				model.LoanStatusApprovedBujp,
-				model.LoanStatusApprovedPusat,
-				model.LoanStatusPendingUserConfirmation,
-				model.LoanStatusDisbursed,
-				model.LoanStatusActive,
-				model.LoanStatusCompleted,
-				model.LoanStatusRejected,
-				model.LoanStatusCancelled,
-			}
-		default:
-			filters["status"] = status
-		}
-		if v := c.Query("search"); v != "" {
-			filters["search"] = v
-		}
+		filters := loanHistoryStatusFilters(c)
 		if v := c.Query("bujp_id"); v != "" {
 			if id, err := uuid.Parse(v); err == nil {
 				filters["bujp_id"] = id
@@ -209,7 +192,7 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 		if uid == uuid.Nil {
 			return utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
 		}
-		resolved, err := h.service.GetMyHistoryByUser(c.Context(), uid, page, limit)
+		resolved, err := h.service.GetMyHistoryByUser(c.Context(), uid, page, limit, loanHistoryStatusFilters(c))
 		if err != nil {
 			return utils.ErrorResponse(c, statusForServiceError(err), err.Error())
 		}
@@ -219,7 +202,7 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 		})
 	}
 
-	items, total, err := h.service.GetMyHistory(c.Context(), personnelID, page, limit)
+	items, total, err := h.service.GetMyHistory(c.Context(), personnelID, page, limit, loanHistoryStatusFilters(c))
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}
@@ -227,6 +210,30 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 	return utils.SuccessResponseWithMeta(c, http.StatusOK, "loan history retrieved", items, &model.PaginationMeta{
 		Page: page, Limit: limit, Total: total, TotalPages: totalPages, HasNext: hasNext, HasPrevious: hasPrev,
 	})
+}
+
+func loanHistoryStatusFilters(c *fiber.Ctx) map[string]interface{} {
+	filters := make(map[string]interface{})
+	status := c.Query("status", "")
+	switch status {
+	case "", "all":
+		filters["status_in"] = []string{
+			model.LoanStatusApprovedBujp,
+			model.LoanStatusApprovedPusat,
+			model.LoanStatusPendingUserConfirmation,
+			model.LoanStatusDisbursed,
+			model.LoanStatusActive,
+			model.LoanStatusCompleted,
+			model.LoanStatusRejected,
+			model.LoanStatusCancelled,
+		}
+	default:
+		filters["status"] = status
+	}
+	if v := c.Query("search"); v != "" {
+		filters["search"] = v
+	}
+	return filters
 }
 
 // Create godoc
@@ -264,10 +271,33 @@ func (h *LoanHandler) Create(c *fiber.Ctx) error {
 	for _, u := range uploads {
 		key, uerr := utils.UploadFormFile(c.Context(), c, u.field, folder)
 		if uerr != nil {
-			return utils.ErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("Failed to upload %s: %v", u.field, uerr))
+			return utils.UploadErrorResponse(c, u.field, uerr)
 		}
 		if key != nil {
 			*u.dest = key
+		}
+	}
+
+	if req.SubmitImmediately {
+		missing := []string{}
+		if req.KtpDocument == nil || *req.KtpDocument == "" {
+			missing = append(missing, "KTP")
+		}
+		if req.NpwpDocument == nil || *req.NpwpDocument == "" {
+			missing = append(missing, "NPWP")
+		}
+		if req.SelfieDocument == nil || *req.SelfieDocument == "" {
+			missing = append(missing, "Selfie")
+		}
+		if req.SelfieKtpDocument == nil || *req.SelfieKtpDocument == "" {
+			missing = append(missing, "Selfie + KTP")
+		}
+		if len(missing) > 0 {
+			return utils.ErrorResponse(
+				c,
+				http.StatusBadRequest,
+				"Dokumen wajib belum lengkap: "+strings.Join(missing, ", "),
+			)
 		}
 	}
 
@@ -428,12 +458,20 @@ func (h *LoanHandler) UserConfirm(c *fiber.Ctx) error {
 
 // Statistics godoc
 // @Summary      Loan statistics by status
+// @Description  Returns counts grouped by loan status. Numbers are scoped by
+//
+//	role: company_admin/supervisor see only their BUJP, guard
+//	sees only their own personnel, super_admin sees the whole
+//	tenant.
+//
 // @Tags         Loans
 // @Success      200 {object} model.APIResponse
 // @Security     BearerAuth
 // @Router       /api/v1/loans/statistics [get]
 func (h *LoanHandler) Statistics(c *fiber.Ctx) error {
-	stats, err := h.service.Statistics(c.Context())
+	role, _ := c.Locals("role").(string)
+	uid, _ := c.Locals("userID").(uuid.UUID)
+	stats, err := h.service.StatisticsScoped(c.Context(), role, uid)
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}

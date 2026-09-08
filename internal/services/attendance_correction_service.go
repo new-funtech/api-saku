@@ -8,14 +8,11 @@ import (
 	apperrors "github.com/ganiramadhan/ganipedia/backend/internal/errors"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 )
 
-// combineDateAndHHMM merges a YYYY-MM-DD date with an HH:MM (or HH:MM:SS) time
-// string and produces a full RFC3339 timestamp string. This is needed because
-// the underlying PostgreSQL column is `timestamp with time zone`, which rejects
-// bare "HH:MM" inputs.
 func combineDateAndHHMM(date time.Time, hhmm *string) *string {
 	if hhmm == nil {
 		return nil
@@ -27,20 +24,16 @@ func combineDateAndHHMM(date time.Time, hhmm *string) *string {
 	if len(s) == 5 { // HH:MM
 		s = s + ":00"
 	}
-	// Compose date + time in local timezone, then format as RFC3339.
 	combined := date.Format("2006-01-02") + "T" + s
 	if t, err := time.ParseInLocation("2006-01-02T15:04:05", combined, time.Local); err == nil {
 		out := t.Format(time.RFC3339)
 		return &out
 	}
-	// Fallback: return the original string so we surface a parse error upstream
-	// rather than silently dropping the field.
+
 	original := s
 	return &original
 }
 
-// presignAttendanceCorrectionDoc fills SupportingDocumentURL when the stored
-// supporting_document key is non-empty.
 func presignAttendanceCorrectionDoc(ctx context.Context, r *model.AttendanceCorrectionResponse) {
 	if r == nil || r.SupportingDocument == nil || *r.SupportingDocument == "" {
 		return
@@ -55,7 +48,7 @@ type AttendanceCorrectionService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.AttendanceCorrectionResponse, error)
 	GetByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error)
-	GetPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error)
+	GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error)
 	Create(ctx context.Context, req *model.CreateAttendanceCorrectionRequest) (*model.AttendanceCorrectionResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceCorrectionRequest) (*model.AttendanceCorrectionResponse, error)
 	Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status, notes string) (*model.AttendanceCorrectionResponse, error)
@@ -63,11 +56,12 @@ type AttendanceCorrectionService interface {
 }
 
 type attendancecorrectionServiceImpl struct {
-	repo repository.AttendanceCorrectionRepository
+	repo     repository.AttendanceCorrectionRepository
+	notifier *notifier.Notifier
 }
 
-func NewAttendanceCorrectionService(repo repository.AttendanceCorrectionRepository) AttendanceCorrectionService {
-	return &attendancecorrectionServiceImpl{repo: repo}
+func NewAttendanceCorrectionService(repo repository.AttendanceCorrectionRepository, notif *notifier.Notifier) AttendanceCorrectionService {
+	return &attendancecorrectionServiceImpl{repo: repo, notifier: notif}
 }
 
 func (s *attendancecorrectionServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error) {
@@ -114,8 +108,8 @@ func (s *attendancecorrectionServiceImpl) GetByPersonnelID(ctx context.Context, 
 	return responses, total, nil
 }
 
-func (s *attendancecorrectionServiceImpl) GetPending(ctx context.Context, page, limit int) ([]model.AttendanceCorrectionResponse, int64, error) {
-	corrections, total, err := s.repo.FindPending(ctx, page, limit)
+func (s *attendancecorrectionServiceImpl) GetPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error) {
+	corrections, total, err := s.repo.FindPending(ctx, page, limit, filters)
 	if err != nil {
 		return nil, 0, apperrors.Internal("Failed to retrieve pending corrections")
 	}
@@ -162,7 +156,6 @@ func (s *attendancecorrectionServiceImpl) Create(ctx context.Context, req *model
 		return nil, apperrors.Internal("Failed to create attendance correction")
 	}
 
-	// Fetch created correction with relations
 	created, err := s.repo.FindByID(ctx, correction.ID)
 	if err != nil {
 		return nil, apperrors.Internal("Failed to retrieve created correction")
@@ -174,7 +167,6 @@ func (s *attendancecorrectionServiceImpl) Create(ctx context.Context, req *model
 }
 
 func (s *attendancecorrectionServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceCorrectionRequest) (*model.AttendanceCorrectionResponse, error) {
-	// Find existing correction
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if apperrors.IsNotFound(err) {
@@ -183,12 +175,10 @@ func (s *attendancecorrectionServiceImpl) Update(ctx context.Context, id uuid.UU
 		return nil, apperrors.Internal("Failed to retrieve attendance correction")
 	}
 
-	// Only allow update if status is pending
 	if existing.Status != "pending" {
 		return nil, apperrors.BadRequest("Can only update pending correction requests")
 	}
 
-	// Update fields
 	if req.CorrectionDate != nil {
 		correctionDate, err := utils.ParseDate(*req.CorrectionDate)
 		if err != nil {
@@ -233,7 +223,6 @@ func (s *attendancecorrectionServiceImpl) Approve(ctx context.Context, id uuid.U
 		return nil, apperrors.Validation("Status must be either 'approved' or 'rejected'")
 	}
 
-	// Find existing correction
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if apperrors.IsNotFound(err) {
@@ -242,17 +231,14 @@ func (s *attendancecorrectionServiceImpl) Approve(ctx context.Context, id uuid.U
 		return nil, apperrors.Internal("Failed to retrieve attendance correction")
 	}
 
-	// Only allow approval if status is pending
 	if existing.Status != "pending" {
 		return nil, apperrors.BadRequest("Can only approve/reject pending correction requests")
 	}
 
-	// Approve/reject the correction
 	if err := s.repo.Approve(ctx, id, approverID, status, notes); err != nil {
 		return nil, apperrors.Internal("Failed to approve/reject attendance correction")
 	}
 
-	// Fetch updated correction with relations
 	updated, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperrors.Internal("Failed to retrieve updated correction")
@@ -260,11 +246,11 @@ func (s *attendancecorrectionServiceImpl) Approve(ctx context.Context, id uuid.U
 
 	response := toAttendanceCorrectionResponse(updated)
 	presignAttendanceCorrectionDoc(ctx, &response)
+	s.notifier.CorrectionDecision(ctx, updated, status)
 	return &response, nil
 }
 
 func (s *attendancecorrectionServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
-	// Find existing correction
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		if apperrors.IsNotFound(err) {
@@ -273,7 +259,6 @@ func (s *attendancecorrectionServiceImpl) Delete(ctx context.Context, id uuid.UU
 		return apperrors.Internal("Failed to retrieve attendance correction")
 	}
 
-	// Only allow deletion if status is pending or rejected
 	if existing.Status == "approved" {
 		return apperrors.BadRequest("Cannot delete approved correction requests")
 	}
@@ -285,11 +270,6 @@ func (s *attendancecorrectionServiceImpl) Delete(ctx context.Context, id uuid.UU
 	return nil
 }
 
-// Helper functions
-
-// formatStoredHHMM converts a stored time string back to "HH:MM". The DB may
-// hold the value as either a bare HH:MM:SS string or a full RFC3339 timestamp
-// depending on the column type — handle both gracefully.
 func formatStoredHHMM(v *string) *string {
 	if v == nil || *v == "" {
 		return v
