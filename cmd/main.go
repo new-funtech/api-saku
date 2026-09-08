@@ -17,6 +17,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/emailworker"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	payrollScheduler "github.com/ganiramadhan/ganipedia/backend/internal/services/payroll"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services/realtime"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
 
 	_ "github.com/ganiramadhan/ganipedia/backend/docs"
@@ -141,7 +142,7 @@ func main() {
 	loanRepo := repository.NewLoanRepository(config.DB)
 	loanApprovalRepo := repository.NewLoanApprovalRepository(config.DB)
 	loanInstallmentRepo := repository.NewLoanInstallmentRepository(config.DB)
-	// notificationRepo := repository.NewNotificationRepository(config.DB) // Notification feature disabled
+	notificationRepo := repository.NewNotificationRepository(config.DB)
 
 	// Initialize services
 	productSvc := services.NewProductService(productRepo)
@@ -150,6 +151,8 @@ func main() {
 	// Centralized notifier — all transactional emails for loans/leave/attendance
 	// corrections funnel through this service onto the broker queue.
 	notifierSvc := notifier.New(config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"), userRepo)
+	realtimeHub := realtime.NewHub()
+	notificationSvc := services.NewNotificationService(notificationRepo, personnelRepo, notifierSvc, realtimeHub)
 	bujpSvc := services.NewBujpService(bujpRepo)
 	locationSvc := services.NewLocationService(locationRepo)
 	shiftSvc := services.NewShiftService(shiftRepo)
@@ -163,10 +166,9 @@ func main() {
 	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, attendanceCorrectionRepo, salaryComponentRepo, notifierSvc)
 	monthlyReportSvc := services.NewMonthlyReportService(monthlyReportRepo)
 	loanProductSvc := services.NewLoanProductService(loanProductRepo)
-	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo, notifierSvc)
-	loanApprovalSvc := services.NewLoanApprovalService(loanApprovalRepo, loanRepo, loanInstallmentRepo, loanSvc, notifierSvc)
+	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo, notifierSvc, notificationSvc)
+	loanApprovalSvc := services.NewLoanApprovalService(loanApprovalRepo, loanRepo, loanInstallmentRepo, loanSvc, notifierSvc, notificationSvc)
 	loanInstallmentSvc := services.NewLoanInstallmentService(loanInstallmentRepo, loanRepo)
-	// notificationSvc := services.NewNotificationService(notificationRepo) // Notification feature disabled
 	dashboardSvc := services.NewDashboardService(userRepo, bujpRepo, locationRepo, personnelRepo, assignmentRepo, attendanceRepo, leaveRepo)
 
 	// Initialize handlers
@@ -190,7 +192,8 @@ func main() {
 	loanHdl := handlers.NewLoanHandler(loanSvc)
 	loanApprovalHdl := handlers.NewLoanApprovalHandler(loanApprovalSvc)
 	loanInstallmentHdl := handlers.NewLoanInstallmentHandler(loanInstallmentSvc, loanSvc)
-	// notificationHdl := handlers.NewNotificationHandler(notificationSvc) // Notification feature disabled
+	notificationHdl := handlers.NewNotificationHandler(notificationSvc)
+	realtimeHdl := handlers.NewRealtimeHandler(realtimeHub)
 	uploadHdl := handlers.NewUploadHandler()
 	dashboardHdl := handlers.NewDashboardHandler(dashboardSvc)
 
@@ -214,7 +217,7 @@ func main() {
 	)
 
 	// Setup routes
-	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, userRepo, personnelRepo)
+	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, realtimeHdl, userRepo, personnelRepo)
 
 	// Start server with graceful shutdown
 	port := config.GetEnv("APP_PORT", "4000")

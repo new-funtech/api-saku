@@ -10,6 +10,8 @@ import (
 )
 
 type LoanRepository interface {
+	DB() *gorm.DB
+	WithTx(tx *gorm.DB) LoanRepository
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Loan, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Loan, error)
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Loan, int64, error)
@@ -32,6 +34,14 @@ type loanRepositoryImpl struct {
 
 func NewLoanRepository(db *gorm.DB) LoanRepository {
 	return &loanRepositoryImpl{db: db}
+}
+
+func (r *loanRepositoryImpl) DB() *gorm.DB {
+	return r.db
+}
+
+func (r *loanRepositoryImpl) WithTx(tx *gorm.DB) LoanRepository {
+	return &loanRepositoryImpl{db: tx}
 }
 
 func (r *loanRepositoryImpl) baseQuery(ctx context.Context) *gorm.DB {

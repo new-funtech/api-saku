@@ -33,6 +33,7 @@ type loanApprovalServiceImpl struct {
 	installmentRepo repository.LoanInstallmentRepository
 	loanService     *loanServiceImpl
 	notifier        *notifier.Notifier
+	notificationSvc NotificationService
 }
 
 func NewLoanApprovalService(
@@ -41,6 +42,7 @@ func NewLoanApprovalService(
 	installmentRepo repository.LoanInstallmentRepository,
 	loanSvc LoanService,
 	notif *notifier.Notifier,
+	notificationSvc NotificationService,
 ) LoanApprovalService {
 	impl, _ := loanSvc.(*loanServiceImpl)
 	return &loanApprovalServiceImpl{
@@ -49,6 +51,7 @@ func NewLoanApprovalService(
 		installmentRepo: installmentRepo,
 		loanService:     impl,
 		notifier:        notif,
+		notificationSvc: notificationSvc,
 	}
 }
 
@@ -144,56 +147,72 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		approval.Status = model.LoanApprovalStatusApproved
 	}
 
-	claimed, err := s.approvalRepo.ClaimAndUpdate(ctx, approval)
-	if err != nil {
-		return nil, err
-	}
-	if !claimed {
-		return nil, errors.New("approval already processed")
+	var createdNotifications []model.Notification
+	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txApprovalRepo := s.approvalRepo.WithTx(tx)
+		txLoanRepo := s.loanRepo.WithTx(tx)
+
+		claimed, cerr := txApprovalRepo.ClaimAndUpdate(ctx, approval)
+		if cerr != nil {
+			return cerr
+		}
+		if !claimed {
+			return errors.New("approval already processed")
+		}
+
+		if req.Action == "reject" {
+			loan.Status = model.LoanStatusRejected
+			loan.RejectedAt = &now
+			loan.RejectionReason = req.Notes
+		} else {
+			if req.ApprovedAmount != nil {
+				loan.ApprovedAmount = req.ApprovedAmount
+			}
+			if approval.ApprovalLevel == model.LoanApprovalLevelBprks && req.ApprovedTenor != nil {
+				loan.ApprovedTenor = req.ApprovedTenor
+			}
+			finalAmount := loan.LoanAmount
+			if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
+				finalAmount = *loan.ApprovedAmount
+			}
+			finalTenor := loan.TenorMonths
+			if loan.ApprovedTenor != nil && *loan.ApprovedTenor > 0 {
+				finalTenor = *loan.ApprovedTenor
+			}
+			monthly, total := calculateLoanDetails(finalAmount, loan.InterestRate, finalTenor)
+			loan.MonthlyInstallment = monthly
+			loan.TotalRepayment = total
+			switch approval.ApprovalLevel {
+			case model.LoanApprovalLevelBujp:
+				loan.Status = model.LoanStatusApprovedBujp
+				loan.ApprovedAt = &now
+			case model.LoanApprovalLevelPusat:
+				loan.Status = model.LoanStatusApprovedPusat
+				loan.ApprovedPusatAt = &now
+			default: // LoanApprovalLevelBprks
+				loan.Status = model.LoanStatusPendingUserConfirmation
+				loan.ApprovedBprksAt = &now
+				deadline := now.Add(constants.LoanUserConfirmationWindow)
+				loan.UserConfirmationDeadline = &deadline
+			}
+		}
+		if cerr := txLoanRepo.Update(ctx, loan); cerr != nil {
+			return cerr
+		}
+
+		if s.notificationSvc != nil {
+			rows, nerr := s.notificationSvc.NotifyLoanApprovalDecision(ctx, tx, loan, approval, req.Action != "reject")
+			if nerr != nil {
+				return nerr
+			}
+			createdNotifications = rows
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
 	}
 
-	if req.Action == "reject" {
-		loan.Status = model.LoanStatusRejected
-		loan.RejectedAt = &now
-		loan.RejectionReason = req.Notes
-		if err := s.loanRepo.Update(ctx, loan); err != nil {
-			return nil, err
-		}
-	} else {
-		if req.ApprovedAmount != nil {
-			loan.ApprovedAmount = req.ApprovedAmount
-		}
-		if approval.ApprovalLevel == model.LoanApprovalLevelBprks && req.ApprovedTenor != nil {
-			loan.ApprovedTenor = req.ApprovedTenor
-		}
-		finalAmount := loan.LoanAmount
-		if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
-			finalAmount = *loan.ApprovedAmount
-		}
-		finalTenor := loan.TenorMonths
-		if loan.ApprovedTenor != nil && *loan.ApprovedTenor > 0 {
-			finalTenor = *loan.ApprovedTenor
-		}
-		monthly, total := calculateLoanDetails(finalAmount, loan.InterestRate, finalTenor)
-		loan.MonthlyInstallment = monthly
-		loan.TotalRepayment = total
-		switch approval.ApprovalLevel {
-		case model.LoanApprovalLevelBujp:
-			loan.Status = model.LoanStatusApprovedBujp
-			loan.ApprovedAt = &now
-		case model.LoanApprovalLevelPusat:
-			loan.Status = model.LoanStatusApprovedPusat
-			loan.ApprovedPusatAt = &now
-		default: // LoanApprovalLevelBprks
-			loan.Status = model.LoanStatusPendingUserConfirmation
-			loan.ApprovedBprksAt = &now
-			deadline := now.Add(constants.LoanUserConfirmationWindow)
-			loan.UserConfirmationDeadline = &deadline
-		}
-		if err := s.loanRepo.Update(ctx, loan); err != nil {
-			return nil, err
-		}
-	}
 	r := ToLoanApprovalResponse(ctx, approval)
 	notifyLoan := loan
 	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
@@ -206,6 +225,9 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		s.notifier.LoanPusatDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
 	case model.LoanApprovalLevelBprks:
 		s.notifier.LoanBprksDecision(ctx, notifyLoan, req.Action != "reject", req.Notes)
+	}
+	if s.notificationSvc != nil {
+		s.notificationSvc.PushRealtime(createdNotifications)
 	}
 	return &r, nil
 }

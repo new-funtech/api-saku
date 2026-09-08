@@ -47,6 +47,7 @@ type loanServiceImpl struct {
 	personnelRepo   repository.PersonnelRepository
 	userRepo        repository.UserRepository
 	notifier        *notifier.Notifier
+	notificationSvc NotificationService
 }
 
 func NewLoanService(
@@ -57,6 +58,7 @@ func NewLoanService(
 	personnelRepo repository.PersonnelRepository,
 	userRepo repository.UserRepository,
 	notif *notifier.Notifier,
+	notificationSvc NotificationService,
 ) LoanService {
 	return &loanServiceImpl{
 		loanRepo:        loanRepo,
@@ -66,6 +68,7 @@ func NewLoanService(
 		personnelRepo:   personnelRepo,
 		userRepo:        userRepo,
 		notifier:        notif,
+		notificationSvc: notificationSvc,
 	}
 }
 
@@ -296,18 +299,40 @@ func (s *loanServiceImpl) Submit(ctx context.Context, id uuid.UUID) (*model.Loan
 		return nil, errors.New("only draft loans can be submitted")
 	}
 	now := time.Now()
-	claimed, err := s.loanRepo.ClaimSubmission(ctx, loan.ID, now)
-	if err != nil {
-		return nil, err
+
+	var createdNotifications []model.Notification
+	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txLoanRepo := s.loanRepo.WithTx(tx)
+		txApprovalRepo := s.approvalRepo.WithTx(tx)
+
+		claimed, cerr := txLoanRepo.ClaimSubmission(ctx, loan.ID, now)
+		if cerr != nil {
+			return cerr
+		}
+		if !claimed {
+			return errors.New("only draft loans can be submitted")
+		}
+		if cerr := txApprovalRepo.CreateMany(ctx, buildInitialApprovals(loan.ID)); cerr != nil {
+			return cerr
+		}
+		if s.notificationSvc != nil {
+			rows, nerr := s.notificationSvc.NotifyLoanSubmitted(ctx, tx, loan)
+			if nerr != nil {
+				return nerr
+			}
+			createdNotifications = rows
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
 	}
-	if !claimed {
-		return nil, errors.New("only draft loans can be submitted")
-	}
-	if err := s.createApprovalRecords(ctx, loan.ID); err != nil {
-		return nil, err
-	}
+
 	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
 		s.notifier.LoanSubmitted(ctx, fresh)
+	}
+	if s.notificationSvc != nil {
+		s.notificationSvc.PushRealtime(createdNotifications)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
@@ -324,8 +349,26 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 	}
 	loan.Status = model.LoanStatusCancelled
 	loan.RejectionReason = reason
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
-		return nil, err
+
+	var createdNotifications []model.Notification
+	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		if cerr := s.loanRepo.WithTx(tx).Update(ctx, loan); cerr != nil {
+			return cerr
+		}
+		if s.notificationSvc != nil {
+			rows, nerr := s.notificationSvc.NotifyLoanCancelled(ctx, tx, loan)
+			if nerr != nil {
+				return nerr
+			}
+			createdNotifications = rows
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+	if s.notificationSvc != nil {
+		s.notificationSvc.PushRealtime(createdNotifications)
 	}
 	return s.GetByID(ctx, loan.ID)
 }
@@ -502,8 +545,11 @@ func (s *loanServiceImpl) generateLoanNumber(ctx context.Context) (string, error
 	return fmt.Sprintf("LN-%04d-%02d-%04d", now.Year(), now.Month(), count+1), nil
 }
 
-func (s *loanServiceImpl) createApprovalRecords(ctx context.Context, loanID uuid.UUID) error {
-	approvals := []model.LoanApproval{
+// buildInitialApprovals is a pure builder (no repo call) so it can be used
+// both outside a transaction (none left to, but kept generic) and — as it is
+// now — inside Submit's db.Transaction via a tx-bound repository.
+func buildInitialApprovals(loanID uuid.UUID) []model.LoanApproval {
+	return []model.LoanApproval{
 		{
 			LoanID:            loanID,
 			ApprovalLevel:     model.LoanApprovalLevelBujp,
@@ -523,7 +569,6 @@ func (s *loanServiceImpl) createApprovalRecords(ctx context.Context, loanID uuid
 			Status:            model.LoanApprovalStatusPending,
 		},
 	}
-	return s.approvalRepo.CreateMany(ctx, approvals)
 }
 
 func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan) error {

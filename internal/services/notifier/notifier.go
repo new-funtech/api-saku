@@ -68,7 +68,7 @@ func (n *Notifier) dispatch(ctx context.Context, to []string, subject, htmlBody 
 	}
 }
 
-func (n *Notifier) adminCompanyEmails(ctx context.Context, bujpID *uuid.UUID) []string {
+func (n *Notifier) AdminCompanyUsers(ctx context.Context, bujpID *uuid.UUID) []model.User {
 	if n == nil || n.userRepo == nil || bujpID == nil || *bujpID == uuid.Nil {
 		return nil
 	}
@@ -78,19 +78,13 @@ func (n *Notifier) adminCompanyEmails(ctx context.Context, bujpID *uuid.UUID) []
 		"status":  "active",
 	})
 	if err != nil {
-		log.Printf("[notifier] adminCompanyEmails lookup failed: %v", err)
+		log.Printf("[notifier] AdminCompanyUsers lookup failed: %v", err)
 		return nil
 	}
-	out := make([]string, 0, len(users))
-	for _, u := range users {
-		if u.Email != "" {
-			out = append(out, u.Email)
-		}
-	}
-	return out
+	return users
 }
 
-func (n *Notifier) adminPusatEmails(ctx context.Context) []string {
+func (n *Notifier) AdminPusatUsers(ctx context.Context) []model.User {
 	if n == nil || n.userRepo == nil {
 		return nil
 	}
@@ -99,9 +93,28 @@ func (n *Notifier) adminPusatEmails(ctx context.Context) []string {
 		"status": "active",
 	})
 	if err != nil {
-		log.Printf("[notifier] adminPusatEmails lookup failed: %v", err)
+		log.Printf("[notifier] AdminPusatUsers lookup failed: %v", err)
 		return nil
 	}
+	return users
+}
+
+func (n *Notifier) AdminBprksUsers(ctx context.Context) []model.User {
+	if n == nil || n.userRepo == nil {
+		return nil
+	}
+	users, _, err := n.userRepo.FindAll(ctx, 1, 999, map[string]interface{}{
+		"role":   roleBprks,
+		"status": "active",
+	})
+	if err != nil {
+		log.Printf("[notifier] AdminBprksUsers lookup failed: %v", err)
+		return nil
+	}
+	return users
+}
+
+func userEmails(users []model.User) []string {
 	out := make([]string, 0, len(users))
 	for _, u := range users {
 		if u.Email != "" {
@@ -111,25 +124,16 @@ func (n *Notifier) adminPusatEmails(ctx context.Context) []string {
 	return out
 }
 
+func (n *Notifier) adminCompanyEmails(ctx context.Context, bujpID *uuid.UUID) []string {
+	return userEmails(n.AdminCompanyUsers(ctx, bujpID))
+}
+
+func (n *Notifier) adminPusatEmails(ctx context.Context) []string {
+	return userEmails(n.AdminPusatUsers(ctx))
+}
+
 func (n *Notifier) adminBprksEmails(ctx context.Context) []string {
-	if n == nil || n.userRepo == nil {
-		return nil
-	}
-	users, _, err := n.userRepo.FindAll(ctx, 1, 999, map[string]interface{}{
-		"role":   roleBprks,
-		"status": "active",
-	})
-	if err != nil {
-		log.Printf("[notifier] adminBprksEmails lookup failed: %v", err)
-		return nil
-	}
-	out := make([]string, 0, len(users))
-	for _, u := range users {
-		if u.Email != "" {
-			out = append(out, u.Email)
-		}
-	}
-	return out
+	return userEmails(n.AdminBprksUsers(ctx))
 }
 
 func personnelEmail(p *model.Personnel) []string {

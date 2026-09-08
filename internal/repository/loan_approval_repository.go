@@ -9,6 +9,7 @@ import (
 )
 
 type LoanApprovalRepository interface {
+	WithTx(tx *gorm.DB) LoanApprovalRepository
 	FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanApproval, error)
 	FindCurrentPendingForLoan(ctx context.Context, loanID uuid.UUID) (*model.LoanApproval, error)
 	FindPendingForRole(ctx context.Context, role string, bujpID *uuid.UUID, page, limit int) ([]model.LoanApproval, int64, error)
@@ -25,6 +26,10 @@ type loanApprovalRepositoryImpl struct {
 
 func NewLoanApprovalRepository(db *gorm.DB) LoanApprovalRepository {
 	return &loanApprovalRepositoryImpl{db: db}
+}
+
+func (r *loanApprovalRepositoryImpl) WithTx(tx *gorm.DB) LoanApprovalRepository {
+	return &loanApprovalRepositoryImpl{db: tx}
 }
 
 func (r *loanApprovalRepositoryImpl) FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanApproval, error) {

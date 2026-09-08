@@ -51,7 +51,8 @@ func RunMigrations() {
 		&model.LoanProduct{},
 		&model.Loan{},
 		&model.LoanApproval{},
-		&model.LoanInstallment{}); err != nil {
+		&model.LoanInstallment{},
+		&model.Notification{}); err != nil {
 		log.Printf("AutoMigrate warning: %v", err)
 	}
 
@@ -179,6 +180,12 @@ func RunMigrations() {
 		`CREATE INDEX IF NOT EXISTS idx_loan_installments_status ON loan_installments(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_loan_installments_due_date ON loan_installments(due_date)`,
 		`CREATE INDEX IF NOT EXISTS idx_loan_installments_payroll_id ON loan_installments(payroll_id)`,
+
+		// Notifications
+		`CREATE INDEX IF NOT EXISTS idx_notifications_recipient_user_id ON notifications(recipient_user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read)`,
+		`CREATE INDEX IF NOT EXISTS idx_notifications_entity_id ON notifications(entity_id)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_event_recipient_type ON notifications(event_id, recipient_user_id, type)`,
 	}
 
 	for _, idx := range indexes {

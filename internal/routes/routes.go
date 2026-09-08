@@ -8,6 +8,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/websocket/v2"
 )
 
 func SetupRoutes(
@@ -33,6 +34,8 @@ func SetupRoutes(
 	loanHdl *handlers.LoanHandler,
 	loanApprovalHdl *handlers.LoanApprovalHandler,
 	loanInstallmentHdl *handlers.LoanInstallmentHandler,
+	notificationHdl *handlers.NotificationHandler,
+	realtimeHdl *handlers.RealtimeHandler,
 	userRepo repository.UserRepository,
 	personnelRepo repository.PersonnelRepository,
 ) {
@@ -257,15 +260,14 @@ func SetupRoutes(
 	loanInstallmentRoutes := v1.Group("/loan-installments", protected()...)
 	loanInstallmentRoutes.Post("/:id/pay", loanInstallmentHdl.Pay)
 	loanInstallmentRoutes.Post("/mark-overdue", loanInstallmentHdl.MarkOverdue)
+	notificationRoutes := v1.Group("/notifications", protected()...)
+	notificationRoutes.Get("/", notificationHdl.GetAll)
+	notificationRoutes.Get("/unread-count", notificationHdl.GetUnreadCount)
+	notificationRoutes.Post("/read-all", notificationHdl.MarkAllAsRead)
+	notificationRoutes.Post("/:id/read", notificationHdl.MarkAsRead)
+	notificationRoutes.Delete("/clear-read", notificationHdl.ClearRead)
+	notificationRoutes.Delete("/:id", notificationHdl.Delete)
 
-	// Notification routes disabled as per requirement
-	// notificationRoutes := v1.Group("/notifications", protected()...)
-	// notificationRoutes.Get("/", notificationHdl.GetAll)
-	// notificationRoutes.Get("/unread-count", notificationHdl.GetUnreadCount)
-	// notificationRoutes.Put("/read-all", notificationHdl.MarkAllAsRead)
-	// notificationRoutes.Put("/:id/read", notificationHdl.MarkAsRead)
-	// notificationRoutes.Delete("/:id", notificationHdl.Delete)
-
-	// WebSocket for real-time notifications - disabled
-	// app.Get("/ws/notifications", websocket.New(notificationHdl.HandleWebSocket))
+	app.Use("/ws/notifications", realtimeHdl.UpgradeAuth)
+	app.Get("/ws/notifications", websocket.New(realtimeHdl.Handle))
 }

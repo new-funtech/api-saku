@@ -1,60 +1,52 @@
-# Stage 1: Build stage
-FROM golang:1.25.0-alpine AS builder
+# syntax=docker/dockerfile:1
 
-# Install necessary build tools
-RUN apk add --no-cache \
-    git \
-    ca-certificates \
-    tzdata
+# Stage 1: Build
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
-WORKDIR /app
+RUN apk add --no-cache git ca-certificates
 
-# Copy go mod files first for better layer caching
+ENV CGO_ENABLED=0 \
+    GOFLAGS=-mod=readonly
+
+WORKDIR /src
+
 COPY go.mod go.sum ./
-RUN go mod download && go mod verify
 
-# Copy source code
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
 COPY . .
 
-# Build the application with optimizations
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
-    -a \
-    -installsuffix cgo \
-    -o /app/bin/api-hrmis \
-    ./cmd/main.go
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG VERSION=dev
 
-# Stage 2: Final minimal runtime image
-FROM alpine:3.19
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath \
+      -ldflags="-s -w -X main.version=${VERSION}" \
+      -o /out/api-hrmis ./cmd
 
-# Install runtime dependencies (curl for healthcheck)
-RUN apk --no-cache add \
-    ca-certificates \
-    tzdata \
-    curl \
-    && addgroup -g 1000 appuser \
-    && adduser -D -u 1000 -G appuser appuser
+# Stage 2: Runtime
+FROM alpine:3.22 AS runtime
 
-# Set timezone
-ENV TZ=Asia/Jakarta
+RUN apk add --no-cache ca-certificates tzdata wget && \
+    addgroup -S app && adduser -S -G app app
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder --chown=appuser:appuser /app/bin/api-hrmis /app/api-hrmis
+ENV APP_PORT=4000 \
+    APP_ENV=production \
+    TZ=Asia/Jakarta
 
-# Copy environment files if needed (optional, better to use env vars)
-COPY --from=builder --chown=appuser:appuser /app/envs ./envs
+COPY --from=builder --chown=app:app /out/api-hrmis /app/api-hrmis
 
-# Use non-root user for security
-USER appuser
+USER app:app
 
-# Expose application port
 EXPOSE 4000
 
-# Health check (use curl; busybox wget flags are limited)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
-    CMD curl -fsS http://127.0.0.1:4000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget -qO- "http://127.0.0.1:${APP_PORT}/health" >/dev/null 2>&1 || exit 1
 
-# Run the application
-CMD ["/app/api-hrmis"]
+ENTRYPOINT ["/app/api-hrmis"]
