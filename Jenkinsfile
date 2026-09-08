@@ -123,26 +123,52 @@ Alias       : ${NETWORK_ALIAS}:${CONTAINER_PORT}
                             exit 1
                         fi
 
+                        # Tolerant KEY=value reader: trims \r (CRLF secret files),
+                        # trims stray spaces around the key/"=" (e.g. hand-edited
+                        # "KEY = value" lines), and strips a wrapping "export ".
+                        # A plain regex match instead of an exact field compare
+                        # avoids false "missing" reports caused only by formatting,
+                        # which is what was tripping up CORS_ORIGINS.
                         get_env_value() {
                             key="$1"
                             awk -v key="$key" '
                                 BEGIN { FS = "=" }
-                                $1 == key || $1 == "export " key {
-                                    sub(/^[^=]*=/, "", $0)
-                                    sub(/\r$/, "", $0)
-                                    print
-                                    exit
+                                {
+                                    line = $0
+                                    sub(/\r$/, "", line)
+                                    k = line
+                                    sub(/=.*/, "", k)
+                                    sub(/^[ \t]*export[ \t]+/, "", k)
+                                    gsub(/[ \t]+$/, "", k)
+                                    gsub(/^[ \t]+/, "", k)
+                                    if (k == key) {
+                                        v = line
+                                        sub(/^[^=]*=/, "", v)
+                                        gsub(/^[ \t]+/, "", v)
+                                        gsub(/[ \t]+$/, "", v)
+                                        gsub(/^"|"$/, "", v)
+                                        print v
+                                        exit
+                                    }
                                 }
                             ' "$HRMIS_API_ENV_FILE"
                         }
 
-                        for name in APP_PORT APP_ENV CORS_ORIGINS DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME DB_SSLMODE DB_MAX_OPEN_CONNS DB_MAX_IDLE_CONNS DB_CONN_MAX_LIFETIME REDIS_HOST REDIS_PORT REDIS_DB REDIS_POOL_SIZE JWT_SECRET JWT_EXPIRATION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET; do
+                        # CORS_ORIGINS is intentionally NOT in this required list: it
+                        # is not a secret, and the app already falls back to "*" when
+                        # it is unset/empty (see config.GetEnv in cmd/main.go), so an
+                        # empty value here is valid configuration, not a broken one.
+                        for name in APP_PORT APP_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME DB_SSLMODE DB_MAX_OPEN_CONNS DB_MAX_IDLE_CONNS DB_CONN_MAX_LIFETIME REDIS_HOST REDIS_PORT REDIS_DB REDIS_POOL_SIZE JWT_SECRET JWT_EXPIRATION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION AWS_BUCKET; do
                             value="$(get_env_value "$name")"
                             if [ -z "$value" ]; then
                                 echo "ERROR: required API env $name is missing in $API_ENV_FILE_CREDENTIALS_ID." >&2
                                 exit 1
                             fi
                         done
+
+                        if [ -z "$(get_env_value CORS_ORIGINS)" ]; then
+                            echo "NOTE: CORS_ORIGINS not set in $API_ENV_FILE_CREDENTIALS_ID; app will default to '*'."
+                        fi
 
                         APP_PORT_VALUE="$(get_env_value APP_PORT)"
                         if [ "$APP_PORT_VALUE" != "$CONTAINER_PORT" ]; then
