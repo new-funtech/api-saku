@@ -69,6 +69,11 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 		Preload("Loan.Personnel").
 		Preload("Loan.Bujp").
 		Preload("Loan.LoanProduct").
+		// Admin Pusat/BPRKS read the BUJP-level sanction_status verdict off
+		// Loan.Approvals — without this, ToLoanResponse always sees an empty
+		// Approvals slice and the field silently disappears from the API
+		// response, even though it's correctly saved in the DB.
+		Preload("Loan.Approvals.Approver").
 		Where("loan_approvals.approval_level = ? AND loan_approvals.status = ?", level, model.LoanApprovalStatusPending)
 
 	needsLoanJoin := (level == model.LoanApprovalLevelBujp && bujpID != nil) ||
