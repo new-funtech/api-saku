@@ -324,14 +324,14 @@ func bindCreateLoanRequest(c *fiber.Ctx) (*model.CreateLoanRequest, error) {
 		if lpid := utils.FormUUID(c, "loan_product_id"); lpid != uuid.Nil {
 			req.LoanProductID = &lpid
 		}
-		if v := c.FormValue("interest_rate"); v != "" {
-			r := utils.FormFloat(c, "interest_rate", 0)
-			req.InterestRate = &r
-		}
 		if v := c.FormValue("deduct_from_payroll"); v != "" {
 			b := utils.FormBool(c, "deduct_from_payroll", true)
 			req.DeductFromPayroll = &b
 		}
+		// Default false (not omitted-means-accepted) — a missing field must
+		// not be silently treated as consent given.
+		termsAccepted := utils.FormBool(c, "terms_accepted", false)
+		req.TermsAccepted = &termsAccepted
 		if v := utils.FormString(c, "placement_bujp_name"); v != "" {
 			req.PlacementBujpName = &v
 		}

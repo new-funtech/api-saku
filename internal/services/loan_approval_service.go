@@ -121,6 +121,11 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 	if approval.Status != model.LoanApprovalStatusPending {
 		return nil, errors.New("approval already processed")
 	}
+	if approval.ApprovalLevel == model.LoanApprovalLevelBujp && req.Action == "approve" {
+		if req.SanctionStatus == nil || strings.TrimSpace(*req.SanctionStatus) == "" {
+			return nil, errors.New("status sanksi karyawan wajib diisi pada Verifikasi Admin Perusahaan")
+		}
+	}
 	loan, err := s.loanRepo.FindByID(ctx, approval.LoanID)
 	if err != nil {
 		return nil, errors.New("loan not found")
@@ -141,6 +146,9 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 	approval.Notes = req.Notes
 	approval.ApprovedAmount = req.ApprovedAmount
 	approval.ApprovedTenor = req.ApprovedTenor
+	if approval.ApprovalLevel == model.LoanApprovalLevelBujp {
+		approval.SanctionStatus = req.SanctionStatus
+	}
 	if req.Action == "reject" {
 		approval.Status = model.LoanApprovalStatusRejected
 	} else {
@@ -311,6 +319,7 @@ func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.Lo
 		Notes:             a.Notes,
 		ApprovedAmount:    a.ApprovedAmount,
 		ApprovedTenor:     a.ApprovedTenor,
+		SanctionStatus:    a.SanctionStatus,
 		ReviewedAt:        a.ReviewedAt,
 		CreatedAt:         a.CreatedAt,
 		UpdatedAt:         a.UpdatedAt,

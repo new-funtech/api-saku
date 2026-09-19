@@ -153,6 +153,9 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 	if req.TenorMonths > constants.LoanMaxTenorMonths {
 		return nil, fmt.Errorf("tenor maksimal %d bulan", constants.LoanMaxTenorMonths)
 	}
+	if req.TermsAccepted == nil || !*req.TermsAccepted {
+		return nil, errors.New("Anda harus menyetujui seluruh pernyataan pada Persetujuan & Validasi sebelum mengajukan pinjaman")
+	}
 
 	// Resolve personnel
 	personnelID, err := s.resolvePersonnelID(ctx, req.PersonnelID, actorUserID)
@@ -165,10 +168,11 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 	}
 
 	interestRate := constants.LoanDefaultInterestRatePct
+	registrationFee := constants.LoanDefaultRegistrationFee
+	provisiRate := constants.LoanDefaultProvisiRatePct
+	penaltyEarlyPayoff := constants.LoanDefaultPenaltyEarlyPayoff
+	penaltyRunningInterest := constants.LoanDefaultPenaltyRunningInterest
 	var productID *uuid.UUID
-	if req.InterestRate != nil {
-		interestRate = *req.InterestRate
-	}
 	if req.LoanProductID != nil && *req.LoanProductID != uuid.Nil {
 		product, perr := s.productRepo.FindByID(ctx, *req.LoanProductID)
 		if perr != nil {
@@ -183,14 +187,17 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		if req.TenorMonths > product.MaxTenor {
 			return nil, fmt.Errorf("tenor exceeds product maximum (%d months)", product.MaxTenor)
 		}
-		if req.InterestRate == nil {
-			interestRate = product.InterestRate
-		}
+		interestRate = product.InterestRate
+		registrationFee = product.RegistrationFee
+		provisiRate = product.ProvisiRate
+		penaltyEarlyPayoff = product.PenaltyEarlyPayoff
+		penaltyRunningInterest = product.PenaltyRunningInterest
 		pid := product.ID
 		productID = &pid
 	}
 
 	monthly, total := calculateLoanDetails(req.LoanAmount, interestRate, req.TenorMonths)
+	provisi, netDisbursed := calculateFeeDetails(req.LoanAmount, registrationFee, provisiRate, req.TenorMonths)
 
 	loanNumber, err := s.generateLoanNumber(ctx)
 	if err != nil {
@@ -203,29 +210,38 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		bujpID = &bid
 	}
 
+	termsAcceptedAt := time.Now()
+
 	loan := &model.Loan{
-		LoanNumber:         loanNumber,
-		PersonnelID:        personnelID,
-		BujpID:             bujpID,
-		LoanProductID:      productID,
-		Purpose:            req.Purpose,
-		LoanAmount:         req.LoanAmount,
-		InterestRate:       interestRate,
-		TenorMonths:        req.TenorMonths,
-		MonthlyInstallment: monthly,
-		TotalRepayment:     total,
-		DeductFromPayroll:  derefBoolDefault(req.DeductFromPayroll, true),
-		KtpDocument:        req.KtpDocument,
-		NpwpDocument:       req.NpwpDocument,
-		SelfieDocument:     req.SelfieDocument,
-		SelfieKtpDocument:  req.SelfieKtpDocument,
-		PksDocument:        req.PksDocument,
-		CollateralDocument: req.CollateralDocument,
-		PlacementBujpName:  req.PlacementBujpName,
-		PlacementAddress:   req.PlacementAddress,
-		PlacementDuration:  req.PlacementDuration,
-		Status:             model.LoanStatusDraft,
-		CreatedBy:          &actorUserID,
+		LoanNumber:             loanNumber,
+		PersonnelID:            personnelID,
+		BujpID:                 bujpID,
+		LoanProductID:          productID,
+		Purpose:                req.Purpose,
+		LoanAmount:             req.LoanAmount,
+		InterestRate:           interestRate,
+		TenorMonths:            req.TenorMonths,
+		MonthlyInstallment:     monthly,
+		TotalRepayment:         total,
+		RegistrationFee:        registrationFee,
+		ProvisiRate:            provisiRate,
+		Provisi:                provisi,
+		PenaltyEarlyPayoff:     penaltyEarlyPayoff,
+		PenaltyRunningInterest: penaltyRunningInterest,
+		NetDisbursed:           netDisbursed,
+		DeductFromPayroll:      derefBoolDefault(req.DeductFromPayroll, true),
+		KtpDocument:            req.KtpDocument,
+		NpwpDocument:           req.NpwpDocument,
+		SelfieDocument:         req.SelfieDocument,
+		SelfieKtpDocument:      req.SelfieKtpDocument,
+		PksDocument:            req.PksDocument,
+		CollateralDocument:     req.CollateralDocument,
+		PlacementBujpName:      req.PlacementBujpName,
+		PlacementAddress:       req.PlacementAddress,
+		PlacementDuration:      req.PlacementDuration,
+		TermsAcceptedAt:        &termsAcceptedAt,
+		Status:                 model.LoanStatusDraft,
+		CreatedBy:              &actorUserID,
 	}
 
 	if err := s.loanRepo.Create(ctx, loan); err != nil {
@@ -262,6 +278,11 @@ func (s *loanServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.U
 		monthly, total := calculateLoanDetails(loan.LoanAmount, loan.InterestRate, loan.TenorMonths)
 		loan.MonthlyInstallment = monthly
 		loan.TotalRepayment = total
+	}
+	if req.LoanAmount != nil || req.TenorMonths != nil {
+		provisi, netDisbursed := calculateFeeDetails(loan.LoanAmount, loan.RegistrationFee, loan.ProvisiRate, loan.TenorMonths)
+		loan.Provisi = provisi
+		loan.NetDisbursed = netDisbursed
 	}
 	if req.DeductFromPayroll != nil {
 		loan.DeductFromPayroll = *req.DeductFromPayroll
@@ -622,6 +643,12 @@ func calculateLoanDetails(principal, monthlyRatePct float64, tenorMonths int) (m
 	return
 }
 
+func calculateFeeDetails(principal, registrationFee, provisiRatePct float64, tenorMonths int) (provisi, netDisbursed float64) {
+	provisi = round2(principal * (provisiRatePct / 100) * float64(tenorMonths))
+	netDisbursed = round2(principal - registrationFee - provisi)
+	return
+}
+
 func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
@@ -665,6 +692,12 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 		TenorMonths:              l.TenorMonths,
 		MonthlyInstallment:       l.MonthlyInstallment,
 		TotalRepayment:           l.TotalRepayment,
+		RegistrationFee:          l.RegistrationFee,
+		ProvisiRate:              l.ProvisiRate,
+		Provisi:                  l.Provisi,
+		PenaltyEarlyPayoff:       l.PenaltyEarlyPayoff,
+		PenaltyRunningInterest:   l.PenaltyRunningInterest,
+		NetDisbursed:             l.NetDisbursed,
 		ApprovedAmount:           l.ApprovedAmount,
 		ApprovedTenor:            l.ApprovedTenor,
 		DisbursementDate:         dateStrPtr(l.DisbursementDate),
@@ -681,6 +714,7 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 		PlacementAddress:         l.PlacementAddress,
 		PlacementDuration:        l.PlacementDuration,
 		PlacementLocation:        l.PlacementLocation,
+		TermsAcceptedAt:          l.TermsAcceptedAt,
 		Status:                   l.Status,
 		SubmittedAt:              l.SubmittedAt,
 		ApprovedAt:               l.ApprovedAt,
@@ -735,6 +769,11 @@ func ToLoanResponse(l *model.Loan) model.LoanResponse {
 		monthly, total := calculateLoanDetails(finalAmount, l.InterestRate, finalTenor)
 		r.MonthlyInstallment = monthly
 		r.TotalRepayment = total
+	}
+	if finalAmount != l.LoanAmount || finalTenor != l.TenorMonths {
+		provisi, netDisbursed := calculateFeeDetails(finalAmount, l.RegistrationFee, l.ProvisiRate, finalTenor)
+		r.Provisi = provisi
+		r.NetDisbursed = netDisbursed
 	}
 	return r
 }

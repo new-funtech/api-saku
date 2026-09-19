@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/google/uuid"
@@ -71,18 +72,22 @@ func (s *loanProductServiceImpl) Create(ctx context.Context, req *model.CreateLo
 		return nil, err
 	}
 	lp := &model.LoanProduct{
-		BujpID:            req.BujpID,
-		Code:              code,
-		Name:              req.Name,
-		Description:       req.Description,
-		MinAmount:         req.MinAmount,
-		MaxAmount:         req.MaxAmount,
-		InterestRate:      req.InterestRate,
-		MaxTenor:          req.MaxTenor,
-		RequirePks:        derefBoolDefault(req.RequirePks, true),
-		RequireCollateral: derefBoolDefault(req.RequireCollateral, false),
-		IsActive:          derefBoolDefault(req.IsActive, true),
-		CreatedBy:         createdBy,
+		BujpID:                 req.BujpID,
+		Code:                   code,
+		Name:                   req.Name,
+		Description:            req.Description,
+		MinAmount:              req.MinAmount,
+		MaxAmount:              req.MaxAmount,
+		InterestRate:           req.InterestRate,
+		RegistrationFee:        derefFloatDefault(req.RegistrationFee, constants.LoanDefaultRegistrationFee),
+		ProvisiRate:            derefFloatDefault(req.ProvisiRate, constants.LoanDefaultProvisiRatePct),
+		PenaltyEarlyPayoff:     derefFloatDefault(req.PenaltyEarlyPayoff, constants.LoanDefaultPenaltyEarlyPayoff),
+		PenaltyRunningInterest: derefFloatDefault(req.PenaltyRunningInterest, constants.LoanDefaultPenaltyRunningInterest),
+		MaxTenor:               req.MaxTenor,
+		RequirePks:             derefBoolDefault(req.RequirePks, true),
+		RequireCollateral:      derefBoolDefault(req.RequireCollateral, false),
+		IsActive:               derefBoolDefault(req.IsActive, true),
+		CreatedBy:              createdBy,
 	}
 	if err := s.repo.Create(ctx, lp); err != nil {
 		return nil, err
@@ -116,6 +121,18 @@ func (s *loanProductServiceImpl) Update(ctx context.Context, id uuid.UUID, req *
 	}
 	if req.InterestRate != nil {
 		lp.InterestRate = *req.InterestRate
+	}
+	if req.RegistrationFee != nil {
+		lp.RegistrationFee = *req.RegistrationFee
+	}
+	if req.ProvisiRate != nil {
+		lp.ProvisiRate = *req.ProvisiRate
+	}
+	if req.PenaltyEarlyPayoff != nil {
+		lp.PenaltyEarlyPayoff = *req.PenaltyEarlyPayoff
+	}
+	if req.PenaltyRunningInterest != nil {
+		lp.PenaltyRunningInterest = *req.PenaltyRunningInterest
 	}
 	if req.MaxTenor != nil {
 		lp.MaxTenor = *req.MaxTenor
@@ -160,21 +177,25 @@ func (s *loanProductServiceImpl) generateCode(ctx context.Context) (string, erro
 
 func ToLoanProductResponse(lp *model.LoanProduct) model.LoanProductResponse {
 	r := model.LoanProductResponse{
-		ID:                lp.ID,
-		BujpID:            lp.BujpID,
-		Code:              lp.Code,
-		Name:              lp.Name,
-		Description:       lp.Description,
-		MinAmount:         lp.MinAmount,
-		MaxAmount:         lp.MaxAmount,
-		InterestRate:      lp.InterestRate,
-		MaxTenor:          lp.MaxTenor,
-		RequirePks:        lp.RequirePks,
-		RequireCollateral: lp.RequireCollateral,
-		IsActive:          lp.IsActive,
-		CreatedBy:         lp.CreatedBy,
-		CreatedAt:         lp.CreatedAt,
-		UpdatedAt:         lp.UpdatedAt,
+		ID:                     lp.ID,
+		BujpID:                 lp.BujpID,
+		Code:                   lp.Code,
+		Name:                   lp.Name,
+		Description:            lp.Description,
+		MinAmount:              lp.MinAmount,
+		MaxAmount:              lp.MaxAmount,
+		InterestRate:           lp.InterestRate,
+		RegistrationFee:        lp.RegistrationFee,
+		ProvisiRate:            lp.ProvisiRate,
+		PenaltyEarlyPayoff:     lp.PenaltyEarlyPayoff,
+		PenaltyRunningInterest: lp.PenaltyRunningInterest,
+		MaxTenor:               lp.MaxTenor,
+		RequirePks:             lp.RequirePks,
+		RequireCollateral:      lp.RequireCollateral,
+		IsActive:               lp.IsActive,
+		CreatedBy:              lp.CreatedBy,
+		CreatedAt:              lp.CreatedAt,
+		UpdatedAt:              lp.UpdatedAt,
 	}
 	if lp.Bujp != nil {
 		b := toBujpResponse(lp.Bujp)
@@ -185,6 +206,13 @@ func ToLoanProductResponse(lp *model.LoanProduct) model.LoanProductResponse {
 		r.Creator = &c
 	}
 	return r
+}
+
+func derefFloatDefault(f *float64, def float64) float64 {
+	if f == nil {
+		return def
+	}
+	return *f
 }
 
 func derefBoolDefault(b *bool, def bool) bool {

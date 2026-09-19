@@ -91,7 +91,7 @@ func (r *loanApprovalRepositoryImpl) FindPendingForRole(ctx context.Context, rol
 		return nil, 0, err
 	}
 	offset := (page - 1) * limit
-	err := q.Order("loan_approvals.created_at ASC").Limit(limit).Offset(offset).Find(&items).Error
+	err := q.Order("loan_approvals.created_at DESC").Limit(limit).Offset(offset).Find(&items).Error
 	return items, total, err
 }
 
