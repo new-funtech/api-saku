@@ -132,6 +132,7 @@ func (r *loanApprovalRepositoryImpl) ClaimAndUpdate(ctx context.Context, a *mode
 			"notes":           a.Notes,
 			"approved_amount": a.ApprovedAmount,
 			"approved_tenor":  a.ApprovedTenor,
+			"sanction_status": a.SanctionStatus,
 		})
 	if result.Error != nil {
 		return false, result.Error
