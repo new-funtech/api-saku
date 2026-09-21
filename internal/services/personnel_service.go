@@ -9,6 +9,7 @@ import (
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -41,6 +42,7 @@ func (s *personnelServiceImpl) GetAll(ctx context.Context, page, limit int, filt
 	responses := make([]model.PersonnelResponse, len(personnels))
 	for i, personnel := range personnels {
 		responses[i] = toPersonnelResponse(&personnel)
+		presignPersonnelDocs(ctx, &responses[i])
 	}
 
 	return responses, total, nil
@@ -56,6 +58,7 @@ func (s *personnelServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (*mode
 	}
 
 	response := toPersonnelResponse(personnel)
+	presignPersonnelDocs(ctx, &response)
 	return &response, nil
 }
 
@@ -68,6 +71,7 @@ func (s *personnelServiceImpl) GetByBujpID(ctx context.Context, bujpID uuid.UUID
 	responses := make([]model.PersonnelResponse, len(personnels))
 	for i, personnel := range personnels {
 		responses[i] = toPersonnelResponse(&personnel)
+		presignPersonnelDocs(ctx, &responses[i])
 	}
 
 	return responses, nil
@@ -111,6 +115,8 @@ func (s *personnelServiceImpl) Create(ctx context.Context, req *model.CreatePers
 		FullName:         req.FullName,
 		MotherMaidenName: req.MotherMaidenName,
 		Photo:            req.Photo,
+		KtpDocument:      req.KtpDocument,
+		NpwpDocument:     req.NpwpDocument,
 		BirthDate:        birthDate,
 		Gender:           req.Gender,
 		Address:          req.Address,
@@ -137,6 +143,7 @@ func (s *personnelServiceImpl) Create(ctx context.Context, req *model.CreatePers
 	// Fetch the created personnel with relations
 	created, _ := s.repo.FindByID(ctx, personnel.ID)
 	response := toPersonnelResponse(created)
+	presignPersonnelDocs(ctx, &response)
 	return &response, nil
 }
 
@@ -187,6 +194,12 @@ func (s *personnelServiceImpl) Update(ctx context.Context, id uuid.UUID, req *mo
 	}
 	if req.Photo != nil {
 		personnel.Photo = req.Photo
+	}
+	if req.KtpDocument != nil {
+		personnel.KtpDocument = req.KtpDocument
+	}
+	if req.NpwpDocument != nil {
+		personnel.NpwpDocument = req.NpwpDocument
 	}
 	if req.BirthDate != nil {
 		if !req.BirthDate.IsZero() {
@@ -245,6 +258,7 @@ func (s *personnelServiceImpl) Update(ctx context.Context, id uuid.UUID, req *mo
 	// Fetch the updated personnel with relations
 	updated, _ := s.repo.FindByID(ctx, id)
 	response := toPersonnelResponse(updated)
+	presignPersonnelDocs(ctx, &response)
 	return &response, nil
 }
 
@@ -256,9 +270,6 @@ func (s *personnelServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 		}
 		return fmt.Errorf("failed to get personnel: %w", err)
 	}
-
-	// Block deletion when the personnel still has any loan history; this
-	// surfaces a friendlier message than the raw FK constraint error.
 	if s.loanRepo != nil {
 		if count, lerr := s.loanRepo.CountByPersonnelID(ctx, id); lerr == nil && count > 0 {
 			return fmt.Errorf("personel %s tidak dapat dihapus karena masih memiliki %d data pinjaman. Selesaikan atau batalkan pinjaman terlebih dahulu sebelum menghapus personel", personnel.FullName, count)
@@ -272,8 +283,6 @@ func (s *personnelServiceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// parseBaseSalary converts string to float64 for base_salary field
-// Handles both string ("12000000") and number formats from JSON
 func parseBaseSalary(salaryStr string) float64 {
 	if salaryStr == "" {
 		return 0
@@ -289,6 +298,29 @@ func toPersonnelResponse(personnel *model.Personnel) model.PersonnelResponse {
 	return ToPersonnelResponse(personnel)
 }
 
+func presignPersonnelDocs(ctx context.Context, r *model.PersonnelResponse) {
+	if r == nil {
+		return
+	}
+	pairs := []struct {
+		key *string
+		dst **string
+	}{
+		{r.Photo, &r.PhotoURL},
+		{r.KtpDocument, &r.KtpDocumentURL},
+		{r.NpwpDocument, &r.NpwpDocumentURL},
+	}
+	for _, p := range pairs {
+		if p.key == nil || *p.key == "" {
+			continue
+		}
+		if url, err := utils.GeneratePresignedURL(ctx, *p.key, time.Hour); err == nil && url != "" {
+			u := url
+			*p.dst = &u
+		}
+	}
+}
+
 func ToPersonnelResponse(personnel *model.Personnel) model.PersonnelResponse {
 	response := model.PersonnelResponse{
 		ID:               personnel.ID,
@@ -299,6 +331,8 @@ func ToPersonnelResponse(personnel *model.Personnel) model.PersonnelResponse {
 		FullName:         personnel.FullName,
 		MotherMaidenName: personnel.MotherMaidenName,
 		Photo:            personnel.Photo,
+		KtpDocument:      personnel.KtpDocument,
+		NpwpDocument:     personnel.NpwpDocument,
 		BirthDate:        model.FormatDatePtr(personnel.BirthDate),
 		Gender:           personnel.Gender,
 		Address:          personnel.Address,

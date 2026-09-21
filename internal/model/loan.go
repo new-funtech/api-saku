@@ -42,6 +42,8 @@ type Loan struct {
 	ApprovedTenor          *int       `json:"approved_tenor"`
 	DisbursementDate       *time.Time `json:"disbursement_date" gorm:"type:date"`
 	FirstInstallmentDate   *time.Time `json:"first_installment_date" gorm:"type:date"`
+	DisbursementMethod     *string    `json:"disbursement_method" gorm:"type:varchar(20)"`
+	DisbursementAccount    *string    `json:"disbursement_account" gorm:"type:varchar(100)"`
 	DeductFromPayroll      bool       `json:"deduct_from_payroll" gorm:"default:true"`
 	KtpDocument            *string    `json:"ktp_document" gorm:"type:varchar(255)"`
 	NpwpDocument           *string    `json:"npwp_document" gorm:"type:varchar(255)"`
@@ -88,28 +90,21 @@ func (l *Loan) BeforeCreate(tx *gorm.DB) error {
 }
 
 type CreateLoanRequest struct {
-	PersonnelID       *uuid.UUID `json:"personnel_id"` // optional - inferred from auth user if absent
-	LoanProductID     *uuid.UUID `json:"loan_product_id"`
-	Purpose           string     `json:"purpose" validate:"omitempty,max=500"`
-	LoanAmount        float64    `json:"loan_amount" validate:"required,gt=0"`
-	TenorMonths       int        `json:"tenor_months" validate:"required,gte=1,lte=120"`
-	DeductFromPayroll *bool      `json:"deduct_from_payroll"`
-	// Must be true — the applicant's confirmation of the "Persetujuan &
-	// Validasi" checklist (data accuracy, SK, fee disclosure, payroll
-	// deduction authorization, privacy consent). Enforced in
-	// loanServiceImpl.Create, not just validated client-side, so a loan
-	// can't be created via direct API access without recorded consent.
-	TermsAccepted      *bool   `json:"terms_accepted" validate:"required"`
-	KtpDocument        *string `json:"ktp_document"`
-	NpwpDocument       *string `json:"npwp_document"`
-	SelfieDocument     *string `json:"selfie_document"`
-	SelfieKtpDocument  *string `json:"selfie_ktp_document"`
-	PksDocument        *string `json:"pks_document"`
-	CollateralDocument *string `json:"collateral_document"`
-	PlacementBujpName  *string `json:"placement_bujp_name"`
-	PlacementAddress   *string `json:"placement_address"`
-	PlacementDuration  *string `json:"placement_duration"`
-	SubmitImmediately  bool    `json:"submit_immediately"`
+	PersonnelID        *uuid.UUID `json:"personnel_id"` // optional - inferred from auth user if absent
+	LoanProductID      *uuid.UUID `json:"loan_product_id"`
+	Purpose            string     `json:"purpose" validate:"omitempty,max=500"`
+	LoanAmount         float64    `json:"loan_amount" validate:"required,gt=0"`
+	TenorMonths        int        `json:"tenor_months" validate:"required,gte=1,lte=120"`
+	DeductFromPayroll  *bool      `json:"deduct_from_payroll"`
+	TermsAccepted      *bool      `json:"terms_accepted" validate:"required"`
+	SelfieDocument     *string    `json:"selfie_document"`
+	SelfieKtpDocument  *string    `json:"selfie_ktp_document"`
+	PksDocument        *string    `json:"pks_document"`
+	CollateralDocument *string    `json:"collateral_document"`
+	PlacementBujpName  *string    `json:"placement_bujp_name"`
+	PlacementAddress   *string    `json:"placement_address"`
+	PlacementDuration  *string    `json:"placement_duration"`
+	SubmitImmediately  bool       `json:"submit_immediately"`
 }
 
 type UpdateLoanRequest struct {
@@ -117,12 +112,22 @@ type UpdateLoanRequest struct {
 	LoanAmount         *float64 `json:"loan_amount" validate:"omitempty,gt=0"`
 	TenorMonths        *int     `json:"tenor_months" validate:"omitempty,gte=1,lte=120"`
 	DeductFromPayroll  *bool    `json:"deduct_from_payroll"`
-	KtpDocument        *string  `json:"ktp_document"`
-	NpwpDocument       *string  `json:"npwp_document"`
 	SelfieDocument     *string  `json:"selfie_document"`
 	SelfieKtpDocument  *string  `json:"selfie_ktp_document"`
 	PksDocument        *string  `json:"pks_document"`
 	CollateralDocument *string  `json:"collateral_document"`
+}
+
+// DisburseLoanRequest carries what the admin actually recorded on the
+// "Catat Pencairan Dana" form (admin-abujapi's DisbursementDialog). All
+// fields are optional — when a date is omitted, ProcessDisbursement falls
+// back to its previous defaults (now / 1st of next month) so existing
+// callers that don't send a body keep working.
+type DisburseLoanRequest struct {
+	DisbursementDate     *CustomDate `json:"disbursement_date" example:"2026-01-15" swaggertype:"string"`
+	FirstInstallmentDate *CustomDate `json:"first_installment_date" example:"2026-02-15" swaggertype:"string"`
+	DisbursementMethod   *string     `json:"disbursement_method" validate:"omitempty,oneof=transfer cash deduction" example:"transfer"`
+	DisbursementAccount  *string     `json:"disbursement_account" example:"BCA123456789"`
 }
 
 type LoanResponse struct {
@@ -147,6 +152,8 @@ type LoanResponse struct {
 	ApprovedTenor            *int                      `json:"approved_tenor,omitempty"`
 	DisbursementDate         *string                   `json:"disbursement_date,omitempty"`
 	FirstInstallmentDate     *string                   `json:"first_installment_date,omitempty"`
+	DisbursementMethod       *string                   `json:"disbursement_method,omitempty"`
+	DisbursementAccount      *string                   `json:"disbursement_account,omitempty"`
 	DeductFromPayroll        bool                      `json:"deduct_from_payroll"`
 	KtpDocument              *string                   `json:"ktp_document,omitempty"`
 	KtpDocumentURL           *string                   `json:"ktp_document_url,omitempty"`

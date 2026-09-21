@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
@@ -33,7 +34,6 @@ type LoanService interface {
 	ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID
 }
 
-// MyHistoryResult bundles paginated history items for a user.
 type MyHistoryResult struct {
 	Items []model.LoanResponse
 	Total int64
@@ -167,6 +167,22 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		return nil, errors.New("personnel not found")
 	}
 
+	if req.SubmitImmediately {
+		missingIdentity := []string{}
+		if personnel.KtpDocument == nil || *personnel.KtpDocument == "" {
+			missingIdentity = append(missingIdentity, "KTP")
+		}
+		if personnel.NpwpDocument == nil || *personnel.NpwpDocument == "" {
+			missingIdentity = append(missingIdentity, "NPWP")
+		}
+		if len(missingIdentity) > 0 {
+			return nil, fmt.Errorf(
+				"dokumen %s belum ada di data personel — hubungi admin perusahaan untuk melengkapinya",
+				strings.Join(missingIdentity, "/"),
+			)
+		}
+	}
+
 	interestRate := constants.LoanDefaultInterestRatePct
 	registrationFee := constants.LoanDefaultRegistrationFee
 	provisiRate := constants.LoanDefaultProvisiRatePct
@@ -230,8 +246,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		PenaltyRunningInterest: penaltyRunningInterest,
 		NetDisbursed:           netDisbursed,
 		DeductFromPayroll:      derefBoolDefault(req.DeductFromPayroll, true),
-		KtpDocument:            req.KtpDocument,
-		NpwpDocument:           req.NpwpDocument,
 		SelfieDocument:         req.SelfieDocument,
 		SelfieKtpDocument:      req.SelfieKtpDocument,
 		PksDocument:            req.PksDocument,
@@ -286,12 +300,6 @@ func (s *loanServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.U
 	}
 	if req.DeductFromPayroll != nil {
 		loan.DeductFromPayroll = *req.DeductFromPayroll
-	}
-	if req.KtpDocument != nil {
-		loan.KtpDocument = req.KtpDocument
-	}
-	if req.NpwpDocument != nil {
-		loan.NpwpDocument = req.NpwpDocument
 	}
 	if req.SelfieDocument != nil {
 		loan.SelfieDocument = req.SelfieDocument
@@ -373,7 +381,20 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 
 	var createdNotifications []model.Notification
 	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
-		if cerr := s.loanRepo.WithTx(tx).Update(ctx, loan); cerr != nil {
+		txLoanRepo := s.loanRepo.WithTx(tx)
+		// Re-check atomically inside the write itself — the plain read
+		// above can be stale by the time we get here (e.g. an approval or
+		// disbursement already moved the loan past the point of no
+		// return), and an unconditional Update() would silently clobber
+		// that concurrent progress.
+		claimed, cerr := txLoanRepo.ClaimCancel(ctx, loan.ID)
+		if cerr != nil {
+			return cerr
+		}
+		if !claimed {
+			return errors.New("loan cannot be cancelled in current status")
+		}
+		if cerr := txLoanRepo.Update(ctx, loan); cerr != nil {
 			return cerr
 		}
 		if s.notificationSvc != nil {
@@ -435,7 +456,17 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 		loan.Status = model.LoanStatusCancelled
 		loan.RejectionReason = reason
 	} else {
-		if err := s.processDisbursement(ctx, loan); err != nil {
+		// Guards against a concurrent admin-triggered Disburse() for this
+		// same loan (see ClaimDisbursement) — without this, both paths
+		// could create a duplicate installment schedule.
+		claimed, cerr := s.loanRepo.ClaimDisbursement(ctx, loan.ID)
+		if cerr != nil {
+			return nil, cerr
+		}
+		if !claimed {
+			return nil, errors.New("loan is already being disbursed or has already been disbursed")
+		}
+		if err := s.processDisbursement(ctx, loan, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -592,11 +623,35 @@ func buildInitialApprovals(loanID uuid.UUID) []model.LoanApproval {
 	}
 }
 
-func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan) error {
+// processDisbursement finalizes disbursement bookkeeping: disbursement/
+// first-installment dates (from req when the admin's "Catat Pencairan
+// Dana" form provided them, otherwise defaulted to now / 1st of next
+// month — e.g. when triggered by the applicant's own UserConfirm accept,
+// which has no such form), disbursement method/account, and the
+// installment schedule itself.
+func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan, req *model.DisburseLoanRequest) error {
 	now := time.Now()
-	loan.DisbursementDate = &now
-	first := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.Local)
-	loan.FirstInstallmentDate = &first
+	if req != nil && req.DisbursementDate != nil && !req.DisbursementDate.IsZero() {
+		d := req.DisbursementDate.Time
+		loan.DisbursementDate = &d
+	} else {
+		loan.DisbursementDate = &now
+	}
+
+	if req != nil && req.FirstInstallmentDate != nil && !req.FirstInstallmentDate.IsZero() {
+		f := req.FirstInstallmentDate.Time
+		loan.FirstInstallmentDate = &f
+	} else {
+		first := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, time.Local)
+		loan.FirstInstallmentDate = &first
+	}
+
+	if req != nil && req.DisbursementMethod != nil && *req.DisbursementMethod != "" {
+		loan.DisbursementMethod = req.DisbursementMethod
+	}
+	if req != nil && req.DisbursementAccount != nil && *req.DisbursementAccount != "" {
+		loan.DisbursementAccount = req.DisbursementAccount
+	}
 
 	approvedAmount := loan.LoanAmount
 	if loan.ApprovedAmount != nil {
@@ -613,7 +668,7 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 
 	installments := make([]model.LoanInstallment, 0, approvedTenor)
 	for i := 0; i < approvedTenor; i++ {
-		due := first.AddDate(0, i, 0)
+		due := loan.FirstInstallmentDate.AddDate(0, i, 0)
 		amt := monthlyPrincipal + monthlyInterest
 		installments = append(installments, model.LoanInstallment{
 			LoanID:            loan.ID,
@@ -653,6 +708,16 @@ func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
 
+func resolveLoanIdentityDoc(loanDoc *string, personnel *model.Personnel, get func(*model.Personnel) *string) *string {
+	if loanDoc != nil && *loanDoc != "" {
+		return loanDoc
+	}
+	if personnel == nil {
+		return nil
+	}
+	return get(personnel)
+}
+
 func presignLoanDocs(ctx context.Context, r *model.LoanResponse) {
 	if r == nil {
 		return
@@ -681,30 +746,35 @@ func presignLoanDocs(ctx context.Context, r *model.LoanResponse) {
 
 func ToLoanResponse(l *model.Loan) model.LoanResponse {
 	r := model.LoanResponse{
-		ID:                       l.ID,
-		LoanNumber:               l.LoanNumber,
-		PersonnelID:              l.PersonnelID,
-		BujpID:                   l.BujpID,
-		LoanProductID:            l.LoanProductID,
-		Purpose:                  l.Purpose,
-		LoanAmount:               l.LoanAmount,
-		InterestRate:             l.InterestRate,
-		TenorMonths:              l.TenorMonths,
-		MonthlyInstallment:       l.MonthlyInstallment,
-		TotalRepayment:           l.TotalRepayment,
-		RegistrationFee:          l.RegistrationFee,
-		ProvisiRate:              l.ProvisiRate,
-		Provisi:                  l.Provisi,
-		PenaltyEarlyPayoff:       l.PenaltyEarlyPayoff,
-		PenaltyRunningInterest:   l.PenaltyRunningInterest,
-		NetDisbursed:             l.NetDisbursed,
-		ApprovedAmount:           l.ApprovedAmount,
-		ApprovedTenor:            l.ApprovedTenor,
-		DisbursementDate:         dateStrPtr(l.DisbursementDate),
-		FirstInstallmentDate:     dateStrPtr(l.FirstInstallmentDate),
-		DeductFromPayroll:        l.DeductFromPayroll,
-		KtpDocument:              l.KtpDocument,
-		NpwpDocument:             l.NpwpDocument,
+		ID:                     l.ID,
+		LoanNumber:             l.LoanNumber,
+		PersonnelID:            l.PersonnelID,
+		BujpID:                 l.BujpID,
+		LoanProductID:          l.LoanProductID,
+		Purpose:                l.Purpose,
+		LoanAmount:             l.LoanAmount,
+		InterestRate:           l.InterestRate,
+		TenorMonths:            l.TenorMonths,
+		MonthlyInstallment:     l.MonthlyInstallment,
+		TotalRepayment:         l.TotalRepayment,
+		RegistrationFee:        l.RegistrationFee,
+		ProvisiRate:            l.ProvisiRate,
+		Provisi:                l.Provisi,
+		PenaltyEarlyPayoff:     l.PenaltyEarlyPayoff,
+		PenaltyRunningInterest: l.PenaltyRunningInterest,
+		NetDisbursed:           l.NetDisbursed,
+		ApprovedAmount:         l.ApprovedAmount,
+		ApprovedTenor:          l.ApprovedTenor,
+		DisbursementDate:       dateStrPtr(l.DisbursementDate),
+		FirstInstallmentDate:   dateStrPtr(l.FirstInstallmentDate),
+		DisbursementMethod:     l.DisbursementMethod,
+		DisbursementAccount:    l.DisbursementAccount,
+		DeductFromPayroll:      l.DeductFromPayroll,
+		// Prefer the loan's own KTP/NPWP if present (legacy loans created
+		// before these moved to Personnel); otherwise resolve from
+		// Personnel, where they're now uploaded once instead of per loan.
+		KtpDocument:              resolveLoanIdentityDoc(l.KtpDocument, l.Personnel, func(p *model.Personnel) *string { return p.KtpDocument }),
+		NpwpDocument:             resolveLoanIdentityDoc(l.NpwpDocument, l.Personnel, func(p *model.Personnel) *string { return p.NpwpDocument }),
 		SelfieDocument:           l.SelfieDocument,
 		SelfieKtpDocument:        l.SelfieKtpDocument,
 		PksDocument:              l.PksDocument,

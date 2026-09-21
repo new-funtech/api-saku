@@ -20,6 +20,8 @@ type LoanRepository interface {
 	UpdateColumns(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error
 	ClaimUserConfirmation(ctx context.Context, id uuid.UUID, confirmedAt time.Time) (bool, error)
 	ClaimSubmission(ctx context.Context, id uuid.UUID, submittedAt time.Time) (bool, error)
+	ClaimDisbursement(ctx context.Context, id uuid.UUID) (bool, error)
+	ClaimCancel(ctx context.Context, id uuid.UUID) (bool, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountThisMonth(ctx context.Context) (int64, error)
 	CountByStatus(ctx context.Context, status string) (int64, error)
@@ -127,6 +129,41 @@ func (r *loanRepositoryImpl) ClaimUserConfirmation(ctx context.Context, id uuid.
 	result := r.db.WithContext(ctx).Model(&model.Loan{}).
 		Where("id = ? AND status = ? AND user_confirmed_at IS NULL", id, model.LoanStatusPendingUserConfirmation).
 		Update("user_confirmed_at", confirmedAt)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
+// ClaimDisbursement atomically transitions a loan straight to `active` so
+// two concurrent disbursement triggers for the same loan — a manual
+// admin "Cairkan" action (Disburse) racing the applicant's own accept
+// (UserConfirm) hitting this at nearly the same instant, or even just a
+// doubled click on either button — can't both pass. Only the caller that
+// flips this row wins and goes on to create the installment schedule;
+// the loser gets RowsAffected == 0 and must not create installments,
+// otherwise the loan ends up with a duplicated schedule.
+func (r *loanRepositoryImpl) ClaimDisbursement(ctx context.Context, id uuid.UUID) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Where("id = ? AND status IN (?, ?)", id, model.LoanStatusPendingUserConfirmation, model.LoanStatusApprovedPusat).
+		Update("status", model.LoanStatusActive)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
+// ClaimCancel atomically transitions a loan to `cancelled`, guarded
+// against the same set of terminal/non-cancellable statuses the service
+// layer already checks before calling this — closing the window where a
+// concurrent approval/disbursement action moves the loan into one of
+// those statuses between that check and this write, which a plain
+// unconditional Update() would otherwise silently clobber.
+func (r *loanRepositoryImpl) ClaimCancel(ctx context.Context, id uuid.UUID) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Where("id = ? AND status NOT IN (?, ?, ?)", id,
+			model.LoanStatusActive, model.LoanStatusDisbursed, model.LoanStatusCompleted).
+		Update("status", model.LoanStatusCancelled)
 	if result.Error != nil {
 		return false, result.Error
 	}

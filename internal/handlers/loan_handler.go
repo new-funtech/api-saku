@@ -255,14 +255,11 @@ func (h *LoanHandler) Create(c *fiber.Ctx) error {
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	role, _ := c.Locals("role").(string)
 
-	// Upload optional document files when sent as multipart parts.
 	folder := fmt.Sprintf("LOANS/%s", uid.String())
 	uploads := []struct {
 		field string
 		dest  **string
 	}{
-		{"ktp_document", &req.KtpDocument},
-		{"npwp_document", &req.NpwpDocument},
 		{"selfie_document", &req.SelfieDocument},
 		{"selfie_ktp_document", &req.SelfieKtpDocument},
 		{"pks_document", &req.PksDocument},
@@ -280,12 +277,6 @@ func (h *LoanHandler) Create(c *fiber.Ctx) error {
 
 	if req.SubmitImmediately {
 		missing := []string{}
-		if req.KtpDocument == nil || *req.KtpDocument == "" {
-			missing = append(missing, "KTP")
-		}
-		if req.NpwpDocument == nil || *req.NpwpDocument == "" {
-			missing = append(missing, "NPWP")
-		}
 		if req.SelfieDocument == nil || *req.SelfieDocument == "" {
 			missing = append(missing, "Selfie")
 		}

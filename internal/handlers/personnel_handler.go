@@ -170,15 +170,23 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 		})
 	}
 
-	// Upload photo if provided as multipart file
+	// Upload photo/KTP/NPWP if provided as multipart files
 	if key, uerr := utils.UploadFormFile(ctx, c, "photo", "PERSONNEL/PHOTOS"); uerr != nil {
 		return utils.UploadErrorResponse(c, "photo", uerr)
 	} else if key != nil {
 		req.Photo = key
 	}
+	if key, uerr := utils.UploadFormFile(ctx, c, "ktp_document", "PERSONNEL/KTP"); uerr != nil {
+		return utils.UploadErrorResponse(c, "ktp_document", uerr)
+	} else if key != nil {
+		req.KtpDocument = key
+	}
+	if key, uerr := utils.UploadFormFile(ctx, c, "npwp_document", "PERSONNEL/NPWP"); uerr != nil {
+		return utils.UploadErrorResponse(c, "npwp_document", uerr)
+	} else if key != nil {
+		req.NpwpDocument = key
+	}
 
-	// Tenant clamp: BUJP-scoped callers may only create personnel under
-	// their own BUJP, regardless of what they posted.
 	if role, _ := c.Locals("role").(string); !utils.IsPusat(role) {
 		if scoped, ok := c.Locals("bujpID").(uuid.UUID); ok && scoped != uuid.Nil {
 			req.BujpID = scoped
@@ -198,6 +206,24 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 		finalKey := strings.ReplaceAll(*req.PhotoFinalPath, "{personnel_id}", personnel.ID.String())
 		if merr := utils.MoveFileInS3(ctx, *req.PhotoTempPath, finalKey); merr == nil {
 			update := &model.UpdatePersonnelRequest{Photo: &finalKey}
+			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
+				personnel = updated
+			}
+		}
+	}
+	if req.KtpTempPath != nil && req.KtpFinalPath != nil && *req.KtpTempPath != "" && *req.KtpFinalPath != "" {
+		finalKey := strings.ReplaceAll(*req.KtpFinalPath, "{personnel_id}", personnel.ID.String())
+		if merr := utils.MoveFileInS3(ctx, *req.KtpTempPath, finalKey); merr == nil {
+			update := &model.UpdatePersonnelRequest{KtpDocument: &finalKey}
+			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
+				personnel = updated
+			}
+		}
+	}
+	if req.NpwpTempPath != nil && req.NpwpFinalPath != nil && *req.NpwpTempPath != "" && *req.NpwpFinalPath != "" {
+		finalKey := strings.ReplaceAll(*req.NpwpFinalPath, "{personnel_id}", personnel.ID.String())
+		if merr := utils.MoveFileInS3(ctx, *req.NpwpTempPath, finalKey); merr == nil {
+			update := &model.UpdatePersonnelRequest{NpwpDocument: &finalKey}
 			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
 				personnel = updated
 			}
@@ -259,6 +285,16 @@ func (h *PersonnelHandler) UpdatePersonnel(c *fiber.Ctx) error {
 	} else if key != nil {
 		req.Photo = key
 	}
+	if key, uerr := utils.UploadFormFile(ctx, c, "ktp_document", "PERSONNEL/KTP"); uerr != nil {
+		return utils.UploadErrorResponse(c, "ktp_document", uerr)
+	} else if key != nil {
+		req.KtpDocument = key
+	}
+	if key, uerr := utils.UploadFormFile(ctx, c, "npwp_document", "PERSONNEL/NPWP"); uerr != nil {
+		return utils.UploadErrorResponse(c, "npwp_document", uerr)
+	} else if key != nil {
+		req.NpwpDocument = key
+	}
 
 	// Tenant ownership check before update.
 	existing, gerr := h.service.GetByID(ctx, id)
@@ -284,6 +320,37 @@ func (h *PersonnelHandler) UpdatePersonnel(c *fiber.Ctx) error {
 			Code:    statusForServiceError(err),
 			Message: err.Error(),
 		})
+	}
+
+	// Finalize any presigned temp-path uploads (photo/KTP/NPWP) — mirrors
+	// CreatePersonnel below. Without this, files uploaded via the
+	// temp-path/final-path flow (the only flow the admin UI actually uses
+	// when editing an existing personnel) sit in S3's temp/ prefix forever
+	// and personnel.KtpDocument/NpwpDocument never gets set, so the
+	// document silently "disappears" even though the admin did upload it.
+	if req.PhotoTempPath != nil && req.PhotoFinalPath != nil && *req.PhotoTempPath != "" && *req.PhotoFinalPath != "" {
+		finalKey := strings.ReplaceAll(*req.PhotoFinalPath, "{personnel_id}", personnel.ID.String())
+		if merr := utils.MoveFileInS3(ctx, *req.PhotoTempPath, finalKey); merr == nil {
+			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{Photo: &finalKey}); uerr == nil {
+				personnel = updated
+			}
+		}
+	}
+	if req.KtpTempPath != nil && req.KtpFinalPath != nil && *req.KtpTempPath != "" && *req.KtpFinalPath != "" {
+		finalKey := strings.ReplaceAll(*req.KtpFinalPath, "{personnel_id}", personnel.ID.String())
+		if merr := utils.MoveFileInS3(ctx, *req.KtpTempPath, finalKey); merr == nil {
+			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{KtpDocument: &finalKey}); uerr == nil {
+				personnel = updated
+			}
+		}
+	}
+	if req.NpwpTempPath != nil && req.NpwpFinalPath != nil && *req.NpwpTempPath != "" && *req.NpwpFinalPath != "" {
+		finalKey := strings.ReplaceAll(*req.NpwpFinalPath, "{personnel_id}", personnel.ID.String())
+		if merr := utils.MoveFileInS3(ctx, *req.NpwpTempPath, finalKey); merr == nil {
+			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{NpwpDocument: &finalKey}); uerr == nil {
+				personnel = updated
+			}
+		}
 	}
 
 	return c.Status(http.StatusOK).JSON(model.APIResponse{
@@ -323,6 +390,12 @@ func bindCreatePersonnelRequest(c *fiber.Ctx) (*model.CreatePersonnelRequest, er
 	if v := utils.FormString(c, "photo"); v != "" {
 		req.Photo = &v
 	}
+	if v := utils.FormString(c, "ktp_document"); v != "" {
+		req.KtpDocument = &v
+	}
+	if v := utils.FormString(c, "npwp_document"); v != "" {
+		req.NpwpDocument = &v
+	}
 	if v := utils.FormString(c, "gender"); v != "" {
 		req.Gender = &v
 	}
@@ -352,6 +425,18 @@ func bindCreatePersonnelRequest(c *fiber.Ctx) (*model.CreatePersonnelRequest, er
 	}
 	if v := utils.FormString(c, "photo_final_path"); v != "" {
 		req.PhotoFinalPath = &v
+	}
+	if v := utils.FormString(c, "ktp_temp_path"); v != "" {
+		req.KtpTempPath = &v
+	}
+	if v := utils.FormString(c, "ktp_final_path"); v != "" {
+		req.KtpFinalPath = &v
+	}
+	if v := utils.FormString(c, "npwp_temp_path"); v != "" {
+		req.NpwpTempPath = &v
+	}
+	if v := utils.FormString(c, "npwp_final_path"); v != "" {
+		req.NpwpFinalPath = &v
 	}
 	if t, err := utils.ParseFlexibleDate(utils.FormString(c, "birth_date")); err == nil {
 		cd := model.CustomDate{Time: t}
@@ -398,6 +483,12 @@ func bindUpdatePersonnelRequest(c *fiber.Ctx) (*model.UpdatePersonnelRequest, er
 	}
 	if v := utils.FormString(c, "photo"); v != "" {
 		req.Photo = &v
+	}
+	if v := utils.FormString(c, "ktp_document"); v != "" {
+		req.KtpDocument = &v
+	}
+	if v := utils.FormString(c, "npwp_document"); v != "" {
+		req.NpwpDocument = &v
 	}
 	if v := utils.FormString(c, "gender"); v != "" {
 		req.Gender = &v

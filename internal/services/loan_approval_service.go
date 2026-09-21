@@ -21,7 +21,7 @@ type LoanApprovalService interface {
 	GetByLoan(ctx context.Context, loanID uuid.UUID) ([]model.LoanApprovalResponse, error)
 	Process(ctx context.Context, approvalID uuid.UUID, approverID uuid.UUID, req *model.LoanApprovalRequest) (*model.LoanApprovalResponse, error)
 	ProcessByLoan(ctx context.Context, loanID uuid.UUID, approverID uuid.UUID, role string, req *model.LoanApprovalRequest) (*model.LoanApprovalResponse, error)
-	Disburse(ctx context.Context, loanID uuid.UUID) (*model.LoanResponse, error)
+	Disburse(ctx context.Context, loanID uuid.UUID, req *model.DisburseLoanRequest) (*model.LoanResponse, error)
 	ResolveUserBujpID(ctx context.Context, userID uuid.UUID) uuid.UUID
 	ResolveUserPersonnelID(ctx context.Context, userID uuid.UUID) uuid.UUID
 	LoadLoanScope(ctx context.Context, loanID uuid.UUID) (bujpID *uuid.UUID, personnelID uuid.UUID, err error)
@@ -278,7 +278,7 @@ func (s *loanApprovalServiceImpl) ProcessByLoan(ctx context.Context, loanID uuid
 	return s.Process(ctx, target.ID, approverID, req)
 }
 
-func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID) (*model.LoanResponse, error) {
+func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID, req *model.DisburseLoanRequest) (*model.LoanResponse, error) {
 	loan, err := s.loanRepo.FindByID(ctx, loanID)
 	if err != nil {
 		return nil, errors.New("loan not found")
@@ -289,7 +289,19 @@ func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID
 	if s.loanService == nil {
 		return nil, errors.New("loan service unavailable")
 	}
-	if err := s.loanService.processDisbursement(ctx, loan); err != nil {
+	// Atomically claim the disbursement before touching installments — see
+	// ClaimDisbursement's doc comment. Without this, a concurrent
+	// UserConfirm(accept) for the same loan (or a doubled click here)
+	// could both pass the status check above and both create an
+	// installment schedule.
+	claimed, cerr := s.loanRepo.ClaimDisbursement(ctx, loan.ID)
+	if cerr != nil {
+		return nil, cerr
+	}
+	if !claimed {
+		return nil, errors.New("loan is already being disbursed or has already been disbursed")
+	}
+	if err := s.loanService.processDisbursement(ctx, loan, req); err != nil {
 		return nil, err
 	}
 	if err := s.loanRepo.Update(ctx, loan); err != nil {

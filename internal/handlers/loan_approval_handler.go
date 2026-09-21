@@ -210,7 +210,17 @@ func (h *LoanApprovalHandler) Disburse(c *fiber.Ctx) error {
 	if !h.canAccessLoan(c, id) {
 		return utils.ErrorResponse(c, http.StatusForbidden, "forbidden")
 	}
-	r, err := h.service.Disburse(c.Context(), id)
+	// Body is optional — a caller with nothing to record (e.g. the
+	// applicant's own accept, which never posts a body here) still works;
+	// this only carries what admin-abujapi's "Catat Pencairan Dana" form
+	// actually collected (date, method, account, first installment date).
+	var req model.DisburseLoanRequest
+	if len(c.Body()) > 0 {
+		if err := c.BodyParser(&req); err != nil {
+			return utils.ErrorResponse(c, http.StatusBadRequest, "invalid body")
+		}
+	}
+	r, err := h.service.Disburse(c.Context(), id, &req)
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 	}

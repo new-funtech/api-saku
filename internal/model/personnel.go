@@ -16,6 +16,8 @@ type Personnel struct {
 	FullName         string     `json:"full_name" gorm:"type:varchar(100);not null;index"`
 	MotherMaidenName *string    `json:"mother_maiden_name" gorm:"type:varchar(100)"`
 	Photo            *string    `json:"photo" gorm:"type:varchar(255)"`
+	KtpDocument      *string    `json:"ktp_document" gorm:"type:varchar(255)"`
+	NpwpDocument     *string    `json:"npwp_document" gorm:"type:varchar(255)"`
 	BirthDate        *time.Time `json:"birth_date" gorm:"type:date"`
 	Gender           *string    `json:"gender" gorm:"type:varchar(1)"`
 	Address          *string    `json:"address" gorm:"type:text"`
@@ -51,6 +53,8 @@ type CreatePersonnelRequest struct {
 	FullName         string      `json:"full_name" validate:"required,max=100" example:"Ahmad Suryadi"`
 	MotherMaidenName *string     `json:"mother_maiden_name" example:"Siti Aminah"`
 	Photo            *string     `json:"photo" example:"personnel/photo.jpg"`
+	KtpDocument      *string     `json:"ktp_document,omitempty" example:"personnel/ktp.jpg"`
+	NpwpDocument     *string     `json:"npwp_document,omitempty" example:"personnel/npwp.jpg"`
 	BirthDate        *CustomDate `json:"birth_date" example:"1990-01-15" swaggertype:"string"`
 	Gender           *string     `json:"gender" validate:"omitempty,oneof=M F" example:"M"`
 	Address          *string     `json:"address" example:"Jl. Merdeka No. 123, Bandung"`
@@ -66,6 +70,10 @@ type CreatePersonnelRequest struct {
 	BaseSalary       string      `json:"base_salary" example:"5000000"`
 	PhotoTempPath    *string     `json:"photo_temp_path,omitempty" example:"PERSONNEL/PHOTOS/temp/abc.jpg"`
 	PhotoFinalPath   *string     `json:"photo_final_path,omitempty" example:"PERSONNEL/PHOTOS/{personnel_id}/abc.jpg"`
+	KtpTempPath      *string     `json:"ktp_temp_path,omitempty" example:"PERSONNEL/KTP/temp/abc.jpg"`
+	KtpFinalPath     *string     `json:"ktp_final_path,omitempty" example:"PERSONNEL/KTP/{personnel_id}/abc.jpg"`
+	NpwpTempPath     *string     `json:"npwp_temp_path,omitempty" example:"PERSONNEL/NPWP/temp/abc.jpg"`
+	NpwpFinalPath    *string     `json:"npwp_final_path,omitempty" example:"PERSONNEL/NPWP/{personnel_id}/abc.jpg"`
 }
 
 type UpdatePersonnelRequest struct {
@@ -76,6 +84,8 @@ type UpdatePersonnelRequest struct {
 	FullName         *string     `json:"full_name" validate:"omitempty,max=100" example:"Ahmad Suryadi"`
 	MotherMaidenName *string     `json:"mother_maiden_name" example:"Siti Aminah"`
 	Photo            *string     `json:"photo" example:"personnel/photo.jpg"`
+	KtpDocument      *string     `json:"ktp_document,omitempty" example:"personnel/ktp.jpg"`
+	NpwpDocument     *string     `json:"npwp_document,omitempty" example:"personnel/npwp.jpg"`
 	BirthDate        *CustomDate `json:"birth_date" example:"1990-01-15" swaggertype:"string"`
 	Gender           *string     `json:"gender" validate:"omitempty,oneof=M F" example:"M"`
 	Address          *string     `json:"address" example:"Jl. Merdeka No. 123, Bandung"`
@@ -91,6 +101,10 @@ type UpdatePersonnelRequest struct {
 	BaseSalary       *string     `json:"base_salary" example:"5000000"`
 	PhotoTempPath    *string     `json:"photo_temp_path,omitempty" example:"PERSONNEL/PHOTOS/temp/abc.jpg"`
 	PhotoFinalPath   *string     `json:"photo_final_path,omitempty" example:"PERSONNEL/PHOTOS/{personnel_id}/abc.jpg"`
+	KtpTempPath      *string     `json:"ktp_temp_path,omitempty" example:"PERSONNEL/KTP/temp/abc.jpg"`
+	KtpFinalPath     *string     `json:"ktp_final_path,omitempty" example:"PERSONNEL/KTP/{personnel_id}/abc.jpg"`
+	NpwpTempPath     *string     `json:"npwp_temp_path,omitempty" example:"PERSONNEL/NPWP/temp/abc.jpg"`
+	NpwpFinalPath    *string     `json:"npwp_final_path,omitempty" example:"PERSONNEL/NPWP/{personnel_id}/abc.jpg"`
 }
 
 type PersonnelResponse struct {
@@ -102,6 +116,11 @@ type PersonnelResponse struct {
 	FullName         string        `json:"full_name" example:"Ahmad Suryadi"`
 	MotherMaidenName *string       `json:"mother_maiden_name,omitempty" example:"Siti Aminah"`
 	Photo            *string       `json:"photo,omitempty" example:"personnel/photo.jpg"`
+	PhotoURL         *string       `json:"photo_url,omitempty"`
+	KtpDocument      *string       `json:"ktp_document,omitempty" example:"personnel/ktp.jpg"`
+	KtpDocumentURL   *string       `json:"ktp_document_url,omitempty"`
+	NpwpDocument     *string       `json:"npwp_document,omitempty" example:"personnel/npwp.jpg"`
+	NpwpDocumentURL  *string       `json:"npwp_document_url,omitempty"`
 	BirthDate        *string       `json:"birth_date,omitempty" example:"1990-01-15"`
 	Gender           *string       `json:"gender,omitempty" example:"M"`
 	Address          *string       `json:"address,omitempty" example:"Jl. Merdeka No. 123, Bandung"`
