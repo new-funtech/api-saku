@@ -26,6 +26,9 @@ type NotificationService interface {
 	NotifyLoanCancelled(ctx context.Context, tx *gorm.DB, loan *model.Loan) ([]model.Notification, error)
 
 	PushRealtime(rows []model.Notification)
+
+	NotifyOvertimeSubmitted(ctx context.Context, o *model.Overtime, applicantName string)
+	NotifyOvertimeDecision(ctx context.Context, o *model.Overtime, approved bool)
 }
 
 type notificationServiceImpl struct {
@@ -262,6 +265,20 @@ func (s *notificationServiceImpl) createForRecipients(
 	loan *model.Loan,
 	eventID string,
 ) ([]model.Notification, error) {
+	return s.createFor(ctx, tx, recipientIDs, loan.BujpID, model.NotificationEntityLoan, loan.ID, notifType, title, body, eventID)
+}
+
+// createFor stores one notification per recipient about any entity. The event id makes it
+// idempotent: a repeated event is not delivered twice.
+func (s *notificationServiceImpl) createFor(
+	ctx context.Context,
+	tx *gorm.DB,
+	recipientIDs []uuid.UUID,
+	bujpID *uuid.UUID,
+	entityType string,
+	entityID uuid.UUID,
+	notifType, title, body, eventID string,
+) ([]model.Notification, error) {
 	repo := s.repo
 	if tx != nil {
 		repo = s.repo.WithTx(tx)
@@ -273,12 +290,12 @@ func (s *notificationServiceImpl) createForRecipients(
 		}
 		n := &model.Notification{
 			RecipientUserID: recipientID,
-			BujpID:          loan.BujpID,
+			BujpID:          bujpID,
 			Type:            notifType,
 			Title:           title,
 			Body:            body,
-			EntityType:      model.NotificationEntityLoan,
-			EntityID:        loan.ID,
+			EntityType:      entityType,
+			EntityID:        entityID,
 			EventID:         eventID,
 		}
 		ok, err := repo.Create(ctx, n)
@@ -290,4 +307,37 @@ func (s *notificationServiceImpl) createForRecipients(
 		}
 	}
 	return created, nil
+}
+
+// NotifyOvertimeSubmitted tells the company admins a request awaits their decision.
+func (s *notificationServiceImpl) NotifyOvertimeSubmitted(ctx context.Context, o *model.Overtime, applicantName string) {
+	if o == nil || o.Personnel == nil || s.notifier == nil {
+		return
+	}
+	bujpID := o.Personnel.BujpID
+	reviewers := s.notifier.AdminCompanyUsers(ctx, &bujpID)
+	title, body := notifOvertimeReviewRequired(applicantName, o.Date, o.TotalHours)
+	rows, err := s.createFor(ctx, nil, userIDs(reviewers), &bujpID, model.NotificationEntityOvertime, o.ID,
+		model.NotificationTypeOvertimeReviewRequired, title, body, fmt.Sprintf("overtime_submitted:%s", o.ID))
+	if err == nil {
+		s.PushRealtime(rows)
+	}
+}
+
+// NotifyOvertimeDecision tells the applicant how the request was decided.
+func (s *notificationServiceImpl) NotifyOvertimeDecision(ctx context.Context, o *model.Overtime, approved bool) {
+	if o == nil || o.Personnel == nil || o.Personnel.UserID == nil {
+		return
+	}
+	bujpID := o.Personnel.BujpID
+	notifType := model.NotificationTypeOvertimeApproved
+	if !approved {
+		notifType = model.NotificationTypeOvertimeRejected
+	}
+	title, body := notifOvertimeDecision(approved, o.Date, o.ApproverNotes)
+	rows, err := s.createFor(ctx, nil, []uuid.UUID{*o.Personnel.UserID}, &bujpID, model.NotificationEntityOvertime, o.ID,
+		notifType, title, body, fmt.Sprintf("overtime_decision:%s:%s", o.ID, o.Status))
+	if err == nil {
+		s.PushRealtime(rows)
+	}
 }

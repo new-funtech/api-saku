@@ -25,6 +25,7 @@ func SetupRoutes(
 	attendanceCorrectionHdl *handlers.AttendanceCorrectionHandler,
 	patrolHdl *handlers.PatrolHandler,
 	leaveHdl *handlers.LeaveHandler,
+	overtimeHdl *handlers.OvertimeHandler,
 	salaryComponentHdl *handlers.SalaryComponentHandler,
 	payrollHdl *handlers.PayrollHandler,
 	monthlyReportHdl *handlers.MonthlyReportHandler,
@@ -172,8 +173,10 @@ func SetupRoutes(
 	attendanceCorrectionRoutes.Get("/", attendanceCorrectionHdl.GetAll)
 	attendanceCorrectionRoutes.Get("/:id", attendanceCorrectionHdl.GetByID)
 	attendanceCorrectionRoutes.Post("/", attendanceCorrectionHdl.Create)
-	attendanceCorrectionRoutes.Post("/:id/approve", attendanceCorrectionHdl.Approve)
-	attendanceCorrectionRoutes.Post("/:id/reject", attendanceCorrectionHdl.Reject)
+	// Only admin roles decide leave and correction requests.
+	requestReviewer := middleware.RequireRoles("super_admin", "admin", "company_admin")
+	attendanceCorrectionRoutes.Post("/:id/approve", requestReviewer, attendanceCorrectionHdl.Approve)
+	attendanceCorrectionRoutes.Post("/:id/reject", requestReviewer, attendanceCorrectionHdl.Reject)
 	attendanceCorrectionRoutes.Put("/:id", attendanceCorrectionHdl.Update)
 	attendanceCorrectionRoutes.Delete("/:id", attendanceCorrectionHdl.Delete)
 
@@ -192,10 +195,23 @@ func SetupRoutes(
 	leaveRoutes.Get("/", leaveHdl.GetAll)
 	leaveRoutes.Get("/:id", leaveHdl.GetByID)
 	leaveRoutes.Post("/", leaveHdl.Create)
-	leaveRoutes.Post("/:id/approve", leaveHdl.Approve)
-	leaveRoutes.Post("/:id/reject", leaveHdl.Reject)
+	leaveRoutes.Post("/:id/approve", requestReviewer, leaveHdl.Approve)
+	leaveRoutes.Post("/:id/reject", requestReviewer, leaveHdl.Reject)
 	leaveRoutes.Put("/:id", leaveHdl.Update)
 	leaveRoutes.Delete("/:id", leaveHdl.Delete)
+
+	// Overtime routes: staff file and manage their own; admins decide.
+	overtimeRoutes := v1.Group("/overtimes", protected()...)
+	overtimeAdmin := middleware.RequireRoles("super_admin", "admin", "company_admin")
+	overtimeStaff := middleware.RequireRoles("guard", "supervisor")
+	overtimeRoutes.Get("/pending", overtimeAdmin, overtimeHdl.Pending)
+	overtimeRoutes.Get("/", overtimeHdl.GetAll)
+	overtimeRoutes.Get("/:id", overtimeHdl.GetByID)
+	overtimeRoutes.Post("/", overtimeStaff, overtimeHdl.Create)
+	overtimeRoutes.Put("/:id", overtimeStaff, overtimeHdl.Update)
+	overtimeRoutes.Delete("/:id", overtimeStaff, overtimeHdl.Delete)
+	overtimeRoutes.Post("/:id/approve", overtimeAdmin, overtimeHdl.Approve)
+	overtimeRoutes.Post("/:id/reject", overtimeAdmin, overtimeHdl.Reject)
 
 	// Salary Component routes (all protected)
 	salaryComponentRoutes := v1.Group("/salary-components", protected()...)
@@ -238,6 +254,8 @@ func SetupRoutes(
 	// Loan routes (all protected)
 	loanRoutes := v1.Group("/loans", protected()...)
 	loanRoutes.Get("/", loanHdl.GetAll)
+	loanRoutes.Get("/my-summary", loanInstallmentHdl.MySummary)
+	loanRoutes.Get("/admin-summary", middleware.RequireRoles("super_admin", "admin", "company_admin"), loanInstallmentHdl.AdminSummary)
 	loanRoutes.Get("/statistics", loanHdl.Statistics)
 	loanRoutes.Get("/history", loanHdl.History)
 	loanRoutes.Get("/history/:personnel_id", loanHdl.History)

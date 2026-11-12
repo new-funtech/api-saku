@@ -44,6 +44,7 @@ func RunMigrations() {
 		&model.AttendanceCorrection{},
 		&model.Patrol{},
 		&model.Leave{},
+		&model.Overtime{},
 		&model.SalaryComponent{},
 		&model.Payroll{},
 		&model.PayrollDetail{},
@@ -134,6 +135,9 @@ func RunMigrations() {
 		`CREATE INDEX IF NOT EXISTS idx_leaves_type ON leaves(type)`,
 		`CREATE INDEX IF NOT EXISTS idx_leaves_start_date ON leaves(start_date)`,
 		`CREATE INDEX IF NOT EXISTS idx_leaves_end_date ON leaves(end_date)`,
+
+		// Overtimes
+		`CREATE INDEX IF NOT EXISTS idx_overtimes_personnel_date ON overtimes(personnel_id, date)`,
 
 		// Salary Components
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_salary_components_code ON salary_components(code)`,

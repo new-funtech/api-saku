@@ -14,9 +14,16 @@ const (
 	NotificationTypeLoanRejected       = "LOAN_REJECTED"
 	NotificationTypeLoanCancelled      = "LOAN_CANCELLED"
 	NotificationTypeLoanCompleted      = "LOAN_COMPLETED"
+
+	NotificationTypeOvertimeReviewRequired = "OVERTIME_REVIEW_REQUIRED"
+	NotificationTypeOvertimeApproved       = "OVERTIME_APPROVED"
+	NotificationTypeOvertimeRejected       = "OVERTIME_REJECTED"
 )
 
-const NotificationEntityLoan = "loan"
+const (
+	NotificationEntityLoan     = "loan"
+	NotificationEntityOvertime = "overtime"
+)
 
 type Notification struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey"`

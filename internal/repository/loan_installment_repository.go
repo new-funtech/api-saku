@@ -15,6 +15,8 @@ type LoanInstallmentRepository interface {
 	WithTx(tx *gorm.DB) LoanInstallmentRepository
 	CreateMany(ctx context.Context, items []model.LoanInstallment) error
 	Update(ctx context.Context, item *model.LoanInstallment) error
+	DueStats(ctx context.Context, bujpID uuid.UUID, today time.Time, horizonDays int) (overdue int64, overdueAmount float64, dueSoon int64, err error)
+	FindUnpaidByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.LoanInstallment, error)
 	MarkOverdueBefore(ctx context.Context, before time.Time) (int64, error)
 	GetDueForPayroll(ctx context.Context, personnelID uuid.UUID, period time.Time) ([]model.LoanInstallment, error)
 }
@@ -78,4 +80,47 @@ func (r *loanInstallmentRepositoryImpl) GetDueForPayroll(ctx context.Context, pe
 		Order("loan_installments.due_date ASC").
 		Find(&items).Error
 	return items, err
+}
+
+// FindUnpaidByPersonnel returns the unpaid installments of the person's running loans, soonest due first.
+func (r *loanInstallmentRepositoryImpl) FindUnpaidByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.LoanInstallment, error) {
+	var items []model.LoanInstallment
+	err := r.db.WithContext(ctx).
+		Joins("JOIN loans ON loans.id = loan_installments.loan_id").
+		Where("loans.personnel_id = ? AND loans.status IN ? AND loan_installments.status IN ?",
+			personnelID,
+			[]string{model.LoanStatusActive, model.LoanStatusDisbursed},
+			[]string{model.LoanInstallmentStatusPending, model.LoanInstallmentStatusOverdue}).
+		Preload("Loan").
+		Order("loan_installments.due_date ASC, loan_installments.installment_number ASC").
+		Find(&items).Error
+	return items, err
+}
+
+// DueStats counts overdue and soon-due installments of running loans; a nil bujpID means everyone.
+func (r *loanInstallmentRepositoryImpl) DueStats(ctx context.Context, bujpID uuid.UUID, today time.Time, horizonDays int) (overdue int64, overdueAmount float64, dueSoon int64, err error) {
+	base := func() *gorm.DB {
+		q := r.db.WithContext(ctx).Model(&model.LoanInstallment{}).
+			Joins("JOIN loans ON loans.id = loan_installments.loan_id").
+			Where("loans.status IN ? AND loan_installments.status IN ?",
+				[]string{model.LoanStatusActive, model.LoanStatusDisbursed},
+				[]string{model.LoanInstallmentStatusPending, model.LoanInstallmentStatusOverdue})
+		if bujpID != uuid.Nil {
+			q = q.Where("loans.bujp_id = ?", bujpID)
+		}
+		return q
+	}
+	var late struct {
+		Count  int64
+		Amount float64
+	}
+	if err = base().Where("loan_installments.due_date < ?", today).
+		Select("COUNT(*) AS count, COALESCE(SUM(loan_installments.installment_amount + loan_installments.late_fee - loan_installments.paid_amount), 0) AS amount").
+		Scan(&late).Error; err != nil {
+		return
+	}
+	overdue, overdueAmount = late.Count, late.Amount
+	err = base().Where("loan_installments.due_date >= ? AND loan_installments.due_date <= ?", today, today.AddDate(0, 0, horizonDays)).
+		Count(&dueSoon).Error
+	return
 }

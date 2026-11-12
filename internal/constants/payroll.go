@@ -11,4 +11,12 @@ const (
 
 	AttendanceStatusPermission = "permission"
 	PayrollPercentageDivisor   = 100.0
+
+	// Overtime pay (general formula, after Kepmenakertrans 102/2004): the hourly wage is the monthly
+	// base salary / 173; per day the first overtime hour pays 1.5x and every further hour 2x.
+	PayrollMonthlyWorkHours     = 173.0
+	OvertimeFirstHourMultiplier = 1.5
+	OvertimeNextHourMultiplier  = 2.0
+	OvertimeSalaryComponentCode = "LEMBUR"
+	OvertimeSalaryComponentName = "Upah Lembur"
 )

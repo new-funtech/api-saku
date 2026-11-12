@@ -135,6 +135,7 @@ func main() {
 	attendanceCorrectionRepo := repository.NewAttendanceCorrectionRepository(config.DB)
 	patrolRepo := repository.NewPatrolRepository(config.DB)
 	leaveRepo := repository.NewLeaveRepository(config.DB)
+	overtimeRepo := repository.NewOvertimeRepository(config.DB)
 	salaryComponentRepo := repository.NewSalaryComponentRepository(config.DB)
 	payrollRepo := repository.NewPayrollRepository(config.DB)
 	monthlyReportRepo := repository.NewMonthlyReportRepository(config.DB)
@@ -162,8 +163,9 @@ func main() {
 	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo, notifierSvc)
 	patrolSvc := services.NewPatrolService(patrolRepo, attendanceRepo)
 	leaveSvc := services.NewLeaveService(leaveRepo, notifierSvc)
+	overtimeSvc := services.NewOvertimeService(overtimeRepo, notifierSvc, notificationSvc)
 	salaryComponentSvc := services.NewSalaryComponentService(salaryComponentRepo)
-	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, attendanceCorrectionRepo, salaryComponentRepo, notifierSvc)
+	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, attendanceCorrectionRepo, salaryComponentRepo, overtimeRepo, notifierSvc)
 	monthlyReportSvc := services.NewMonthlyReportService(monthlyReportRepo)
 	loanProductSvc := services.NewLoanProductService(loanProductRepo)
 	loanSvc := services.NewLoanService(loanRepo, loanProductRepo, loanApprovalRepo, loanInstallmentRepo, personnelRepo, userRepo, notifierSvc, notificationSvc)
@@ -185,6 +187,7 @@ func main() {
 	attendanceCorrectionHdl := handlers.NewAttendanceCorrectionHandler(attendanceCorrectionSvc)
 	patrolHdl := handlers.NewPatrolHandler(patrolSvc)
 	leaveHdl := handlers.NewLeaveHandler(leaveSvc)
+	overtimeHdl := handlers.NewOvertimeHandler(overtimeSvc)
 	salaryComponentHdl := handlers.NewSalaryComponentHandler(salaryComponentSvc)
 	payrollHdl := handlers.NewPayrollHandler(payrollSvc)
 	monthlyReportHdl := handlers.NewMonthlyReportHandler(monthlyReportSvc, userRepo)
@@ -217,7 +220,7 @@ func main() {
 	)
 
 	// Setup routes
-	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, realtimeHdl, userRepo, personnelRepo)
+	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, overtimeHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, realtimeHdl, userRepo, personnelRepo)
 
 	// Start server with graceful shutdown
 	port := config.GetEnv("APP_PORT", "4000")

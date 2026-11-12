@@ -150,3 +150,39 @@ func correctionTypeLabel(t string) string {
 	}
 	return t
 }
+
+func (n *Notifier) OvertimeDecision(ctx context.Context, o *model.Overtime, status string) {
+	if n == nil || o == nil {
+		return
+	}
+	to := personnelEmail(o.Personnel)
+	if len(to) == 0 {
+		return
+	}
+	approved := strings.EqualFold(status, "approved")
+	tone, badge := toneSuccess, "Disetujui"
+	headline := "Pengajuan Lembur Disetujui"
+	intro := "Pengajuan lembur Anda telah <strong style=\"color:#047857\">disetujui</strong> oleh admin perusahaan."
+	if !approved {
+		tone, badge = toneDanger, "Ditolak"
+		headline = "Pengajuan Lembur Ditolak"
+		intro = "Mohon maaf, pengajuan lembur Anda telah <strong style=\"color:#b91c1c\">ditolak</strong> oleh admin perusahaan."
+	}
+	rows := [][2]string{
+		{"Tanggal", formatDateID(o.Date)},
+		{"Jam", fmt.Sprintf("%s – %s", o.StartTime, o.EndTime)},
+		{"Durasi", fmt.Sprintf("%.1f jam", o.TotalHours)},
+		{"Alasan", htmlEscape(o.Reason)},
+	}
+	body := paragraph(intro) + kvCard(rows)
+	if note := derefStr(o.ApproverNotes); note != "" {
+		noteTone, title := toneInfo, "Catatan Persetujuan"
+		if !approved {
+			noteTone, title = toneDanger, "Alasan Penolakan"
+		}
+		body += noticeBox(noteTone, title, htmlEscape(note))
+	}
+	html := wrapEmail(headline, "Keputusan dari admin perusahaan untuk pengajuan Anda.", badge, tone,
+		fmt.Sprintf("Pengajuan lembur Anda %s.", strings.ToLower(badge)), body)
+	n.dispatch(ctx, to, fmt.Sprintf("[SAKU] %s — %s", headline, formatDateID(o.Date)), html)
+}

@@ -1,6 +1,9 @@
 package services
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 func notifLoanSubmittedApplicant() (title, body string) {
 	return "Pengajuan pinjaman terkirim", "Pengajuan pinjaman berhasil dikirim."
@@ -32,4 +35,20 @@ func notifLoanRejected(reason *string) (title, body string) {
 
 func notifLoanCancelled() (title, body string) {
 	return "Pengajuan pinjaman dibatalkan", "Pengajuan pinjaman telah dibatalkan."
+}
+
+func notifOvertimeReviewRequired(applicantName string, date time.Time, hours float64) (title, body string) {
+	return "Pengajuan lembur baru", fmt.Sprintf("%s mengajukan lembur %s (%.1f jam) dan membutuhkan persetujuan Anda.", applicantName, date.Format("02-01-2006"), hours)
+}
+
+func notifOvertimeDecision(approved bool, date time.Time, notes *string) (title, body string) {
+	day := date.Format("02-01-2006")
+	if approved {
+		return "Pengajuan lembur disetujui", fmt.Sprintf("Pengajuan lembur Anda pada %s telah disetujui.", day)
+	}
+	body = fmt.Sprintf("Pengajuan lembur Anda pada %s ditolak.", day)
+	if notes != nil && *notes != "" {
+		body += "\nAlasan: " + *notes
+	}
+	return "Pengajuan lembur ditolak", body
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
@@ -132,4 +133,60 @@ func (h *LoanInstallmentHandler) MarkOverdue(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}
 	return utils.SuccessResponse(c, http.StatusOK, "overdue installments updated", model.APIResponse{Data: map[string]int64{"updated": count}})
+}
+
+// MySummary godoc
+// @Summary      Loan summary for the Beranda
+// @Description  Outstanding balance, next due installment and what is overdue or due within a week.
+// @Tags         LoanInstallments
+// @Success      200 {object} model.APIResponse
+// @Security     BearerAuth
+// @Router       /api/v1/loans/my-summary [get]
+func (h *LoanInstallmentHandler) MySummary(c *fiber.Ctx) error {
+	personnelID, _ := c.Locals("personnelID").(uuid.UUID)
+	if personnelID == uuid.Nil {
+		// Accounts without a personnel record have no loans: an empty summary, not an error.
+		return utils.SuccessResponse(c, http.StatusOK, "loan summary", model.LoanDashboardSummary{DueSoon: []model.LoanDueItem{}})
+	}
+	summary, err := h.service.DashboardSummary(c.Context(), personnelID, time.Now())
+	if err != nil {
+		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+	}
+	return utils.SuccessResponse(c, http.StatusOK, "loan summary", summary)
+}
+
+// AdminSummary godoc
+// @Summary      Loan statistics for the admin Beranda
+// @Description  Applications by status plus overdue and soon-due installments, in the caller's scope.
+// @Tags         LoanInstallments
+// @Success      200 {object} model.APIResponse
+// @Security     BearerAuth
+// @Router       /api/v1/loans/admin-summary [get]
+func (h *LoanInstallmentHandler) AdminSummary(c *fiber.Ctx) error {
+	role, _ := c.Locals("role").(string)
+	uid, _ := c.Locals("userID").(uuid.UUID)
+	stats, err := h.loanService.StatisticsScoped(c.Context(), role, uid)
+	if err != nil {
+		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+	}
+	byStatus := make(map[string]int64, len(stats))
+	for k, v := range stats {
+		if n, ok := v.(int64); ok {
+			byStatus[k] = n
+		}
+	}
+	var bujpID uuid.UUID
+	if !utils.IsPusat(role) {
+		bujpID, _ = c.Locals("bujpID").(uuid.UUID)
+		if bujpID == uuid.Nil {
+			return utils.SuccessResponse(c, http.StatusOK, "loan admin summary", model.LoanAdminSummary{ByStatus: byStatus})
+		}
+	}
+	overdue, amount, soon, err := h.service.DueStats(c.Context(), bujpID, time.Now())
+	if err != nil {
+		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+	}
+	return utils.SuccessResponse(c, http.StatusOK, "loan admin summary", model.LoanAdminSummary{
+		ByStatus: byStatus, OverdueInstallments: overdue, OverdueAmount: amount, DueSoonInstallments: soon,
+	})
 }

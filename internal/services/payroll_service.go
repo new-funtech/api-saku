@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ type payrollServiceImpl struct {
 	attendanceRepo      repository.AttendanceRepository
 	correctionRepo      repository.AttendanceCorrectionRepository
 	salaryComponentRepo repository.SalaryComponentRepository
+	overtimeRepo        repository.OvertimeRepository
 	notifier            *notifier.Notifier
 }
 
@@ -41,6 +43,7 @@ func NewPayrollService(
 	attendanceRepo repository.AttendanceRepository,
 	correctionRepo repository.AttendanceCorrectionRepository,
 	salaryComponentRepo repository.SalaryComponentRepository,
+	overtimeRepo repository.OvertimeRepository,
 	notif *notifier.Notifier,
 ) PayrollService {
 	return &payrollServiceImpl{
@@ -49,6 +52,7 @@ func NewPayrollService(
 		attendanceRepo:      attendanceRepo,
 		correctionRepo:      correctionRepo,
 		salaryComponentRepo: salaryComponentRepo,
+		overtimeRepo:        overtimeRepo,
 		notifier:            notif,
 	}
 }
@@ -388,6 +392,49 @@ func computeAttendanceStats(
 	return stats
 }
 
+// overtimePay prices a month of approved overtime. hoursByDay maps each day to the hours worked that
+// day: the first hour pays 1.5x the hourly wage (base salary / 173), every further hour 2x.
+func overtimePay(baseSalary float64, hoursByDay map[string]float64) (pay, totalHours float64) {
+	if baseSalary <= 0 {
+		return 0, 0
+	}
+	hourly := baseSalary / constants.PayrollMonthlyWorkHours
+	for _, h := range hoursByDay {
+		if h <= 0 {
+			continue
+		}
+		totalHours += h
+		first := math.Min(h, 1)
+		pay += hourly * (first*constants.OvertimeFirstHourMultiplier + (h-first)*constants.OvertimeNextHourMultiplier)
+	}
+	return math.Round(pay*100) / 100, totalHours
+}
+
+// overtimeComponent returns the shared "Upah Lembur" salary component, creating it on first use so
+// overtime pay shows up as its own line on the slip.
+func (s *payrollServiceImpl) overtimeComponent(ctx context.Context) (*model.SalaryComponent, error) {
+	if c, err := s.salaryComponentRepo.FindByCode(ctx, constants.OvertimeSalaryComponentCode); err == nil && c != nil {
+		return c, nil
+	}
+	desc := "Dihitung otomatis dari lembur yang disetujui: upah per jam = gaji pokok / 173; jam pertama 1,5x, jam berikutnya 2x per hari."
+	c := &model.SalaryComponent{
+		Code:              constants.OvertimeSalaryComponentCode,
+		Name:              constants.OvertimeSalaryComponentName,
+		Type:              constants.SalaryComponentTypeAllowance,
+		CalculationMethod: constants.SalaryComponentMethodFixed,
+		IsActive:          true,
+		Description:       &desc,
+	}
+	if err := s.salaryComponentRepo.Create(ctx, c); err != nil {
+		// Lost a race with a concurrent generate: take the one that now exists.
+		if existing, ferr := s.salaryComponentRepo.FindByCode(ctx, constants.OvertimeSalaryComponentCode); ferr == nil && existing != nil {
+			return existing, nil
+		}
+		return nil, err
+	}
+	return c, nil
+}
+
 func computeSalaryComponents(
 	baseSalary float64,
 	bujpID uuid.UUID,
@@ -474,6 +521,27 @@ func (s *payrollServiceImpl) Generate(ctx context.Context, req *model.GeneratePa
 		}
 	}
 
+	// Approved overtime of the period, by personnel and day.
+	overtimeHours := make(map[uuid.UUID]map[string]float64, len(personnels))
+	var overtimeComp *model.SalaryComponent
+	if s.overtimeRepo != nil {
+		approved, oerr := s.overtimeRepo.FindApproved(ctx, req.BujpID, periodStart, periodEnd)
+		if oerr != nil {
+			return nil, oerr
+		}
+		for _, o := range approved {
+			if overtimeHours[o.PersonnelID] == nil {
+				overtimeHours[o.PersonnelID] = map[string]float64{}
+			}
+			overtimeHours[o.PersonnelID][o.Date.Format("2006-01-02")] += o.TotalHours
+		}
+		if len(approved) > 0 {
+			if overtimeComp, err = s.overtimeComponent(ctx); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	result := &model.GeneratePayrollResult{}
 
 	for i := range personnels {
@@ -503,6 +571,14 @@ func (s *payrollServiceImpl) Generate(ctx context.Context, req *model.GeneratePa
 
 		totalAllowances, totalDeductions, details := computeSalaryComponents(baseSalary, req.BujpID, components)
 		totalDeductions += absenceDeduction
+
+		if overtimeComp != nil {
+			if pay, hours := overtimePay(baseSalary, overtimeHours[p.ID]); pay > 0 {
+				note := fmt.Sprintf("%.1f jam lembur", hours)
+				details = append(details, model.PayrollDetail{SalaryComponentID: overtimeComp.ID, Amount: pay, Notes: &note})
+				totalAllowances += pay
+			}
+		}
 
 		netSalary := baseSalary + totalAllowances - totalDeductions
 		payroll := &model.Payroll{
