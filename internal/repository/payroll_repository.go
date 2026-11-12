@@ -38,7 +38,10 @@ func (r *payrollRepositoryImpl) FindAll(ctx context.Context, page, limit int, fi
 	query := r.db.WithContext(ctxTimeout).Model(&model.Payroll{})
 
 	// Apply filters
-	if personnelID, ok := filters["personnel_id"].(string); ok && personnelID != "" {
+	// Handlers pass the caller's own id as a uuid.UUID, query params as a string.
+	if pid, ok := filters["personnel_id"].(uuid.UUID); ok && pid != uuid.Nil {
+		query = query.Where("payrolls.personnel_id = ?", pid)
+	} else if personnelID, ok := filters["personnel_id"].(string); ok && personnelID != "" {
 		query = query.Where("personnel_id = ?", personnelID)
 	}
 	if v, ok := filters["force_empty"].(bool); ok && v {

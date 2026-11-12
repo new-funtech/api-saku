@@ -261,37 +261,21 @@ func (h *AttendanceHandler) Summary(c *fiber.Ctx) error {
 
 	utils.ApplyBujpScope(c, baseFilters)
 
-	count := func(status string) int64 {
-		f := make(map[string]interface{}, len(baseFilters)+1)
-		for k, v := range baseFilters {
-			f[k] = v
-		}
-		if status != "" {
-			f["status"] = status
-		}
-		_, total, err := h.service.GetAll(ctx, 1, 1, f)
-		if err != nil {
-			return 0
-		}
-		return total
+	summary, err := h.service.Summary(ctx, baseFilters)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
+			Status:  "error",
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to load attendance summary",
+		})
 	}
-
-	hadir := count("present")
-	telat := count("late")
-	izin := count("permission") + count("sick") + count("leave")
-	total := count("")
+	summary.Period = period
 
 	return c.Status(http.StatusOK).JSON(model.APIResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
 		Message: "Attendance summary",
-		Data: fiber.Map{
-			"period": period,
-			"hadir":  hadir,
-			"telat":  telat,
-			"izin":   izin,
-			"total":  total,
-		},
+		Data:    summary,
 	})
 }
 

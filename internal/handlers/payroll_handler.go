@@ -58,6 +58,16 @@ func (h *PayrollHandler) GetAll(c *fiber.Ctx) error {
 	}
 
 	utils.ApplyBujpScope(c, filters)
+	// Staff see only their own slips, whatever personnel_id the request asks for;
+	// only admin roles list everyone in their scope.
+	if role, _ := c.Locals("role").(string); role == "guard" || role == "supervisor" {
+		pid, _ := c.Locals("personnelID").(uuid.UUID)
+		if pid == uuid.Nil {
+			filters["force_empty"] = true
+		} else {
+			filters["personnel_id"] = pid
+		}
+	}
 
 	payrolls, total, err := h.service.GetAll(ctx, page, limit, filters)
 	if err != nil {
@@ -121,6 +131,12 @@ func (h *PayrollHandler) GetByID(c *fiber.Ctx) error {
 
 	if !utils.CanAccessBujp(c, payroll.BujpID) {
 		return forbiddenResponse(c)
+	}
+	// Staff may open only their own slip, not a colleague's from the same BUJP.
+	if role, _ := c.Locals("role").(string); role == "guard" || role == "supervisor" {
+		if pid, _ := c.Locals("personnelID").(uuid.UUID); pid == uuid.Nil || pid != payroll.PersonnelID {
+			return forbiddenResponse(c)
+		}
 	}
 
 	return c.Status(http.StatusOK).JSON(model.APIResponse{

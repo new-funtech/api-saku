@@ -48,23 +48,3 @@ func CacheDel(ctx context.Context, keys ...string) {
 	}
 	config.RedisClient.Del(ctx, keys...)
 }
-
-// CacheDelByPrefix scans and deletes all keys matching prefix*.
-// Useful for invalidating list caches keyed by query parameters.
-func CacheDelByPrefix(ctx context.Context, prefix string) {
-	if config.RedisClient == nil || prefix == "" {
-		return
-	}
-	iter := config.RedisClient.Scan(ctx, 0, prefix+"*", 200).Iterator()
-	var keys []string
-	for iter.Next(ctx) {
-		keys = append(keys, iter.Val())
-		if len(keys) >= 200 {
-			config.RedisClient.Del(ctx, keys...)
-			keys = keys[:0]
-		}
-	}
-	if len(keys) > 0 {
-		config.RedisClient.Del(ctx, keys...)
-	}
-}

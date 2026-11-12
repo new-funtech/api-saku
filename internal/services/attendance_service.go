@@ -38,6 +38,7 @@ func presignAttendancePhotos(ctx context.Context, r *model.AttendanceResponse) {
 
 type AttendanceService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceResponse, int64, error)
+	Summary(ctx context.Context, filters map[string]interface{}) (*model.AttendanceSummary, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.AttendanceResponse, error)
 	GetByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (*model.AttendanceResponse, error)
 	GetByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.AttendanceResponse, int64, error)
@@ -58,6 +59,29 @@ type attendanceServiceImpl struct {
 
 func NewAttendanceService(repo repository.AttendanceRepository, personnelRepo repository.PersonnelRepository, assignmentRepo repository.AssignmentRepository) AttendanceService {
 	return &attendanceServiceImpl{repo: repo, personnelRepo: personnelRepo, assignmentRepo: assignmentRepo}
+}
+
+// Summary tallies attendance for the filtered range in one query. "Hadir"
+// counts everyone who showed up, late or not; "Izin" folds leave, permission
+// and sick together, with Sakit also reported on its own.
+func (s *attendanceServiceImpl) Summary(ctx context.Context, filters map[string]interface{}) (*model.AttendanceSummary, error) {
+	c, err := s.repo.CountByStatus(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+	var total int64
+	for _, n := range c {
+		total += n
+	}
+	return &model.AttendanceSummary{
+		Hadir:      c["present"] + c["late"],
+		TepatWaktu: c["present"],
+		Telat:      c["late"],
+		Izin:       c["permission"] + c["sick"] + c["leave"],
+		Sakit:      c["sick"],
+		Alpa:       c["absent"],
+		Total:      total,
+	}, nil
 }
 
 func (s *attendanceServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceResponse, int64, error) {

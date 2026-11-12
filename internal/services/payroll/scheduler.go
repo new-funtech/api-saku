@@ -54,8 +54,6 @@ func (s *Scheduler) Stop() {
 	log.Println("[payroll-cron] stopped")
 }
 
-func (s *Scheduler) RunNow() { s.run() }
-
 func (s *Scheduler) run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()

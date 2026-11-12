@@ -208,11 +208,13 @@ func SetupRoutes(
 	// Payroll routes (all protected)
 	payrollRoutes := v1.Group("/payrolls", protected()...)
 	payrollRoutes.Get("/", payrollHdl.GetAll)
-	payrollRoutes.Post("/generate", payrollHdl.Generate)
 	payrollRoutes.Get("/:id", payrollHdl.GetByID)
-	payrollRoutes.Post("/", payrollHdl.Create)
-	payrollRoutes.Put("/:id", payrollHdl.Update)
-	payrollRoutes.Delete("/:id", payrollHdl.Delete)
+	// Only admins may create or change payroll; staff can only read their own slip.
+	payrollAdmin := middleware.RequireRoles("super_admin", "admin", "company_admin")
+	payrollRoutes.Post("/generate", payrollAdmin, payrollHdl.Generate)
+	payrollRoutes.Post("/", payrollAdmin, payrollHdl.Create)
+	payrollRoutes.Put("/:id", payrollAdmin, payrollHdl.Update)
+	payrollRoutes.Delete("/:id", payrollAdmin, payrollHdl.Delete)
 
 	// Monthly Report routes (all protected)
 	monthlyReportRoutes := v1.Group("/monthly-reports", protected()...)

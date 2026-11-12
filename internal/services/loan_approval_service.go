@@ -16,6 +16,13 @@ import (
 
 var ErrRejectNotesRequired = errors.New("rejection notes are required")
 
+// approvalStage is the loan status each approval level acts on.
+var approvalStage = map[int]string{
+	model.LoanApprovalLevelBujp:  model.LoanStatusSubmitted,
+	model.LoanApprovalLevelPusat: model.LoanStatusApprovedBujp,
+	model.LoanApprovalLevelBprks: model.LoanStatusApprovedPusat,
+}
+
 type LoanApprovalService interface {
 	GetPending(ctx context.Context, role string, bujpID *uuid.UUID, page, limit int) ([]model.LoanApprovalResponse, int64, error)
 	GetByLoan(ctx context.Context, loanID uuid.UUID) ([]model.LoanApprovalResponse, error)
@@ -160,6 +167,18 @@ func (s *loanApprovalServiceImpl) Process(ctx context.Context, approvalID uuid.U
 		txApprovalRepo := s.approvalRepo.WithTx(tx)
 		txLoanRepo := s.loanRepo.WithTx(tx)
 
+		// Lock the loan row and re-check its stage: a cancellation or another
+		// reviewer may have moved it since it was read above, and writing the
+		// stale copy back would resurrect a cancelled loan.
+		locked, lerr := txLoanRepo.LockByID(ctx, approval.LoanID)
+		if lerr != nil {
+			return lerr
+		}
+		if locked.Status != approvalStage[approval.ApprovalLevel] {
+			return errors.New("loan is no longer awaiting this approval")
+		}
+		loan = locked
+
 		claimed, cerr := txApprovalRepo.ClaimAndUpdate(ctx, approval)
 		if cerr != nil {
 			return cerr
@@ -289,26 +308,12 @@ func (s *loanApprovalServiceImpl) Disburse(ctx context.Context, loanID uuid.UUID
 	if s.loanService == nil {
 		return nil, errors.New("loan service unavailable")
 	}
-	// Atomically claim the disbursement before touching installments — see
-	// ClaimDisbursement's doc comment. Without this, a concurrent
-	// UserConfirm(accept) for the same loan (or a doubled click here)
-	// could both pass the status check above and both create an
-	// installment schedule.
-	claimed, cerr := s.loanRepo.ClaimDisbursement(ctx, loan.ID)
-	if cerr != nil {
-		return nil, cerr
-	}
-	if !claimed {
-		return nil, errors.New("loan is already being disbursed or has already been disbursed")
-	}
-	if err := s.loanService.processDisbursement(ctx, loan, req); err != nil {
+	// disburse claims the loan atomically, so a concurrent accept or a doubled
+	// click cannot create a second installment schedule.
+	if err := s.loanService.disburse(ctx, loan, req); err != nil {
 		return nil, err
 	}
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
-		return nil, err
-	}
-	r := ToLoanResponse(loan)
-	return &r, nil
+	return s.loanService.GetByID(ctx, loan.ID)
 }
 
 func ToLoanApprovalResponse(ctx context.Context, a *model.LoanApproval) model.LoanApprovalResponse {

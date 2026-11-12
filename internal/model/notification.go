@@ -45,12 +45,14 @@ func (n *Notification) BeforeCreate(tx *gorm.DB) error {
 }
 
 type NotificationResponse struct {
-	ID         uuid.UUID  `json:"id"`
-	Type       string     `json:"type"`
-	Title      string     `json:"title"`
-	Body       string     `json:"body"`
-	EntityType string     `json:"entity_type"`
-	EntityID   uuid.UUID  `json:"entity_id"`
+	ID         uuid.UUID `json:"id"`
+	Type       string    `json:"type"`
+	Title      string    `json:"title"`
+	Body       string    `json:"body"`
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+	// LoanNumber identifies the loan (e.g. LN-2026-11-0002) when the notification is about one.
+	LoanNumber string     `json:"loan_number,omitempty"`
 	ActionURL  *string    `json:"action_url,omitempty"`
 	Metadata   *string    `json:"metadata,omitempty"`
 	IsRead     bool       `json:"is_read"`

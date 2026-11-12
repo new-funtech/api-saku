@@ -97,3 +97,15 @@ type AttendanceResponse struct {
 	CreatedAt             time.Time           `json:"created_at"`
 	UpdatedAt             time.Time           `json:"updated_at"`
 }
+
+// AttendanceSummary is the per-status tally behind the dashboard recap.
+type AttendanceSummary struct {
+	Period     string `json:"period"`
+	Hadir      int64  `json:"hadir"`
+	TepatWaktu int64  `json:"tepat_waktu"`
+	Telat      int64  `json:"telat"`
+	Izin       int64  `json:"izin"`
+	Sakit      int64  `json:"sakit"`
+	Alpa       int64  `json:"alpa"`
+	Total      int64  `json:"total"`
+}

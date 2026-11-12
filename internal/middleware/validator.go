@@ -19,12 +19,6 @@ func ValidateRequest(data interface{}) error {
 	return validate.Struct(data)
 }
 
-func ValidationMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		return c.Next()
-	}
-}
-
 func ValidateAndParse(c *fiber.Ctx, data interface{}) error {
 	if err := c.BodyParser(data); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{

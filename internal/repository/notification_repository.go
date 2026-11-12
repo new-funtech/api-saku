@@ -20,6 +20,7 @@ type NotificationRepository interface {
 	MarkAllRead(ctx context.Context, recipientUserID uuid.UUID) error
 	Delete(ctx context.Context, recipientUserID, id uuid.UUID) error
 	ClearRead(ctx context.Context, recipientUserID uuid.UUID) error
+	LoanNumbers(ctx context.Context, loanIDs []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
 type notificationRepositoryImpl struct {
@@ -91,4 +92,24 @@ func (r *notificationRepositoryImpl) ClearRead(ctx context.Context, recipientUse
 	return r.db.WithContext(ctx).
 		Where("recipient_user_id = ? AND is_read = ?", recipientUserID, true).
 		Delete(&model.Notification{}).Error
+}
+
+// LoanNumbers maps loan ids to their loan numbers in one query.
+func (r *notificationRepositoryImpl) LoanNumbers(ctx context.Context, loanIDs []uuid.UUID) (map[uuid.UUID]string, error) {
+	out := make(map[uuid.UUID]string, len(loanIDs))
+	if len(loanIDs) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		ID         uuid.UUID
+		LoanNumber string
+	}
+	if err := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Select("id, loan_number").Where("id IN ?", loanIDs).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, rw := range rows {
+		out[rw.ID] = rw.LoanNumber
+	}
+	return out, nil
 }

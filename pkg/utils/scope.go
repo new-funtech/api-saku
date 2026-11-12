@@ -61,14 +61,6 @@ func ApplyBujpScope(c *fiber.Ctx, filters map[string]interface{}) {
 	}
 }
 
-// ApplyPersonnelScope is like ApplyBujpScope but used for resources that have
-// no BUJP column (e.g. assignments). BUJP-scoped roles are translated into
-// "any personnel under my BUJP" by setting filters["bujp_id"] which the repo
-// must JOIN through personnels.
-func ApplyPersonnelScope(c *fiber.Ctx, filters map[string]interface{}) {
-	ApplyBujpScope(c, filters)
-}
-
 // CanAccessBujp returns true when the caller is allowed to read/write data
 // belonging to the given BUJP.
 func CanAccessBujp(c *fiber.Ctx, bujpID uuid.UUID) bool {

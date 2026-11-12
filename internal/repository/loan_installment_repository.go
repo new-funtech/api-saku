@@ -12,6 +12,7 @@ import (
 type LoanInstallmentRepository interface {
 	FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanInstallment, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.LoanInstallment, error)
+	WithTx(tx *gorm.DB) LoanInstallmentRepository
 	CreateMany(ctx context.Context, items []model.LoanInstallment) error
 	Update(ctx context.Context, item *model.LoanInstallment) error
 	MarkOverdueBefore(ctx context.Context, before time.Time) (int64, error)
@@ -24,6 +25,10 @@ type loanInstallmentRepositoryImpl struct {
 
 func NewLoanInstallmentRepository(db *gorm.DB) LoanInstallmentRepository {
 	return &loanInstallmentRepositoryImpl{db: db}
+}
+
+func (r *loanInstallmentRepositoryImpl) WithTx(tx *gorm.DB) LoanInstallmentRepository {
+	return &loanInstallmentRepositoryImpl{db: tx}
 }
 
 func (r *loanInstallmentRepositoryImpl) FindByLoanID(ctx context.Context, loanID uuid.UUID) ([]model.LoanInstallment, error) {

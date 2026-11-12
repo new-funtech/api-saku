@@ -51,11 +51,25 @@ func (s *notificationServiceImpl) List(ctx context.Context, userID uuid.UUID, pa
 	if err != nil {
 		return nil, 0, err
 	}
+	return s.toResponses(ctx, items), total, nil
+}
+
+// toResponses converts rows and attaches each loan's number with a single lookup.
+func (s *notificationServiceImpl) toResponses(ctx context.Context, items []model.Notification) []model.NotificationResponse {
 	out := make([]model.NotificationResponse, len(items))
+	var loanIDs []uuid.UUID
 	for i := range items {
 		out[i] = model.ToNotificationResponse(&items[i])
+		if items[i].EntityType == "loan" {
+			loanIDs = append(loanIDs, items[i].EntityID)
+		}
 	}
-	return out, total, nil
+	if numbers, err := s.repo.LoanNumbers(ctx, loanIDs); err == nil {
+		for i := range out {
+			out[i].LoanNumber = numbers[out[i].EntityID]
+		}
+	}
+	return out
 }
 
 func (s *notificationServiceImpl) UnreadCount(ctx context.Context, userID uuid.UUID) (int64, error) {
@@ -182,8 +196,12 @@ func (s *notificationServiceImpl) PushRealtime(rows []model.Notification) {
 	if s.hub == nil {
 		return
 	}
+	if len(rows) == 0 {
+		return
+	}
+	responses := s.toResponses(context.Background(), rows)
 	for i := range rows {
-		s.hub.SendToUser(rows[i].RecipientUserID, "notification.created", model.ToNotificationResponse(&rows[i]))
+		s.hub.SendToUser(rows[i].RecipientUserID, "notification.created", responses[i])
 	}
 }
 

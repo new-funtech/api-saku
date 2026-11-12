@@ -12,6 +12,7 @@ import (
 
 type AttendanceRepository interface {
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Attendance, int64, error)
+	CountByStatus(ctx context.Context, filters map[string]interface{}) (map[string]int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Attendance, error)
 	FindByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (*model.Attendance, error)
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Attendance, int64, error)
@@ -34,23 +35,17 @@ func (r *attendanceRepositoryImpl) withContext(ctx context.Context) *gorm.DB {
 	return r.db.WithContext(ctx)
 }
 
-func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Attendance, int64, error) {
-	db := r.withContext(ctx)
-
-	var attendances []model.Attendance
-	var total int64
-
-	query := db.Model(&model.Attendance{})
-
+// scopedAttendances applies the shared list filters. empty is true when the
+// caller must see nothing (an unscoped non-admin).
+func scopedAttendances(db *gorm.DB, filters map[string]interface{}) (query *gorm.DB, empty bool) {
+	query = db.Model(&model.Attendance{})
 	if v, ok := filters["force_empty"].(bool); ok && v {
-		return []model.Attendance{}, 0, nil
+		return query, true
 	}
 	if bujpID, ok := filters["bujp_id"].(uuid.UUID); ok && bujpID != uuid.Nil {
 		query = query.Joins("JOIN personnels ON personnels.id = attendances.personnel_id").
 			Where("personnels.bujp_id = ?", bujpID)
 	}
-
-	// Apply filters
 	if personnelID, ok := filters["personnel_id"].(uuid.UUID); ok && personnelID != uuid.Nil {
 		query = query.Where("attendances.personnel_id = ?", personnelID)
 	}
@@ -68,6 +63,40 @@ func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int,
 	}
 	if endDate, ok := filters["end_date"].(time.Time); ok && !endDate.IsZero() {
 		query = query.Where("attendances.date <= ?", endDate)
+	}
+	return query, false
+}
+
+// CountByStatus returns attendance counts per status in a single query.
+func (r *attendanceRepositoryImpl) CountByStatus(ctx context.Context, filters map[string]interface{}) (map[string]int64, error) {
+	out := map[string]int64{}
+	query, empty := scopedAttendances(r.withContext(ctx), filters)
+	if empty {
+		return out, nil
+	}
+	var rows []struct {
+		Status string
+		Total  int64
+	}
+	if err := query.Select("attendances.status AS status, COUNT(*) AS total").
+		Group("attendances.status").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, rw := range rows {
+		out[rw.Status] = rw.Total
+	}
+	return out, nil
+}
+
+func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Attendance, int64, error) {
+	db := r.withContext(ctx)
+
+	var attendances []model.Attendance
+	var total int64
+
+	query, empty := scopedAttendances(db, filters)
+	if empty {
+		return []model.Attendance{}, 0, nil
 	}
 
 	if err := query.Count(&total).Error; err != nil {

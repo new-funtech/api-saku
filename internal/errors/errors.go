@@ -71,30 +71,6 @@ func IsNotFound(err error) bool {
 	return errors.Is(err, ErrNotFound)
 }
 
-func IsAlreadyExists(err error) bool {
-	var appErr *AppError
-	if errors.As(err, &appErr) {
-		return errors.Is(appErr.Err, ErrAlreadyExists)
-	}
-	return errors.Is(err, ErrAlreadyExists)
-}
-
-func IsValidation(err error) bool {
-	var appErr *AppError
-	if errors.As(err, &appErr) {
-		return errors.Is(appErr.Err, ErrValidation)
-	}
-	return errors.Is(err, ErrValidation)
-}
-
-func IsUnauthorized(err error) bool {
-	var appErr *AppError
-	if errors.As(err, &appErr) {
-		return errors.Is(appErr.Err, ErrUnauthorized)
-	}
-	return errors.Is(err, ErrUnauthorized)
-}
-
 // Common error constructors
 func NotFound(message string) *AppError {
 	return NewAppError(ErrNotFound, message, http.StatusNotFound)
@@ -106,18 +82,6 @@ func BadRequest(message string) *AppError {
 
 func Validation(message string) *AppError {
 	return NewAppError(ErrValidation, message, http.StatusBadRequest)
-}
-
-func Unauthorized(message string) *AppError {
-	return NewAppError(ErrUnauthorized, message, http.StatusUnauthorized)
-}
-
-func Forbidden(message string) *AppError {
-	return NewAppError(ErrForbidden, message, http.StatusForbidden)
-}
-
-func Conflict(message string) *AppError {
-	return NewAppError(ErrConflict, message, http.StatusConflict)
 }
 
 func Internal(message string) *AppError {

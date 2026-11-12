@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrNotPending means a request was already decided (or removed) by the time
+// the guarded write ran.
+var ErrNotPending = errors.New("request is no longer pending")
+
 type LeaveRepository interface {
 	FindAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Leave, int64, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.Leave, error)
@@ -17,6 +22,7 @@ type LeaveRepository interface {
 	FindPending(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.Leave, int64, error)
 	FindByDateRange(ctx context.Context, startDate, endDate time.Time, personnelID uuid.UUID) ([]model.Leave, error)
 	Create(ctx context.Context, leave *model.Leave) error
+	CreateIfFree(ctx context.Context, leave *model.Leave) (*model.Leave, error)
 	Update(ctx context.Context, leave *model.Leave) error
 	Approve(ctx context.Context, id uuid.UUID, approverID uuid.UUID, status, notes string) error
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -155,11 +161,8 @@ func (r *leaveRepositoryImpl) FindByDateRange(ctx context.Context, startDate, en
 
 	var leaves []model.Leave
 	err := db.
-		Where("personnel_id = ? AND status = ?", personnelID, "approved").
-		Where("((start_date BETWEEN ? AND ?) OR (end_date BETWEEN ? AND ?) OR (start_date <= ? AND end_date >= ?))",
-			startDate, endDate,
-			startDate, endDate,
-			startDate, endDate).
+		Where("personnel_id = ? AND status IN ?", personnelID, []string{"approved", "pending"}).
+		Where("start_date <= ? AND end_date >= ?", endDate, startDate).
 		Order("start_date ASC").
 		Find(&leaves).Error
 
@@ -170,6 +173,32 @@ func (r *leaveRepositoryImpl) Create(ctx context.Context, leave *model.Leave) er
 	db := r.withContext(ctx)
 
 	return db.Create(leave).Error
+}
+
+// CreateIfFree inserts the leave unless it overlaps an approved or pending one
+// of the same personnel, in which case that leave is returned instead. The
+// personnel is locked for the duration, so two simultaneous submissions cannot
+// both pass the overlap check.
+func (r *leaveRepositoryImpl) CreateIfFree(ctx context.Context, leave *model.Leave) (*model.Leave, error) {
+	var conflict *model.Leave
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtext(?))", "leave:"+leave.PersonnelID.String()).Error; err != nil {
+			return err
+		}
+		var existing model.Leave
+		err := tx.Where("personnel_id = ? AND status IN ? AND start_date <= ? AND end_date >= ?",
+			leave.PersonnelID, []string{"approved", "pending"}, leave.EndDate, leave.StartDate).
+			Order("start_date ASC").Limit(1).Take(&existing).Error
+		if err == nil {
+			conflict = &existing
+			return nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(leave).Error
+	})
+	return conflict, err
 }
 
 func (r *leaveRepositoryImpl) Update(ctx context.Context, leave *model.Leave) error {
@@ -196,15 +225,16 @@ func (r *leaveRepositoryImpl) Approve(ctx context.Context, id uuid.UUID, approve
 		"approver_notes": notes,
 	}
 
+	// Guarded by status so two reviewers deciding at once cannot both win.
 	result := db.Model(&model.Leave{}).
-		Where("id = ?", id).
+		Where("id = ? AND status = ?", id, "pending").
 		Updates(updates)
 
 	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("leave not found")
+		return ErrNotPending
 	}
 	return nil
 }

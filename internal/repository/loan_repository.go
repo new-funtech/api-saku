@@ -7,6 +7,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type LoanRepository interface {
@@ -17,6 +18,9 @@ type LoanRepository interface {
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Loan, int64, error)
 	Create(ctx context.Context, l *model.Loan) error
 	Update(ctx context.Context, l *model.Loan) error
+	LockByID(ctx context.Context, id uuid.UUID) (*model.Loan, error)
+	ExpireUnconfirmed(ctx context.Context, id uuid.UUID, now time.Time, reason string) (bool, error)
+	CountsByStatus(ctx context.Context, bujpID, personnelID uuid.UUID) (map[string]int64, error)
 	UpdateColumns(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error
 	ClaimUserConfirmation(ctx context.Context, id uuid.UUID, confirmedAt time.Time) (bool, error)
 	ClaimSubmission(ctx context.Context, id uuid.UUID, submittedAt time.Time) (bool, error)
@@ -24,8 +28,6 @@ type LoanRepository interface {
 	ClaimCancel(ctx context.Context, id uuid.UUID) (bool, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountThisMonth(ctx context.Context) (int64, error)
-	CountByStatus(ctx context.Context, status string) (int64, error)
-	CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error)
 	GetActiveByPersonnel(ctx context.Context, personnelID uuid.UUID) ([]model.Loan, error)
 	CountByPersonnelID(ctx context.Context, personnelID uuid.UUID) (int64, error)
 }
@@ -117,8 +119,59 @@ func (r *loanRepositoryImpl) Create(ctx context.Context, l *model.Loan) error {
 	return r.db.WithContext(ctx).Create(l).Error
 }
 
+// Update writes the loan row only. Preloaded relations (approvals,
+// installments, ...) are never re-saved from a possibly stale copy.
 func (r *loanRepositoryImpl) Update(ctx context.Context, l *model.Loan) error {
-	return r.db.WithContext(ctx).Save(l).Error
+	return r.db.WithContext(ctx).Omit(clause.Associations).Save(l).Error
+}
+
+// LockByID reads the loan row with SELECT ... FOR UPDATE; only meaningful
+// inside a transaction (WithTx).
+func (r *loanRepositoryImpl) LockByID(ctx context.Context, id uuid.UUID) (*model.Loan, error) {
+	var l model.Loan
+	if err := r.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&l, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &l, nil
+}
+
+// ExpireUnconfirmed cancels a loan whose user-confirmation window has passed.
+// The status guard makes it a no-op when the user confirmed in the meantime.
+func (r *loanRepositoryImpl) ExpireUnconfirmed(ctx context.Context, id uuid.UUID, now time.Time, reason string) (bool, error) {
+	res := r.db.WithContext(ctx).Model(&model.Loan{}).
+		Where("id = ? AND status = ? AND user_confirmed_at IS NULL AND user_confirmation_deadline < ?",
+			id, model.LoanStatusPendingUserConfirmation, now).
+		Updates(map[string]interface{}{
+			"status":           model.LoanStatusCancelled,
+			"rejection_reason": reason,
+			"rejected_at":      now,
+		})
+	return res.RowsAffected > 0, res.Error
+}
+
+// CountsByStatus returns the number of loans per status in one query.
+func (r *loanRepositoryImpl) CountsByStatus(ctx context.Context, bujpID, personnelID uuid.UUID) (map[string]int64, error) {
+	type row struct {
+		Status string
+		Total  int64
+	}
+	var rows []row
+	q := r.db.WithContext(ctx).Model(&model.Loan{}).Select("status, COUNT(*) AS total").Group("status")
+	if bujpID != uuid.Nil {
+		q = q.Where("bujp_id = ?", bujpID)
+	}
+	if personnelID != uuid.Nil {
+		q = q.Where("personnel_id = ?", personnelID)
+	}
+	if err := q.Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make(map[string]int64, len(rows))
+	for _, rw := range rows {
+		out[rw.Status] = rw.Total
+	}
+	return out, nil
 }
 
 func (r *loanRepositoryImpl) UpdateColumns(ctx context.Context, id uuid.UUID, updates map[string]interface{}) error {
@@ -193,25 +246,6 @@ func (r *loanRepositoryImpl) CountThisMonth(ctx context.Context) (int64, error) 
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
 	err := r.db.WithContext(ctx).Model(&model.Loan{}).
 		Where("created_at >= ?", start).Count(&c).Error
-	return c, err
-}
-
-func (r *loanRepositoryImpl) CountByStatus(ctx context.Context, status string) (int64, error) {
-	var c int64
-	err := r.db.WithContext(ctx).Model(&model.Loan{}).Where("status = ?", status).Count(&c).Error
-	return c, err
-}
-
-func (r *loanRepositoryImpl) CountByStatusScoped(ctx context.Context, status string, bujpID, personnelID uuid.UUID) (int64, error) {
-	var c int64
-	q := r.db.WithContext(ctx).Model(&model.Loan{}).Where("status = ?", status)
-	if bujpID != uuid.Nil {
-		q = q.Where("bujp_id = ?", bujpID)
-	}
-	if personnelID != uuid.Nil {
-		q = q.Where("personnel_id = ?", personnelID)
-	}
-	err := q.Count(&c).Error
 	return c, err
 }
 

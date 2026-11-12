@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"mime/multipart"
 	"path/filepath"
 	"strings"
 	"time"
@@ -413,21 +412,4 @@ func isValidContentType(contentType string) bool {
 		"application/xlsx": true, // Some browsers may send this
 	}
 	return validTypes[contentType]
-}
-
-func isValidFileExtension(file *multipart.FileHeader) bool {
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	validExts := map[string]bool{
-		".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
-		".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
-	}
-	return validExts[ext]
-}
-
-func getMaxFileSize(contentType string) int64 {
-	// Images have 5MB limit, documents have 10MB limit
-	if strings.HasPrefix(contentType, "image/") {
-		return constants.MaxImageSize
-	}
-	return constants.MaxDocumentSize
 }

@@ -225,15 +225,16 @@ func (r *attendanceCorrectionRepositoryImpl) Approve(ctx context.Context, id uui
 		"approver_notes": notes,
 	}
 
+	// Guarded by status so two reviewers deciding at once cannot both win.
 	result := db.Model(&model.AttendanceCorrection{}).
-		Where("id = ?", id).
+		Where("id = ? AND status = ?", id, "pending").
 		Updates(updates)
 
 	if result.Error != nil {
 		return apperrors.Internal("Failed to approve/reject attendance correction")
 	}
 	if result.RowsAffected == 0 {
-		return apperrors.NotFound("Attendance correction not found")
+		return ErrNotPending
 	}
 
 	return nil

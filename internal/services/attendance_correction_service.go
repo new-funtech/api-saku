@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -236,6 +237,9 @@ func (s *attendancecorrectionServiceImpl) Approve(ctx context.Context, id uuid.U
 	}
 
 	if err := s.repo.Approve(ctx, id, approverID, status, notes); err != nil {
+		if errors.Is(err, repository.ErrNotPending) {
+			return nil, apperrors.BadRequest("Can only approve/reject pending correction requests")
+		}
 		return nil, apperrors.Internal("Failed to approve/reject attendance correction")
 	}
 

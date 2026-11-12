@@ -14,6 +14,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -115,12 +116,15 @@ func (s *loanServiceImpl) expireIfDeadlinePassed(ctx context.Context, loan *mode
 	if !time.Now().After(*loan.UserConfirmationDeadline) {
 		return
 	}
-	loan.Status = model.LoanStatusCancelled
-	reason := "Tidak ada konfirmasi user dalam 24 jam"
-	loan.RejectionReason = &reason
+	// Conditional write: a no-op if the user confirmed in the meantime.
 	now := time.Now()
-	loan.RejectedAt = &now
-	_ = s.loanRepo.Update(ctx, loan)
+	const reason = "Tidak ada konfirmasi user dalam 24 jam"
+	if ok, err := s.loanRepo.ExpireUnconfirmed(ctx, loan.ID, now, reason); err == nil && ok {
+		r := reason
+		loan.Status = model.LoanStatusCancelled
+		loan.RejectionReason = &r
+		loan.RejectedAt = &now
+	}
 }
 
 func (s *loanServiceImpl) GetMyHistory(ctx context.Context, personnelID uuid.UUID, page, limit int, filters map[string]interface{}) ([]model.LoanResponse, int64, error) {
@@ -215,11 +219,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 	monthly, total := calculateLoanDetails(req.LoanAmount, interestRate, req.TenorMonths)
 	provisi, netDisbursed := calculateFeeDetails(req.LoanAmount, registrationFee, provisiRate, req.TenorMonths)
 
-	loanNumber, err := s.generateLoanNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var bujpID *uuid.UUID
 	if personnel.BujpID != uuid.Nil {
 		bid := personnel.BujpID
@@ -229,7 +228,6 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 	termsAcceptedAt := time.Now()
 
 	loan := &model.Loan{
-		LoanNumber:             loanNumber,
 		PersonnelID:            personnelID,
 		BujpID:                 bujpID,
 		LoanProductID:          productID,
@@ -258,7 +256,7 @@ func (s *loanServiceImpl) Create(ctx context.Context, req *model.CreateLoanReque
 		CreatedBy:              &actorUserID,
 	}
 
-	if err := s.loanRepo.Create(ctx, loan); err != nil {
+	if err := s.createWithNumber(ctx, loan); err != nil {
 		return nil, err
 	}
 
@@ -376,9 +374,6 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 		loan.Status == model.LoanStatusCompleted {
 		return nil, errors.New("loan cannot be cancelled in current status")
 	}
-	loan.Status = model.LoanStatusCancelled
-	loan.RejectionReason = reason
-
 	var createdNotifications []model.Notification
 	txErr := s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txLoanRepo := s.loanRepo.WithTx(tx)
@@ -394,9 +389,11 @@ func (s *loanServiceImpl) Cancel(ctx context.Context, id uuid.UUID, reason *stri
 		if !claimed {
 			return errors.New("loan cannot be cancelled in current status")
 		}
-		if cerr := txLoanRepo.Update(ctx, loan); cerr != nil {
+		if cerr := txLoanRepo.UpdateColumns(ctx, loan.ID, map[string]interface{}{"rejection_reason": reason}); cerr != nil {
 			return cerr
 		}
+		loan.Status = model.LoanStatusCancelled
+		loan.RejectionReason = reason
 		if s.notificationSvc != nil {
 			rows, nerr := s.notificationSvc.NotifyLoanCancelled(ctx, tx, loan)
 			if nerr != nil {
@@ -435,6 +432,11 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 	now := time.Now()
 	expired := loan.UserConfirmationDeadline != nil && now.After(*loan.UserConfirmationDeadline)
 
+	if expired {
+		_, _ = s.loanRepo.ExpireUnconfirmed(ctx, loan.ID, now, "User confirmation deadline expired")
+		return nil, errors.New("user confirmation deadline expired; loan cancelled")
+	}
+
 	claimed, err := s.loanRepo.ClaimUserConfirmation(ctx, loan.ID, now)
 	if err != nil {
 		return nil, err
@@ -442,35 +444,15 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 	if !claimed {
 		return nil, errors.New("loan is not pending user confirmation")
 	}
-	loan.UserConfirmedAt = &now
-
-	if expired {
-		loan.Status = model.LoanStatusCancelled
-		r := "User confirmation deadline expired"
-		loan.RejectionReason = &r
-		_ = s.loanRepo.Update(ctx, loan)
-		return nil, errors.New("user confirmation deadline expired; loan cancelled")
-	}
 
 	if action == "decline" {
-		loan.Status = model.LoanStatusCancelled
-		loan.RejectionReason = reason
-	} else {
-		// Guards against a concurrent admin-triggered Disburse() for this
-		// same loan (see ClaimDisbursement) — without this, both paths
-		// could create a duplicate installment schedule.
-		claimed, cerr := s.loanRepo.ClaimDisbursement(ctx, loan.ID)
-		if cerr != nil {
-			return nil, cerr
-		}
-		if !claimed {
-			return nil, errors.New("loan is already being disbursed or has already been disbursed")
-		}
-		if err := s.processDisbursement(ctx, loan, nil); err != nil {
+		if err := s.loanRepo.UpdateColumns(ctx, loan.ID, map[string]interface{}{
+			"status":           model.LoanStatusCancelled,
+			"rejection_reason": reason,
+		}); err != nil {
 			return nil, err
 		}
-	}
-	if err := s.loanRepo.Update(ctx, loan); err != nil {
+	} else if err := s.disburse(ctx, loan, nil); err != nil {
 		return nil, err
 	}
 	if fresh, ferr := s.loanRepo.FindByID(ctx, loan.ID); ferr == nil && fresh != nil {
@@ -480,15 +462,19 @@ func (s *loanServiceImpl) UserConfirm(ctx context.Context, id uuid.UUID, action 
 }
 
 func (s *loanServiceImpl) Statistics(ctx context.Context) (map[string]interface{}, error) {
-	stats := map[string]interface{}{}
-	for _, st := range []string{
-		model.LoanStatusDraft, model.LoanStatusSubmitted, model.LoanStatusApprovedBujp,
-		model.LoanStatusApprovedPusat, model.LoanStatusPendingUserConfirmation,
-		model.LoanStatusRejected, model.LoanStatusDisbursed, model.LoanStatusActive,
-		model.LoanStatusCompleted, model.LoanStatusCancelled,
-	} {
-		c, _ := s.loanRepo.CountByStatus(ctx, st)
-		stats[st] = c
+	return s.statusCounts(ctx, uuid.Nil, uuid.Nil)
+}
+
+// statusCounts returns one entry per known status (zero when absent) from a
+// single grouped query.
+func (s *loanServiceImpl) statusCounts(ctx context.Context, bujpID, personnelID uuid.UUID) (map[string]interface{}, error) {
+	counts, err := s.loanRepo.CountsByStatus(ctx, bujpID, personnelID)
+	if err != nil {
+		return nil, err
+	}
+	stats := emptyLoanStats()
+	for _, st := range loanStatStatuses() {
+		stats[st] = counts[st]
 	}
 	return stats, nil
 }
@@ -515,12 +501,7 @@ func (s *loanServiceImpl) StatisticsScoped(ctx context.Context, role string, use
 		return emptyLoanStats(), nil
 	}
 
-	stats := map[string]interface{}{}
-	for _, st := range loanStatStatuses() {
-		c, _ := s.loanRepo.CountByStatusScoped(ctx, st, bujpID, personnelID)
-		stats[st] = c
-	}
-	return stats, nil
+	return s.statusCounts(ctx, bujpID, personnelID)
 }
 
 func loanStatStatuses() []string {
@@ -588,13 +569,28 @@ func (s *loanServiceImpl) resolvePersonnelID(ctx context.Context, requested *uui
 	return personnel.ID, nil
 }
 
-func (s *loanServiceImpl) generateLoanNumber(ctx context.Context) (string, error) {
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+// createWithNumber inserts the loan with the next LN-YYYY-MM-NNNN number.
+// The number is derived from a count, so two simultaneous requests can pick
+// the same one; the unique index rejects the loser, which simply retries with
+// the next number.
+func (s *loanServiceImpl) createWithNumber(ctx context.Context, loan *model.Loan) error {
 	count, err := s.loanRepo.CountThisMonth(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	now := time.Now()
-	return fmt.Sprintf("LN-%04d-%02d-%04d", now.Year(), now.Month(), count+1), nil
+	for attempt := int64(1); ; attempt++ {
+		loan.LoanNumber = fmt.Sprintf("LN-%04d-%02d-%04d", now.Year(), now.Month(), count+attempt)
+		err = s.loanRepo.Create(ctx, loan)
+		if err == nil || attempt >= 5 || !isUniqueViolation(err) {
+			return err
+		}
+	}
 }
 
 // buildInitialApprovals is a pure builder (no repo call) so it can be used
@@ -623,13 +619,41 @@ func buildInitialApprovals(loanID uuid.UUID) []model.LoanApproval {
 	}
 }
 
-// processDisbursement finalizes disbursement bookkeeping: disbursement/
-// first-installment dates (from req when the admin's "Catat Pencairan
-// Dana" form provided them, otherwise defaulted to now / 1st of next
-// month — e.g. when triggered by the applicant's own UserConfirm accept,
-// which has no such form), disbursement method/account, and the
-// installment schedule itself.
-func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.Loan, req *model.DisburseLoanRequest) error {
+// disburse moves an approved loan to `active` and creates its installment
+// schedule in one transaction, so a failure can never leave an active loan
+// without installments. Only the caller that wins the status claim proceeds,
+// which stops a doubled click, an admin "Cairkan" and the applicant's own
+// accept from creating the schedule twice.
+//
+// req carries the admin's "Catat Pencairan Dana" form; it is nil when the
+// applicant accepts, in which case dates default to now / the 1st of next month.
+func (s *loanServiceImpl) disburse(ctx context.Context, loan *model.Loan, req *model.DisburseLoanRequest) error {
+	return s.loanRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txLoanRepo := s.loanRepo.WithTx(tx)
+		claimed, err := txLoanRepo.ClaimDisbursement(ctx, loan.ID)
+		if err != nil {
+			return err
+		}
+		if !claimed {
+			return errors.New("loan is already being disbursed or has already been disbursed")
+		}
+		installments := s.applyDisbursement(loan, req)
+		if err := s.installmentRepo.WithTx(tx).CreateMany(ctx, installments); err != nil {
+			return err
+		}
+		return txLoanRepo.UpdateColumns(ctx, loan.ID, map[string]interface{}{
+			"disbursement_date":      loan.DisbursementDate,
+			"first_installment_date": loan.FirstInstallmentDate,
+			"disbursement_method":    loan.DisbursementMethod,
+			"disbursement_account":   loan.DisbursementAccount,
+		})
+	})
+}
+
+// applyDisbursement fills the disbursement fields on loan and returns the
+// installment schedule. The last installment absorbs rounding so the schedule
+// always adds up to exactly principal + interest.
+func (s *loanServiceImpl) applyDisbursement(loan *model.Loan, req *model.DisburseLoanRequest) []model.LoanInstallment {
 	now := time.Now()
 	if req != nil && req.DisbursementDate != nil && !req.DisbursementDate.IsZero() {
 		d := req.DisbursementDate.Time
@@ -662,30 +686,34 @@ func (s *loanServiceImpl) processDisbursement(ctx context.Context, loan *model.L
 		approvedTenor = *loan.ApprovedTenor
 	}
 
+	totalInterest := round2(approvedAmount * (loan.InterestRate / 100) * float64(approvedTenor))
 	monthlyPrincipal := round2(approvedAmount / float64(approvedTenor))
-	totalInterest := approvedAmount * (loan.InterestRate / 100) * float64(approvedTenor)
 	monthlyInterest := round2(totalInterest / float64(approvedTenor))
 
 	installments := make([]model.LoanInstallment, 0, approvedTenor)
+	var paidPrincipal, paidInterest float64
 	for i := 0; i < approvedTenor; i++ {
-		due := loan.FirstInstallmentDate.AddDate(0, i, 0)
-		amt := monthlyPrincipal + monthlyInterest
+		principal, interest := monthlyPrincipal, monthlyInterest
+		if i == approvedTenor-1 {
+			principal = round2(approvedAmount - paidPrincipal)
+			interest = round2(totalInterest - paidInterest)
+		}
+		paidPrincipal += principal
+		paidInterest += interest
+		amt := round2(principal + interest)
 		installments = append(installments, model.LoanInstallment{
 			LoanID:            loan.ID,
 			InstallmentNumber: i + 1,
-			DueDate:           due,
-			PrincipalAmount:   monthlyPrincipal,
-			InterestAmount:    monthlyInterest,
+			DueDate:           loan.FirstInstallmentDate.AddDate(0, i, 0),
+			PrincipalAmount:   principal,
+			InterestAmount:    interest,
 			InstallmentAmount: amt,
 			RemainingAmount:   amt,
 			Status:            model.LoanInstallmentStatusPending,
 		})
 	}
-	if err := s.installmentRepo.CreateMany(ctx, installments); err != nil {
-		return err
-	}
 	loan.Status = model.LoanStatusActive
-	return nil
+	return installments
 }
 
 func calculateLoanDetails(principal, monthlyRatePct float64, tenorMonths int) (monthly, total float64) {

@@ -23,6 +23,9 @@ func presignLeaveDoc(ctx context.Context, r *model.LeaveResponse) {
 	}
 }
 
+// maxLeaveSpanDays bounds a single leave request to about a year.
+const maxLeaveSpanDays = 366
+
 type LeaveService interface {
 	GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.LeaveResponse, error)
@@ -117,23 +120,8 @@ func (s *leaveServiceImpl) Create(ctx context.Context, req *model.CreateLeaveReq
 
 	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1
 
-	overlapping, err := s.repo.FindByDateRange(ctx, startDate, endDate, req.PersonnelID)
-	if err == nil && len(overlapping) > 0 {
-		for _, leave := range overlapping {
-			if leave.Status != "approved" && leave.Status != "pending" {
-				continue
-			}
-			statusLabel := "menunggu persetujuan"
-			if leave.Status == "approved" {
-				statusLabel = "sudah disetujui"
-			}
-			return nil, fmt.Errorf(
-				"sudah ada pengajuan cuti/izin (%s) untuk periode %s s/d %s yang bertabrakan dengan tanggal ini",
-				statusLabel,
-				leave.StartDate.Format("02 Jan 2006"),
-				leave.EndDate.Format("02 Jan 2006"),
-			)
-		}
+	if totalDays > maxLeaveSpanDays {
+		return nil, fmt.Errorf("rentang cuti/izin maksimal %d hari", maxLeaveSpanDays)
 	}
 
 	if req.TotalDays != nil {
@@ -151,8 +139,21 @@ func (s *leaveServiceImpl) Create(ctx context.Context, req *model.CreateLeaveReq
 		Status:             "pending", // Default status
 	}
 
-	if err := s.repo.Create(ctx, leave); err != nil {
+	conflict, err := s.repo.CreateIfFree(ctx, leave)
+	if err != nil {
 		return nil, err
+	}
+	if conflict != nil {
+		statusLabel := "menunggu persetujuan"
+		if conflict.Status == "approved" {
+			statusLabel = "sudah disetujui"
+		}
+		return nil, fmt.Errorf(
+			"sudah ada pengajuan cuti/izin (%s) untuk periode %s s/d %s yang bertabrakan dengan tanggal ini",
+			statusLabel,
+			conflict.StartDate.Format("02 Jan 2006"),
+			conflict.EndDate.Format("02 Jan 2006"),
+		)
 	}
 
 	// Fetch created leave with relations
@@ -203,16 +204,17 @@ func (s *leaveServiceImpl) Update(ctx context.Context, id uuid.UUID, req *model.
 		existing.TotalDays = req.TotalDays
 	}
 
+	if totalDays > maxLeaveSpanDays {
+		return nil, fmt.Errorf("rentang cuti/izin maksimal %d hari", maxLeaveSpanDays)
+	}
+
 	overlapping, err := s.repo.FindByDateRange(ctx, existing.StartDate, existing.EndDate, existing.PersonnelID)
-	if err == nil && len(overlapping) > 0 {
-		for _, leave := range overlapping {
-			// Skip current leave
-			if leave.ID == id {
-				continue
-			}
-			if leave.Status == "approved" || leave.Status == "pending" {
-				return nil, errors.New("overlapping leave request already exists for this personnel")
-			}
+	if err != nil {
+		return nil, err
+	}
+	for _, leave := range overlapping {
+		if leave.ID != id {
+			return nil, errors.New("overlapping leave request already exists for this personnel")
 		}
 	}
 
@@ -261,6 +263,9 @@ func (s *leaveServiceImpl) Approve(ctx context.Context, id uuid.UUID, approverID
 
 	// Approve/reject the leave
 	if err := s.repo.Approve(ctx, id, approverID, status, notes); err != nil {
+		if errors.Is(err, repository.ErrNotPending) {
+			return nil, errors.New("can only approve/reject pending leave requests")
+		}
 		return nil, err
 	}
 
