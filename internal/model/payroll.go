@@ -99,3 +99,10 @@ type GeneratePayrollResult struct {
 	Skipped   []string          `json:"skipped"`
 	Payrolls  []PayrollResponse `json:"payrolls"`
 }
+
+// UpdatePaymentStatusRequest changes only the payment state of a payroll.
+type UpdatePaymentStatusRequest struct {
+	PaymentStatus string  `json:"payment_status" validate:"required,oneof=pending paid cancelled"`
+	PaymentDate   *string `json:"payment_date"` // YYYY-MM-DD; defaults to today when marking paid
+	PaymentMethod *string `json:"payment_method"`
+}

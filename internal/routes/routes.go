@@ -214,6 +214,7 @@ func SetupRoutes(
 	payrollRoutes.Post("/generate", payrollAdmin, payrollHdl.Generate)
 	payrollRoutes.Post("/", payrollAdmin, payrollHdl.Create)
 	payrollRoutes.Put("/:id", payrollAdmin, payrollHdl.Update)
+	payrollRoutes.Post("/:id/update-payment-status", payrollAdmin, payrollHdl.UpdatePaymentStatus)
 	payrollRoutes.Delete("/:id", payrollAdmin, payrollHdl.Delete)
 
 	// Monthly Report routes (all protected)

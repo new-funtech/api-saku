@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
@@ -259,6 +260,61 @@ func (h *PayrollHandler) Update(c *fiber.Ctx) error {
 		Code:    http.StatusOK,
 		Message: "Successfully updated payroll",
 		Data:    payroll,
+	})
+}
+
+// UpdatePaymentStatus godoc
+// @Summary Update payroll payment status
+// @Description Mark a payroll as pending, paid or cancelled
+// @Tags payrolls
+// @Accept json
+// @Produce json
+// @Param id path string true "Payroll ID"
+// @Param request body model.UpdatePaymentStatusRequest true "Payment status"
+// @Success 200 {object} model.APIResponse{data=model.PayrollResponse}
+// @Router /api/v1/payrolls/{id}/update-payment-status [post]
+// @Security BearerAuth
+func (h *PayrollHandler) UpdatePaymentStatus(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest, Message: "Invalid UUID format",
+		})
+	}
+	var req model.UpdatePaymentStatusRequest
+	if err := middleware.ValidateAndParse(c, &req); err != nil {
+		return err
+	}
+
+	existing, gerr := h.service.GetByID(ctx, id)
+	if gerr != nil || existing == nil {
+		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusNotFound, Message: "Payroll not found",
+		})
+	}
+	if !utils.CanAccessBujp(c, existing.BujpID) {
+		return forbiddenResponse(c)
+	}
+
+	update := model.UpdatePayrollRequest{PaymentStatus: &req.PaymentStatus, PaymentMethod: req.PaymentMethod}
+	if req.PaymentStatus == "paid" {
+		date := time.Now().Format("2006-01-02")
+		if req.PaymentDate != nil && *req.PaymentDate != "" {
+			date = *req.PaymentDate
+		}
+		update.PaymentDate = &date
+	}
+	payroll, err := h.service.Update(ctx, id, &update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusInternalServerError, Message: err.Error(),
+		})
+	}
+	return c.Status(http.StatusOK).JSON(model.APIResponse{
+		Status: "success", Code: http.StatusOK, Message: "Payment status updated", Data: payroll,
 	})
 }
 

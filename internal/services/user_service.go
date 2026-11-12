@@ -273,6 +273,7 @@ func (s *userServiceImpl) GetProfile(ctx context.Context, userID uuid.UUID) (*mo
 	personnel, err := s.personnelRepo.FindByUserID(ctx, userID)
 	if err == nil && personnel != nil {
 		personnelResp := ToPersonnelResponse(personnel)
+		presignPersonnelDocs(ctx, &personnelResp) // so the app can open its own KTP / NPWP
 		profile.Personnel = &personnelResp
 
 		// Get current assignment for guards
