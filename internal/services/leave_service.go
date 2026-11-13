@@ -40,10 +40,11 @@ type LeaveService interface {
 type leaveServiceImpl struct {
 	repo     repository.LeaveRepository
 	notifier *notifier.Notifier
+	push     PushNotifier
 }
 
-func NewLeaveService(repo repository.LeaveRepository, notif *notifier.Notifier) LeaveService {
-	return &leaveServiceImpl{repo: repo, notifier: notif}
+func NewLeaveService(repo repository.LeaveRepository, notif *notifier.Notifier, push PushNotifier) LeaveService {
+	return &leaveServiceImpl{repo: repo, notifier: notif, push: push}
 }
 
 func (s *leaveServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.LeaveResponse, int64, error) {
@@ -278,6 +279,13 @@ func (s *leaveServiceImpl) Approve(ctx context.Context, id uuid.UUID, approverID
 	response := toLeaveResponse(updated)
 	presignLeaveDoc(ctx, &response)
 	s.notifier.LeaveDecision(ctx, updated, status)
+	if s.push != nil && updated.Personnel != nil && updated.Personnel.UserID != nil {
+		title, kind := "Pengajuan cuti/izin ditolak", "LEAVE_REJECTED"
+		if status == "approved" {
+			title, kind = "Pengajuan cuti/izin disetujui", "LEAVE_APPROVED"
+		}
+		s.push.SendToUserAsync(*updated.Personnel.UserID, title, decisionBody(leaveDetail(updated.Type, updated.StartDate, updated.EndDate), updated.ApproverNotes), pushData(kind, updated.ID))
+	}
 	return &response, nil
 }
 

@@ -32,7 +32,16 @@ func TestRateLimitByIPAnswersWithRetryAfter(t *testing.T) {
 		t.Error("missing Retry-After header")
 	}
 	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "Terlalu banyak permintaan") {
+	if !strings.Contains(string(body), "Terlalu banyak percobaan") {
 		t.Errorf("unexpected body: %s", body)
+	}
+}
+
+func TestHumanWait(t *testing.T) {
+	cases := map[int]string{5: "5 detik", 59: "59 detik", 60: "1 menit", 130: "2 menit 10 detik"}
+	for in, want := range cases {
+		if got := humanWait(in); got != want {
+			t.Errorf("humanWait(%d) = %q, want %q", in, got, want)
+		}
 	}
 }

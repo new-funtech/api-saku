@@ -35,6 +35,8 @@ func SetupRoutes(
 	loanApprovalHdl *handlers.LoanApprovalHandler,
 	loanInstallmentHdl *handlers.LoanInstallmentHandler,
 	notificationHdl *handlers.NotificationHandler,
+	deviceHdl *handlers.DeviceHandler,
+	preferenceHdl *handlers.NotificationPreferenceHandler,
 	realtimeHdl *handlers.RealtimeHandler,
 	userRepo repository.UserRepository,
 	personnelRepo repository.PersonnelRepository,
@@ -203,6 +205,11 @@ func SetupRoutes(
 	overtimeRoutes.Post("/:id/approve", overtimeAdmin, overtimeHdl.Approve)
 	overtimeRoutes.Post("/:id/reject", overtimeAdmin, overtimeHdl.Reject)
 
+	// Device (FCM) tokens: the app registers on sign-in and removes the token on sign-out.
+	deviceRoutes := v1.Group("/devices", protected()...)
+	deviceRoutes.Post("/token", deviceHdl.RegisterToken)
+	deviceRoutes.Delete("/token", deviceHdl.UnregisterToken)
+
 	// Salary Component routes (all protected)
 	salaryComponentRoutes := v1.Group("/salary-components", protected()...)
 	salaryComponentRoutes.Get("/", salaryComponentHdl.GetAll)
@@ -273,6 +280,8 @@ func SetupRoutes(
 	loanInstallmentRoutes.Post("/mark-overdue", loanInstallmentHdl.MarkOverdue)
 	notificationRoutes := v1.Group("/notifications", protected()...)
 	notificationRoutes.Get("/", notificationHdl.GetAll)
+	notificationRoutes.Get("/preferences", preferenceHdl.Get)
+	notificationRoutes.Put("/preferences", preferenceHdl.Update)
 	notificationRoutes.Get("/unread-count", notificationHdl.GetUnreadCount)
 	notificationRoutes.Post("/read-all", notificationHdl.MarkAllAsRead)
 	notificationRoutes.Post("/:id/read", notificationHdl.MarkAsRead)

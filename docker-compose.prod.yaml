@@ -1,7 +1,7 @@
 services:
   api-saku:
-    image: ${IMAGE_FULL}
-    container_name: ${APP_NAME:-api-saku}
+    image: ${IMAGE_FULL:-registry.ganipedia.com/api-saku:latest}
+    container_name: api-saku
     restart: ${RESTART_POLICY:-unless-stopped}
     environment:
       - APP_PORT=${APP_PORT}
@@ -46,6 +46,8 @@ services:
       - PAYROLL_CRON_DAY=${PAYROLL_CRON_DAY}
       - PAYROLL_CRON_HOUR=${PAYROLL_CRON_HOUR}
       - PAYROLL_CRON_MINUTE=${PAYROLL_CRON_MINUTE}
+      # Push notifications (FCM): the service-account JSON as one base64 line. Never put the key in the image.
+      - FIREBASE_CREDENTIALS_BASE64=${FIREBASE_CREDENTIALS_BASE64:-}
     expose:
       - "${APP_PORT:-4000}"
     healthcheck:

@@ -39,3 +39,24 @@ dist/
 # Coverage
 coverage.txt
 coverage.html
+
+# Firebase / Google service-account credentials: never commit
+*firebase-adminsdk*.json
+firebase-service-account*.json
+serviceAccount*.json
+service-account*.json
+credentials/
+
+# Secrets and local deploy files (envs/.env.example stays: it documents the variables)
+envs/.env.*
+!envs/.env.example
+runtime.env
+*-env.txt
+*.pem
+*.p12
+*.pfx
+*.key
+
+# Local debug artifacts
+__debug_bin*
+*.pprof

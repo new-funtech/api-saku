@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/config"
 	"github.com/ganiramadhan/ganipedia/backend/internal/handlers"
 	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
+	pushnotification "github.com/ganiramadhan/ganipedia/backend/internal/notification"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/ganiramadhan/ganipedia/backend/internal/routes"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
@@ -138,6 +140,17 @@ func main() {
 	loanApprovalRepo := repository.NewLoanApprovalRepository(config.DB)
 	loanInstallmentRepo := repository.NewLoanInstallmentRepository(config.DB)
 	notificationRepo := repository.NewNotificationRepository(config.DB)
+	deviceTokenRepo := repository.NewDeviceTokenRepository(config.DB)
+	preferenceRepo := repository.NewNotificationPreferenceRepository(config.DB)
+
+	// Push notifications (FCM). Disabled, with one log line, unless GOOGLE_APPLICATION_CREDENTIALS is set.
+	messenger, err := pushnotification.NewFCMMessenger(context.Background())
+	if err != nil {
+		log.Printf("[push] disabled: %v", err)
+	}
+	pushSender := pushnotification.NewSender(messenger, deviceTokenRepo)
+	pushSender.Start(context.Background())
+	defer pushSender.Stop()
 
 	// Initialize services
 	productSvc := services.NewProductService(productRepo)
@@ -145,18 +158,18 @@ func main() {
 	authSvc := services.NewAuthService(userRepo, config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"))
 	// Centralized notifier — all transactional emails for loans/leave/attendance
 	// corrections funnel through this service onto the broker queue.
-	notifierSvc := notifier.New(config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"), userRepo)
+	notifierSvc := notifier.New(config.RabbitClient, config.GetEnv("RABBITMQ_EMAIL_QUEUE", "email.send"), userRepo, mailer.LoadConfig(), preferenceRepo)
 	realtimeHub := realtime.NewHub()
-	notificationSvc := services.NewNotificationService(notificationRepo, personnelRepo, notifierSvc, realtimeHub)
+	notificationSvc := services.NewNotificationService(notificationRepo, personnelRepo, notifierSvc, realtimeHub, pushSender)
 	bujpSvc := services.NewBujpService(bujpRepo)
 	locationSvc := services.NewLocationService(locationRepo)
 	shiftSvc := services.NewShiftService(shiftRepo)
 	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo, userRepo)
 	assignmentSvc := services.NewAssignmentService(assignmentRepo)
 	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
-	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo, notifierSvc)
+	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo, notifierSvc, pushSender)
 	patrolSvc := services.NewPatrolService(patrolRepo, attendanceRepo)
-	leaveSvc := services.NewLeaveService(leaveRepo, notifierSvc)
+	leaveSvc := services.NewLeaveService(leaveRepo, notifierSvc, pushSender)
 	overtimeSvc := services.NewOvertimeService(overtimeRepo, notifierSvc, notificationSvc)
 	salaryComponentSvc := services.NewSalaryComponentService(salaryComponentRepo)
 	payrollSvc := services.NewPayrollService(payrollRepo, personnelRepo, attendanceRepo, attendanceCorrectionRepo, salaryComponentRepo, overtimeRepo, notifierSvc)
@@ -190,6 +203,8 @@ func main() {
 	loanApprovalHdl := handlers.NewLoanApprovalHandler(loanApprovalSvc)
 	loanInstallmentHdl := handlers.NewLoanInstallmentHandler(loanInstallmentSvc, loanSvc)
 	notificationHdl := handlers.NewNotificationHandler(notificationSvc)
+	deviceHdl := handlers.NewDeviceHandler(deviceTokenRepo)
+	preferenceHdl := handlers.NewNotificationPreferenceHandler(preferenceRepo)
 	realtimeHdl := handlers.NewRealtimeHandler(realtimeHub)
 	uploadHdl := handlers.NewUploadHandler()
 	dashboardHdl := handlers.NewDashboardHandler(dashboardSvc)
@@ -204,6 +219,8 @@ func main() {
 	payrollCron.Start()
 	defer payrollCron.Stop()
 
+	logEmailSetup(mailer.LoadConfig())
+
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
 	defer cancelWorker()
 	go emailworker.Run(
@@ -214,7 +231,7 @@ func main() {
 	)
 
 	// Setup routes
-	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, overtimeHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, realtimeHdl, userRepo, personnelRepo)
+	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, overtimeHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, deviceHdl, preferenceHdl, realtimeHdl, userRepo, personnelRepo)
 
 	// Start server with graceful shutdown
 	port := config.GetEnv("APP_PORT", "4000")
@@ -266,6 +283,10 @@ func healthCheck(c *fiber.Ctx) error {
 }
 
 func customErrorHandler(c *fiber.Ctx, err error) error {
+	// The handler already answered (a failed validation): keep that response.
+	if errors.Is(err, middleware.ErrResponseWritten) {
+		return nil
+	}
 	code := fiber.StatusInternalServerError
 	message := "Internal server error"
 
@@ -279,4 +300,17 @@ func customErrorHandler(c *fiber.Ctx, err error) error {
 		"code":    code,
 		"message": message,
 	})
+}
+
+// logEmailSetup states at startup how emails will go out, so a misconfiguration is visible in the
+// first lines of the log instead of showing up later as emails that never arrive.
+func logEmailSetup(cfg mailer.Config) {
+	switch {
+	case !cfg.IsEnabled():
+		log.Println("[email] DISABLED: MAIL_HOST / MAIL_FROM_ADDRESS are not set, no email will be sent")
+	case config.RabbitClient == nil:
+		log.Printf("[email] direct SMTP via %s:%s (%s); RabbitMQ is not configured", cfg.Host, cfg.Port, cfg.Mode())
+	default:
+		log.Printf("[email] queue worker -> SMTP %s:%s (%s); falls back to direct SMTP if RabbitMQ is down", cfg.Host, cfg.Port, cfg.Mode())
+	}
 }

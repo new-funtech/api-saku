@@ -82,6 +82,12 @@ func handle(ctx context.Context, body []byte, cfg mailer.Config) error {
 		log.Printf("[email-worker] invalid payload: %v body=%s", err, string(body))
 		return nil
 	}
+	return Deliver(ctx, cfg, job)
+}
+
+// Deliver sends one job over SMTP with a bounded number of attempts. The queue worker uses it, and
+// so does the notifier when it has to send directly (no broker, or the broker is unreachable).
+func Deliver(ctx context.Context, cfg mailer.Config, job EmailJob) error {
 	if len(job.To) == 0 || job.Subject == "" {
 		log.Printf("[email-worker] dropping incomplete job subject=%q recipients=%d", job.Subject, len(job.To))
 		return nil
@@ -98,6 +104,7 @@ func handle(ctx context.Context, body []byte, cfg mailer.Config) error {
 	for attempt := 1; attempt <= maxSendAttempts; attempt++ {
 		lastErr = mailer.Send(cfg, msg)
 		if lastErr == nil {
+			log.Printf("[email-worker] sent to=%v subject=%q", job.To, job.Subject)
 			return nil
 		}
 		log.Printf("[email-worker] send attempt %d/%d failed to=%v subject=%q: %v", attempt, maxSendAttempts, job.To, job.Subject, lastErr)

@@ -34,7 +34,7 @@ func limitReached(c *fiber.Ctx) error {
 	return c.Status(http.StatusTooManyRequests).JSON(model.APIResponse{
 		Status:  "error",
 		Code:    http.StatusTooManyRequests,
-		Message: fmt.Sprintf("Terlalu banyak permintaan. Mohon tunggu %d detik lalu coba lagi.", wait),
+		Message: "Terlalu banyak percobaan. Silakan coba lagi dalam " + humanWait(wait) + ".",
 	})
 }
 
@@ -55,4 +55,15 @@ func RateLimitByIP(max int, window time.Duration) fiber.Handler {
 // RateLimitByUser caps requests per signed-in user. Mount it after AuthRequired.
 func RateLimitByUser(max int, window time.Duration) fiber.Handler {
 	return newLimiter(max, window, keyByUser)
+}
+
+// humanWait renders seconds as "45 detik", "2 menit" or "2 menit 10 detik".
+func humanWait(seconds int) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%d detik", seconds)
+	}
+	if seconds%60 == 0 {
+		return fmt.Sprintf("%d menit", seconds/60)
+	}
+	return fmt.Sprintf("%d menit %d detik", seconds/60, seconds%60)
 }

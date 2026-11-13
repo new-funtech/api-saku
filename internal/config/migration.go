@@ -45,6 +45,8 @@ func RunMigrations() {
 		&model.Patrol{},
 		&model.Leave{},
 		&model.Overtime{},
+		&model.DeviceToken{},
+		&model.NotificationPreference{},
 		&model.SalaryComponent{},
 		&model.Payroll{},
 		&model.PayrollDetail{},

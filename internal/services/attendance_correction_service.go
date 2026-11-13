@@ -59,10 +59,11 @@ type AttendanceCorrectionService interface {
 type attendancecorrectionServiceImpl struct {
 	repo     repository.AttendanceCorrectionRepository
 	notifier *notifier.Notifier
+	push     PushNotifier
 }
 
-func NewAttendanceCorrectionService(repo repository.AttendanceCorrectionRepository, notif *notifier.Notifier) AttendanceCorrectionService {
-	return &attendancecorrectionServiceImpl{repo: repo, notifier: notif}
+func NewAttendanceCorrectionService(repo repository.AttendanceCorrectionRepository, notif *notifier.Notifier, push PushNotifier) AttendanceCorrectionService {
+	return &attendancecorrectionServiceImpl{repo: repo, notifier: notif, push: push}
 }
 
 func (s *attendancecorrectionServiceImpl) GetAll(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.AttendanceCorrectionResponse, int64, error) {
@@ -251,6 +252,13 @@ func (s *attendancecorrectionServiceImpl) Approve(ctx context.Context, id uuid.U
 	response := toAttendanceCorrectionResponse(updated)
 	presignAttendanceCorrectionDoc(ctx, &response)
 	s.notifier.CorrectionDecision(ctx, updated, status)
+	if s.push != nil && updated.Personnel != nil && updated.Personnel.UserID != nil {
+		title, kind := "Koreksi absensi ditolak", "CORRECTION_REJECTED"
+		if status == "approved" {
+			title, kind = "Koreksi absensi disetujui", "CORRECTION_APPROVED"
+		}
+		s.push.SendToUserAsync(*updated.Personnel.UserID, title, decisionBody(correctionDetail(updated.CorrectionType, updated.CorrectionDate), updated.ApproverNotes), pushData(kind, updated.ID))
+	}
 	return &response, nil
 }
 

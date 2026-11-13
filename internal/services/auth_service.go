@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/emailworker"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/broker/rabbitmq"
 	jwtutil "github.com/ganiramadhan/ganipedia/backend/pkg/jwt"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -159,15 +161,26 @@ func (s *authServiceImpl) ForgotPassword(ctx context.Context, req model.ForgotPa
 		return err
 	}
 
-	if s.broker == nil {
-		return ErrEmailQueueFailed
+	if s.broker != nil {
+		pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		if perr := s.broker.Publish(pubCtx, s.emailQueue, payload); perr == nil {
+			return nil
+		} else {
+			log.Printf("[auth] queueing the reset email failed: %v", perr)
+		}
 	}
 
-	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	if err := s.broker.Publish(pubCtx, s.emailQueue, payload); err != nil {
-		return fmt.Errorf("%w: %v", ErrEmailQueueFailed, err)
+	// No queue, or it is unreachable: send the code straight over SMTP so the user is not stuck.
+	cfg := mailer.LoadConfig()
+	if !cfg.IsEnabled() {
+		return ErrEmailQueueFailed
 	}
+	go func() {
+		sendCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		_ = emailworker.Deliver(sendCtx, cfg, job)
+	}()
 	return nil
 }
 

@@ -51,3 +51,25 @@ func TestNotifLoanSubmittedApprover_MentionsApplicantName(t *testing.T) {
 		t.Fatalf("expected applicant name in review-required body, got: %q", body)
 	}
 }
+
+func TestLoanDetailIdentifiesTheLoan(t *testing.T) {
+	if got := loanDetail("PJ-2026-0007", 5000000, 12); got != "No. PJ-2026-0007 · Rp 5.000.000 · 12 bulan" {
+		t.Fatalf("detail = %q", got)
+	}
+	if got := loanDetail("", 0, 0); got != "" {
+		t.Fatalf("empty detail = %q", got)
+	}
+}
+
+func TestWithDetailGoesAfterTheFirstSentence(t *testing.T) {
+	got := withDetail("Pengajuan ditolak.\nAlasan: tidak lengkap", "No. PJ-1")
+	if got != "Pengajuan ditolak.\nNo. PJ-1\nAlasan: tidak lengkap" {
+		t.Fatalf("body = %q", got)
+	}
+	if got := withDetail("Disetujui.", "No. PJ-1"); got != "Disetujui.\nNo. PJ-1" {
+		t.Fatalf("body = %q", got)
+	}
+	if got := withDetail("Disetujui.", " "); got != "Disetujui." {
+		t.Fatalf("body = %q", got)
+	}
+}

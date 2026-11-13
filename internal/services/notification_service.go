@@ -36,6 +36,7 @@ type notificationServiceImpl struct {
 	personnelRepo repository.PersonnelRepository
 	notifier      *notifier.Notifier
 	hub           *realtime.Hub
+	push          PushNotifier
 }
 
 func NewNotificationService(
@@ -43,8 +44,9 @@ func NewNotificationService(
 	personnelRepo repository.PersonnelRepository,
 	notif *notifier.Notifier,
 	hub *realtime.Hub,
+	push PushNotifier,
 ) NotificationService {
-	return &notificationServiceImpl{repo: repo, personnelRepo: personnelRepo, notifier: notif, hub: hub}
+	return &notificationServiceImpl{repo: repo, personnelRepo: personnelRepo, notifier: notif, hub: hub, push: push}
 }
 
 // === Outward-facing ===
@@ -195,16 +197,22 @@ func (s *notificationServiceImpl) NotifyLoanCancelled(ctx context.Context, tx *g
 	return s.createForRecipients(ctx, tx, recipients, model.NotificationTypeLoanCancelled, title, body, loan, eventID)
 }
 
+// PushRealtime delivers freshly created notifications: over the websocket to open apps, and as
+// a push (FCM) to the user's devices, so they arrive when the app is closed too.
 func (s *notificationServiceImpl) PushRealtime(rows []model.Notification) {
-	if s.hub == nil {
-		return
-	}
 	if len(rows) == 0 {
 		return
 	}
-	responses := s.toResponses(context.Background(), rows)
-	for i := range rows {
-		s.hub.SendToUser(rows[i].RecipientUserID, "notification.created", responses[i])
+	if s.hub != nil {
+		responses := s.toResponses(context.Background(), rows)
+		for i := range rows {
+			s.hub.SendToUser(rows[i].RecipientUserID, "notification.created", responses[i])
+		}
+	}
+	if s.push != nil {
+		for i := range rows {
+			s.push.SendToUserAsync(rows[i].RecipientUserID, rows[i].Title, pushBody(rows[i].Body), pushData(rows[i].Type, rows[i].EntityID))
+		}
 	}
 }
 
@@ -265,6 +273,7 @@ func (s *notificationServiceImpl) createForRecipients(
 	loan *model.Loan,
 	eventID string,
 ) ([]model.Notification, error) {
+	body = withDetail(body, loanDetail(loan.LoanNumber, loan.LoanAmount, loan.TenorMonths))
 	return s.createFor(ctx, tx, recipientIDs, loan.BujpID, model.NotificationEntityLoan, loan.ID, notifType, title, body, eventID)
 }
 
@@ -317,6 +326,7 @@ func (s *notificationServiceImpl) NotifyOvertimeSubmitted(ctx context.Context, o
 	bujpID := o.Personnel.BujpID
 	reviewers := s.notifier.AdminCompanyUsers(ctx, &bujpID)
 	title, body := notifOvertimeReviewRequired(applicantName, o.Date, o.TotalHours)
+	body = withDetail(body, overtimeDetail(o.Date, o.TotalHours))
 	rows, err := s.createFor(ctx, nil, userIDs(reviewers), &bujpID, model.NotificationEntityOvertime, o.ID,
 		model.NotificationTypeOvertimeReviewRequired, title, body, fmt.Sprintf("overtime_submitted:%s", o.ID))
 	if err == nil {
@@ -335,6 +345,7 @@ func (s *notificationServiceImpl) NotifyOvertimeDecision(ctx context.Context, o 
 		notifType = model.NotificationTypeOvertimeRejected
 	}
 	title, body := notifOvertimeDecision(approved, o.Date, o.ApproverNotes)
+	body = withDetail(body, overtimeDetail(o.Date, o.TotalHours))
 	rows, err := s.createFor(ctx, nil, []uuid.UUID{*o.Personnel.UserID}, &bujpID, model.NotificationEntityOvertime, o.ID,
 		notifType, title, body, fmt.Sprintf("overtime_decision:%s:%s", o.ID, o.Status))
 	if err == nil {
