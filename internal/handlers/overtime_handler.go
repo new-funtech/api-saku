@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -117,19 +119,46 @@ func (h *OvertimeHandler) GetByID(c *fiber.Ctx) error {
 func (h *OvertimeHandler) Create(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	var req model.CreateOvertimeRequest
-	if err := c.BodyParser(&req); err != nil {
+	req, err := bindCreateOvertimeRequest(c)
+	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{Status: "error", Code: http.StatusBadRequest, Message: "Invalid request body"})
 	}
 	req.PersonnelID = callerPersonnelID(c)
 	if req.PersonnelID == uuid.Nil {
 		return c.Status(http.StatusForbidden).JSON(model.APIResponse{Status: "error", Code: http.StatusForbidden, Message: "Akun Anda tidak terhubung dengan data personel"})
 	}
-	o, err := h.service.Create(ctx, &req)
+	uid, _ := c.Locals("userID").(uuid.UUID)
+	for _, field := range []string{"attachment", "supporting_document"} {
+		if key, uerr := utils.UploadFormFile(ctx, c, field, fmt.Sprintf("OVERTIMES/%s", uid.String())); uerr != nil {
+			return utils.UploadErrorResponse(c, field, uerr)
+		} else if key != nil {
+			req.SupportingDocument = key
+			break
+		}
+	}
+	o, err := h.service.Create(ctx, req)
 	if err != nil {
 		return overtimeError(c, err)
 	}
 	return c.Status(http.StatusCreated).JSON(model.APIResponse{Status: "success", Code: http.StatusCreated, Message: "Overtime created", Data: o})
+}
+
+// bindCreateOvertimeRequest reads either a JSON body or a multipart form (with an optional attachment).
+func bindCreateOvertimeRequest(c *fiber.Ctx) (*model.CreateOvertimeRequest, error) {
+	contentType := strings.ToLower(c.Get("Content-Type"))
+	if strings.HasPrefix(contentType, "multipart/form-data") || strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+		return &model.CreateOvertimeRequest{
+			Date:      utils.FormString(c, "date"),
+			StartTime: utils.FormString(c, "start_time"),
+			EndTime:   utils.FormString(c, "end_time"),
+			Reason:    utils.FormString(c, "reason"),
+		}, nil
+	}
+	var req model.CreateOvertimeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return nil, err
+	}
+	return &req, nil
 }
 
 func (h *OvertimeHandler) Update(c *fiber.Ctx) error {

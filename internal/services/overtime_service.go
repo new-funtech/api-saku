@@ -10,6 +10,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services/notifier"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/google/uuid"
 )
 
@@ -86,12 +87,22 @@ func validateOvertime(date, start, end, reason string, now time.Time) (time.Time
 	return day, hours, nil
 }
 
+func presignOvertimeDoc(ctx context.Context, r *model.OvertimeResponse) {
+	if r == nil || r.SupportingDocument == nil || *r.SupportingDocument == "" {
+		return
+	}
+	if url, err := utils.GeneratePresignedURL(ctx, *r.SupportingDocument, time.Hour); err == nil && url != "" {
+		r.SupportingDocumentURL = &url
+	}
+}
+
 func toOvertimeResponse(o *model.Overtime) model.OvertimeResponse {
 	r := model.OvertimeResponse{
 		ID: o.ID, PersonnelID: o.PersonnelID, Date: o.Date.Format("2006-01-02"),
 		StartTime: o.StartTime, EndTime: o.EndTime, TotalHours: o.TotalHours, Reason: o.Reason,
 		Status: o.Status, ApproverID: o.ApproverID, ApprovedAt: o.ApprovedAt, ApproverNotes: o.ApproverNotes,
-		CreatedAt: o.CreatedAt, UpdatedAt: o.UpdatedAt,
+		SupportingDocument: o.SupportingDocument,
+		CreatedAt:          o.CreatedAt, UpdatedAt: o.UpdatedAt,
 	}
 	if o.Personnel != nil {
 		p := ToPersonnelResponse(o.Personnel)
@@ -112,6 +123,7 @@ func (s *overtimeServiceImpl) GetAll(ctx context.Context, page, limit int, filte
 	out := make([]model.OvertimeResponse, len(items))
 	for i := range items {
 		out[i] = toOvertimeResponse(&items[i])
+		presignOvertimeDoc(ctx, &out[i])
 	}
 	return out, total, nil
 }
@@ -122,6 +134,7 @@ func (s *overtimeServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (*model
 		return nil, errors.New("overtime not found")
 	}
 	r := toOvertimeResponse(o)
+	presignOvertimeDoc(ctx, &r)
 	return &r, nil
 }
 
@@ -136,7 +149,7 @@ func (s *overtimeServiceImpl) Create(ctx context.Context, req *model.CreateOvert
 	o := &model.Overtime{
 		PersonnelID: req.PersonnelID, Date: day,
 		StartTime: strings.TrimSpace(req.StartTime), EndTime: strings.TrimSpace(req.EndTime),
-		TotalHours: hours, Reason: strings.TrimSpace(req.Reason), Status: "pending",
+		TotalHours: hours, Reason: strings.TrimSpace(req.Reason), SupportingDocument: req.SupportingDocument, Status: "pending",
 	}
 	conflict, err := s.repo.CreateIfFree(ctx, o)
 	if err != nil {
@@ -154,6 +167,7 @@ func (s *overtimeServiceImpl) Create(ctx context.Context, req *model.CreateOvert
 		s.notifications.NotifyOvertimeSubmitted(ctx, created, created.Personnel.FullName)
 	}
 	r := toOvertimeResponse(created)
+	presignOvertimeDoc(ctx, &r)
 	return &r, nil
 }
 
@@ -214,6 +228,7 @@ func (s *overtimeServiceImpl) Decide(ctx context.Context, id, approverID uuid.UU
 		s.notifications.NotifyOvertimeDecision(ctx, updated, status == "approved")
 	}
 	r := toOvertimeResponse(updated)
+	presignOvertimeDoc(ctx, &r)
 	return &r, nil
 }
 

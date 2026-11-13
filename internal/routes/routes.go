@@ -7,7 +7,6 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/websocket/v2"
 )
 
@@ -45,27 +44,18 @@ func SetupRoutes(
 
 	// Authenticated requests must also resolve the caller's tenant scope
 	// (BUJP / personnel) so handlers can apply row-level filtering.
+	// One budget per signed-in user across the API, plus tighter ones for uploads and payroll below.
+	userLimiter := middleware.RateLimitByUser(240, time.Minute)
 	protected := func() []fiber.Handler {
 		return []fiber.Handler{
 			middleware.AuthRequired(),
 			middleware.LoadCallerScope(userRepo, personnelRepo),
+			userLimiter,
 		}
 	}
 
 	// Stricter rate limit on auth endpoints to deter brute-force attempts.
-	authLimiter := limiter.New(limiter.Config{
-		Max:        10,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP() + ":" + c.Path()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"status": "error", "code": fiber.StatusTooManyRequests,
-				"message": "too many auth attempts, please try again later",
-			})
-		},
-	})
+	authLimiter := middleware.RateLimitByIP(10, time.Minute)
 
 	v1.Post("/login", authLimiter, authHdl.Login)
 	v1.Post("/register", authLimiter, authHdl.Register)
@@ -74,7 +64,7 @@ func SetupRoutes(
 	v1.Post("/reset-password", authLimiter, authHdl.ResetPassword)
 
 	// Upload routes (all protected)
-	uploadRoutes := v1.Group("/uploads", protected()...)
+	uploadRoutes := v1.Group("/uploads", append(protected(), middleware.RateLimitByUser(40, time.Minute))...)
 	uploadRoutes.Post("/presigned-url", uploadHdl.GetPresignedUploadURL)
 	uploadRoutes.Post("/presigned-download-url", uploadHdl.GetPresignedDownloadURL)
 	uploadRoutes.Post("/direct", uploadHdl.DirectUpload)
@@ -227,7 +217,7 @@ func SetupRoutes(
 	payrollRoutes.Get("/:id", payrollHdl.GetByID)
 	// Only admins may create or change payroll; staff can only read their own slip.
 	payrollAdmin := middleware.RequireRoles("super_admin", "admin", "company_admin")
-	payrollRoutes.Post("/generate", payrollAdmin, payrollHdl.Generate)
+	payrollRoutes.Post("/generate", payrollAdmin, middleware.RateLimitByUser(6, time.Minute), payrollHdl.Generate)
 	payrollRoutes.Post("/", payrollAdmin, payrollHdl.Create)
 	payrollRoutes.Put("/:id", payrollAdmin, payrollHdl.Update)
 	payrollRoutes.Post("/:id/update-payment-status", payrollAdmin, payrollHdl.UpdatePaymentStatus)

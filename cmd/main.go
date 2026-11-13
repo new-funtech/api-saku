@@ -10,6 +10,7 @@ import (
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/config"
 	"github.com/ganiramadhan/ganipedia/backend/internal/handlers"
+	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/ganiramadhan/ganipedia/backend/internal/routes"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
@@ -87,6 +87,7 @@ func main() {
 
 	// Middleware
 	app.Use(requestid.New())
+	globalLimiter := middleware.RateLimitByIP(600, time.Minute)
 	app.Use(logger.New(logger.Config{
 		Format:     "[${time}] ${locals:requestid} | ${status} | ${latency} | ${ip} | ${method} ${path} | ${error}\n",
 		TimeFormat: "2006-01-02 15:04:05",
@@ -101,21 +102,14 @@ func main() {
 		MaxAge:           300, // 5 minutes
 	}))
 
-	app.Use(limiter.New(limiter.Config{
-		Max:        300,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		Next: func(c *fiber.Ctx) bool {
-			return c.Path() == "/health"
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"status": "error", "code": fiber.StatusTooManyRequests, "message": "too many requests",
-			})
-		},
-	}))
+	// Outer safety net per address (generous: many users can share one mobile-carrier address).
+	// Per-user and per-endpoint limits are applied in the routes.
+	app.Use(func(c *fiber.Ctx) error {
+		if c.Path() == "/health" {
+			return c.Next()
+		}
+		return globalLimiter(c)
+	})
 
 	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)

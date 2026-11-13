@@ -213,6 +213,10 @@ func (s *attendanceServiceImpl) Create(ctx context.Context, req *model.CreateAtt
 	status := req.Status
 	if status == "" {
 		status = "present"
+		// Arriving after the shift started (plus the grace period) makes the day "late".
+		if s.arrivedLate(ctx, req.AssignmentID, checkIn, date) {
+			status = "late"
+		}
 	}
 
 	attendance := &model.Attendance{
@@ -478,4 +482,27 @@ func toAttendanceResponse(attendance *model.Attendance) model.AttendanceResponse
 	}
 
 	return response
+}
+
+// attendanceLateGraceMinutes is how long after the shift start a check-in still counts as on time.
+const attendanceLateGraceMinutes = 5
+
+// isLateCheckIn reports whether checkIn falls after shiftStart (a time of day) on the given date,
+// allowing the grace period.
+func isLateCheckIn(date time.Time, shiftStart time.Time, checkIn time.Time, graceMinutes int) bool {
+	startAt := time.Date(date.Year(), date.Month(), date.Day(), shiftStart.Hour(), shiftStart.Minute(), shiftStart.Second(), 0, time.Local)
+	return checkIn.After(startAt.Add(time.Duration(graceMinutes) * time.Minute))
+}
+
+// arrivedLate looks up the assignment's shift. Without a check-in, an assignment or a shift there is
+// nothing to compare against, so the day is not marked late.
+func (s *attendanceServiceImpl) arrivedLate(ctx context.Context, assignmentID *uuid.UUID, checkIn *time.Time, date time.Time) bool {
+	if checkIn == nil || assignmentID == nil || *assignmentID == uuid.Nil || s.assignmentRepo == nil {
+		return false
+	}
+	assignment, err := s.assignmentRepo.FindByID(ctx, *assignmentID)
+	if err != nil || assignment == nil || assignment.Shift == nil || assignment.Shift.StartTime.IsZero() {
+		return false
+	}
+	return isLateCheckIn(date, assignment.Shift.StartTime.Time, *checkIn, attendanceLateGraceMinutes)
 }
