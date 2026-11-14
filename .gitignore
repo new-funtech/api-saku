@@ -60,3 +60,4 @@ runtime.env
 # Local debug artifacts
 __debug_bin*
 *.pprof
+loadtest/
