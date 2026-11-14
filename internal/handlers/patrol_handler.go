@@ -61,7 +61,7 @@ func (h *PatrolHandler) GetAll(c *fiber.Ctx) error {
 		}
 	}
 	if status != "" {
-		filters["status"] = status
+		filters["validation_status"] = status
 	}
 
 	utils.ApplyBujpScope(c, filters)
