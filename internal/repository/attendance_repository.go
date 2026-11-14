@@ -27,6 +27,10 @@ type AttendanceRepository interface {
 	FindPlainByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (*model.Attendance, error)
 	// FindOpenForCheckout returns the rows of the given dates with the shift and office loaded in one query.
 	FindOpenForCheckout(ctx context.Context, personnelID uuid.UUID, from, to time.Time) ([]model.Attendance, error)
+	// FindByIdempotencyKey finds the attendance a clock-in or clock-out key belongs to; action is "checkin" or "checkout".
+	FindByIdempotencyKey(ctx context.Context, personnelID uuid.UUID, key string) (att *model.Attendance, action string, err error)
+	// FindFailure returns the recorded failure of an asynchronous request, if any.
+	FindFailure(ctx context.Context, personnelID uuid.UUID, key string) (*model.AttendanceFailure, error)
 	// CompleteCheckOut sets the check-out only if it is still empty; false when it was already set.
 	CompleteCheckOut(ctx context.Context, id uuid.UUID, c CheckOutUpdate) (bool, error)
 	Update(ctx context.Context, attendance *model.Attendance) error
@@ -326,4 +330,27 @@ func (r *attendanceRepositoryImpl) CompleteCheckOut(ctx context.Context, id uuid
 	res := r.withContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
 		Model(&model.Attendance{}).Where("id = ? AND check_out IS NULL", id).Updates(updates)
 	return res.RowsAffected > 0, res.Error
+}
+
+func (r *attendanceRepositoryImpl) FindByIdempotencyKey(ctx context.Context, personnelID uuid.UUID, key string) (*model.Attendance, string, error) {
+	var rows []model.Attendance
+	err := r.withContext(ctx).Select("id", "idempotency_key", "check_out_idempotency_key").
+		Where("personnel_id = ? AND (idempotency_key = ? OR check_out_idempotency_key = ?)", personnelID, key, key).
+		Limit(1).Find(&rows).Error
+	if err != nil || len(rows) == 0 {
+		return nil, "", err
+	}
+	if rows[0].IdempotencyKey != nil && *rows[0].IdempotencyKey == key {
+		return &rows[0], "checkin", nil
+	}
+	return &rows[0], "checkout", nil
+}
+
+func (r *attendanceRepositoryImpl) FindFailure(ctx context.Context, personnelID uuid.UUID, key string) (*model.AttendanceFailure, error) {
+	var rows []model.AttendanceFailure
+	err := r.withContext(ctx).Where("personnel_id = ? AND idempotency_key = ?", personnelID, key).Limit(1).Find(&rows).Error
+	if err != nil || len(rows) == 0 {
+		return nil, err
+	}
+	return &rows[0], nil
 }

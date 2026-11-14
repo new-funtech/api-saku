@@ -351,6 +351,9 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	if h.service.AsyncEnabled() {
+		return h.clockInAsync(c, req, key)
+	}
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_in_photo", folder); uerr != nil {
@@ -563,6 +566,9 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 		})
 	}
 
+	if h.service.AsyncEnabled() {
+		return h.clockOutAsync(c, req, key)
+	}
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_out_photo", folder); uerr != nil {

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/attendanceq"
 	"github.com/ganiramadhan/ganipedia/backend/internal/config"
 	"github.com/ganiramadhan/ganipedia/backend/internal/handlers"
 	"github.com/ganiramadhan/ganipedia/backend/internal/middleware"
@@ -178,6 +179,14 @@ func main() {
 	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo, userRepo)
 	assignmentSvc := services.NewAssignmentService(assignmentRepo)
 	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
+	if attendanceq.AsyncEnabled() {
+		if config.RabbitClient == nil {
+			log.Println("[attendance] ATTENDANCE_ASYNC is on but RabbitMQ is not configured; staying synchronous")
+		} else {
+			attendanceSvc.SetEnqueuer(attendanceq.NewPublisher(config.RabbitClient, attendanceq.LoadConfig()))
+			log.Println("[attendance] asynchronous mode: clock-in/out is queued (workers store it)")
+		}
+	}
 	attendanceCorrectionSvc := services.NewAttendanceCorrectionService(attendanceCorrectionRepo, notifierSvc, pushSender)
 	patrolSvc := services.NewPatrolService(patrolRepo, attendanceRepo)
 	leaveSvc := services.NewLeaveService(leaveRepo, notifierSvc, pushSender)

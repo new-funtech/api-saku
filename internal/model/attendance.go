@@ -26,10 +26,13 @@ type Attendance struct {
 	Notes              *string    `json:"notes" gorm:"type:text"`
 	WorkDuration       *int       `json:"work_duration"` // in minutes
 	// Idempotency: set by the API, never read from the client body. The indexes are created by sql/0001.
-	IdempotencyKey         *string   `json:"-" gorm:"type:varchar(64)"`
-	CheckOutIdempotencyKey *string   `json:"-" gorm:"type:varchar(64)"`
-	CreatedAt              time.Time `json:"created_at"`
-	UpdatedAt              time.Time `json:"updated_at"`
+	IdempotencyKey         *string `json:"-" gorm:"type:varchar(64)"`
+	CheckOutIdempotencyKey *string `json:"-" gorm:"type:varchar(64)"`
+	// Asynchronous path: when the API accepted the request (the official time) and what the device claimed.
+	ServerReceivedAt *time.Time `json:"-"`
+	ClientTimestamp  *time.Time `json:"-"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 
 	// Relations
 	Personnel  *Personnel  `json:"personnel,omitempty" gorm:"foreignKey:PersonnelID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`

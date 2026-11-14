@@ -62,6 +62,27 @@ services:
       - hrmis-network
     restart: unless-stopped
 
+  # RabbitMQ (emails; also the attendance queue when ATTENDANCE_ASYNC=true)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: hrmis-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-hrmis}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-hrmis}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - hrmis-network
+    restart: unless-stopped
+
   # HRMIS API Application
   api:
     build:
@@ -105,6 +126,17 @@ services:
       
       # CORS
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
+
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-hrmis}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-hrmis}
+      RABBITMQ_VHOST: /
+
+      # Attendance (async is off by default)
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Jakarta}
+      ATTENDANCE_ASYNC: ${ATTENDANCE_ASYNC:-false}
     ports:
       - "${APP_PORT:-4000}:4000"
     depends_on:
@@ -113,6 +145,47 @@ services:
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hrmis-network
+    restart: unless-stopped
+
+  # Stores queued clock-in/out events (only needed when ATTENDANCE_ASYNC=true): docker compose --profile async up -d
+  attendance-worker:
+    profiles: ["async"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: hrmis-attendance-worker
+    command: ["/app/attendance-worker"]
+    stop_grace_period: 30s
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-hrmis}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_ENDPOINT: http://minio:9000
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      AWS_BUCKET: ${AWS_BUCKET:-hrmis}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-hrmis}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-hrmis}
+      RABBITMQ_VHOST: /
+      ATTENDANCE_WORKER_METRICS_ADDR: ":9101"
+    ports:
+      - "${ATTENDANCE_WORKER_METRICS_PORT:-9101}:9101"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - hrmis-network
@@ -126,3 +199,4 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  rabbitmq_data:

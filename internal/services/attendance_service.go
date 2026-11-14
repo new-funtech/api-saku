@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/attendanceq"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
@@ -48,6 +49,13 @@ type AttendanceService interface {
 	// ClockIn/ClockOut are idempotent: replayed is true when the answer is an earlier result, not a new write.
 	ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (resp *model.AttendanceResponse, replayed bool, err error)
 	ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (resp *model.AttendanceResponse, replayed bool, err error)
+
+	// Asynchronous mode (ATTENDANCE_ASYNC=true): validate, publish to the broker, answer 202. A worker stores it.
+	SetEnqueuer(e attendanceq.Enqueuer)
+	AsyncEnabled() bool
+	ClockInAsync(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*AsyncAccepted, error)
+	ClockOutAsync(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*AsyncAccepted, error)
+	QueueStatus(ctx context.Context, personnelID uuid.UUID, key string) (*QueueStatus, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -56,6 +64,7 @@ type attendanceServiceImpl struct {
 	repo           repository.AttendanceRepository
 	personnelRepo  repository.PersonnelRepository
 	assignmentRepo repository.AssignmentRepository
+	enqueuer       attendanceq.Enqueuer
 }
 
 func NewAttendanceService(repo repository.AttendanceRepository, personnelRepo repository.PersonnelRepository, assignmentRepo repository.AssignmentRepository) AttendanceService {

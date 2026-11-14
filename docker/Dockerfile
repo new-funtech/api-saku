@@ -26,7 +26,11 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath \
       -ldflags="-s -w -X main.version=${VERSION}" \
-      -o /out/api-hrmis ./cmd
+      -o /out/api-hrmis ./cmd \
+ && GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath \
+      -ldflags="-s -w -X main.version=${VERSION}" \
+      -o /out/attendance-worker ./cmd/attendance-worker
 
 # Stage 2: Runtime
 FROM alpine:3.22 AS runtime
@@ -41,6 +45,8 @@ ENV APP_PORT=4000 \
     TZ=Asia/Jakarta
 
 COPY --from=builder --chown=app:app /out/api-hrmis /app/api-hrmis
+# Same image, second entrypoint: run with `command: ["/app/attendance-worker"]` (see docker-compose).
+COPY --from=builder --chown=app:app /out/attendance-worker /app/attendance-worker
 
 USER app:app
 

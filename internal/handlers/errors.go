@@ -26,6 +26,8 @@ func statusForServiceError(err error) int {
 	}
 	msg := strings.ToLower(err.Error())
 	switch {
+	case errors.Is(err, services.ErrQueueUnavailable):
+		return http.StatusServiceUnavailable
 	case errors.Is(err, services.ErrAlreadyCheckedOut):
 		return http.StatusConflict
 	case errors.Is(err, services.ErrOutsideGeofence):
@@ -51,6 +53,7 @@ func statusForServiceError(err error) int {
 		strings.Contains(msg, "must be"),
 		strings.Contains(msg, "cannot be"),
 		strings.Contains(msg, "belum waktunya"),
+		strings.Contains(msg, "terlalu besar"),
 		strings.Contains(msg, "belum boleh"):
 		return http.StatusBadRequest
 	case strings.Contains(msg, "forbidden"),

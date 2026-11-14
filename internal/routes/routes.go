@@ -154,6 +154,7 @@ func SetupRoutes(
 	attendanceRoutes.Get("/", attendanceHdl.GetAll)
 	attendanceRoutes.Get("/summary", attendanceHdl.Summary)
 	attendanceRoutes.Put("/checkout", attendanceHdl.Checkout)
+	attendanceRoutes.Get("/status/:key", attendanceHdl.QueueStatus)
 	attendanceRoutes.Get("/:id", attendanceHdl.GetByID)
 	attendanceRoutes.Post("/", attendanceHdl.Create)
 	attendanceRoutes.Put("/:id", attendanceHdl.Update)

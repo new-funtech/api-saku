@@ -48,6 +48,19 @@ services:
       - PAYROLL_CRON_MINUTE=${PAYROLL_CRON_MINUTE}
       # Push notifications (FCM): the service-account JSON as one base64 line. Never put the key in the image.
       - FIREBASE_CREDENTIALS_BASE64=${FIREBASE_CREDENTIALS_BASE64:-}
+      # Attendance
+      - APP_TIMEZONE=${APP_TIMEZONE:-Asia/Jakarta}
+      - ATTENDANCE_GEOFENCE_ENABLED=${ATTENDANCE_GEOFENCE_ENABLED:-true}
+      - RATE_LIMIT_IP_PER_MIN=${RATE_LIMIT_IP_PER_MIN:-6000}
+      - PROXY_HEADER=${PROXY_HEADER:-}
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
+      - SCOPE_CACHE_TTL_SECONDS=${SCOPE_CACHE_TTL_SECONDS:-60}
+      # Asynchronous clock-in/out: off by default. Turn on only together with the attendance-worker below.
+      - ATTENDANCE_ASYNC=${ATTENDANCE_ASYNC:-false}
+      - ATTENDANCE_QUEUE=${ATTENDANCE_QUEUE:-attendance.events}
+      - ATTENDANCE_PUBLISH_POOL=${ATTENDANCE_PUBLISH_POOL:-8}
+      - ATTENDANCE_PUBLISH_TIMEOUT=${ATTENDANCE_PUBLISH_TIMEOUT:-3s}
+      - ATTENDANCE_MAX_PHOTO_BYTES=${ATTENDANCE_MAX_PHOTO_BYTES:-2097152}
     expose:
       - "${APP_PORT:-4000}"
     healthcheck:
@@ -68,6 +81,61 @@ services:
       saku:
         aliases:
           - ${NETWORK_ALIAS:-api-saku}
+
+  # Stores the queued clock-in/out events. Start it with: docker compose --profile async up -d
+  attendance-worker:
+    profiles: ["async"]
+    image: ${IMAGE_FULL:-registry.ganipedia.com/api-saku:latest}
+    container_name: attendance-worker
+    restart: ${RESTART_POLICY:-unless-stopped}
+    command: ["/app/attendance-worker"]
+    stop_grace_period: 30s
+    environment:
+      - APP_ENV=${APP_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=${DB_SSLMODE}
+      - DB_MAX_OPEN_CONNS=${ATTENDANCE_WORKER_DB_CONNS:-10}
+      - DB_MAX_IDLE_CONNS=5
+      - DB_CONN_MAX_LIFETIME=${DB_CONN_MAX_LIFETIME}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - AWS_USE_PATH_STYLE_ENDPOINT=${AWS_USE_PATH_STYLE_ENDPOINT}
+      - AWS_BUCKET=${AWS_BUCKET}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST}
+      - ATTENDANCE_QUEUE=${ATTENDANCE_QUEUE:-attendance.events}
+      - ATTENDANCE_WORKER_PREFETCH=${ATTENDANCE_WORKER_PREFETCH:-500}
+      - ATTENDANCE_BATCH_SIZE=${ATTENDANCE_BATCH_SIZE:-100}
+      - ATTENDANCE_BATCH_WAIT=${ATTENDANCE_BATCH_WAIT:-1s}
+      - ATTENDANCE_MAX_ATTEMPTS=${ATTENDANCE_MAX_ATTEMPTS:-5}
+      - ATTENDANCE_RETRY_DELAYS=${ATTENDANCE_RETRY_DELAYS:-2s,10s,60s,300s}
+      - ATTENDANCE_WORKER_METRICS_ADDR=${ATTENDANCE_WORKER_METRICS_ADDR:-:9101}
+    expose:
+      - "9101"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9101/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      service: attendance-worker
+      app: hrmis-abujapi
+    networks:
+      saku:
 
 networks:
   saku:
