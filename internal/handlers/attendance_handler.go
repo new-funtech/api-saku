@@ -304,13 +304,9 @@ func (h *AttendanceHandler) GetByID(c *fiber.Ctx) error {
 		})
 	}
 
-	attendance, err := h.service.GetByID(ctx, id)
-	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
-			Status:  "error",
-			Code:    http.StatusInternalServerError,
-			Message: "Attendance not found",
-		})
+	attendance, denied := h.scoped(c, ctx, id)
+	if denied != 0 {
+		return deniedAttendance(c, denied)
 	}
 
 	return c.Status(http.StatusOK).JSON(model.APIResponse{
@@ -485,6 +481,10 @@ func (h *AttendanceHandler) Update(c *fiber.Ctx) error {
 			Code:    http.StatusInternalServerError,
 			Message: "Invalid attendance ID",
 		})
+	}
+
+	if _, denied := h.scoped(c, ctx, id); denied != 0 {
+		return deniedAttendance(c, denied)
 	}
 
 	req, err := bindUpdateAttendanceRequest(c)
@@ -701,6 +701,10 @@ func (h *AttendanceHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
+	if _, denied := h.scoped(c, ctx, id); denied != 0 {
+		return deniedAttendance(c, denied)
+	}
+
 	if err := h.service.Delete(ctx, id); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -738,4 +742,43 @@ func setIdempotencyHeaders(c *fiber.Ctx, key string, replayed bool) {
 	if replayed {
 		c.Set("Idempotent-Replay", "true")
 	}
+}
+
+// scoped loads an attendance and checks the caller may touch it. denied is 0 when allowed, or the
+// status to answer with (404 unknown, 403 outside the caller's scope).
+func (h *AttendanceHandler) scoped(c *fiber.Ctx, ctx context.Context, id uuid.UUID) (*model.AttendanceResponse, int) {
+	att, err := h.service.GetByID(ctx, id)
+	if err != nil || att == nil {
+		return nil, http.StatusNotFound
+	}
+	if !callerMayAccessAttendance(c, att) {
+		return nil, http.StatusForbidden
+	}
+	return att, 0
+}
+
+func deniedAttendance(c *fiber.Ctx, status int) error {
+	if status == http.StatusForbidden {
+		return forbiddenResponse(c)
+	}
+	return c.Status(http.StatusNotFound).JSON(model.APIResponse{
+		Status: "error", Code: http.StatusNotFound, Message: "Attendance not found",
+	})
+}
+
+// callerMayAccessAttendance applies the same row-level rule the list endpoint uses: central roles
+// see everything, company-scoped roles see their own BUJP, a guard sees only their own records.
+func callerMayAccessAttendance(c *fiber.Ctx, att *model.AttendanceResponse) bool {
+	role, _ := c.Locals("role").(string)
+	switch {
+	case utils.IsPusat(role):
+		return true
+	case utils.IsBujpScoped(role):
+		bujpID, _ := c.Locals("bujpID").(uuid.UUID)
+		return bujpID != uuid.Nil && att.Personnel != nil && att.Personnel.BujpID == bujpID
+	case role == "guard":
+		personnelID, _ := c.Locals("personnelID").(uuid.UUID)
+		return personnelID != uuid.Nil && att.PersonnelID == personnelID
+	}
+	return false
 }

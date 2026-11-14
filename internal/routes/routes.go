@@ -157,8 +157,10 @@ func SetupRoutes(
 	attendanceRoutes.Get("/status/:key", attendanceHdl.QueueStatus)
 	attendanceRoutes.Get("/:id", attendanceHdl.GetByID)
 	attendanceRoutes.Post("/", attendanceHdl.Create)
-	attendanceRoutes.Put("/:id", attendanceHdl.Update)
-	attendanceRoutes.Delete("/:id", attendanceHdl.Delete)
+	// Editing or deleting someone's attendance is an admin action, limited to the admin's own company.
+	attendanceAdmin := middleware.RequireRoles("super_admin", "admin", "company_admin")
+	attendanceRoutes.Put("/:id", attendanceAdmin, attendanceHdl.Update)
+	attendanceRoutes.Delete("/:id", attendanceAdmin, attendanceHdl.Delete)
 
 	// Attendance Correction routes (all protected)
 	attendanceCorrectionRoutes := v1.Group("/attendance-corrections", protected()...)
