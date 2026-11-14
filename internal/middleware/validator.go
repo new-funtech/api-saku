@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/constants"
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -12,8 +13,17 @@ import (
 
 var validate *validator.Validate
 
+// strictEmail wants name@domain.tld: the library's own "email" rule also accepts "a@b" (a host
+// without a dot), which is not an address anyone can receive mail at.
+var strictEmail = regexp.MustCompile(`^[A-Za-z0-9._%+\-]+@([A-Za-z0-9]([A-Za-z0-9\-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$`)
+
 func init() {
 	validate = validator.New()
+	// Replaces the built-in "email" tag for every request struct.
+	_ = validate.RegisterValidation("email", func(fl validator.FieldLevel) bool {
+		v := fl.Field().String()
+		return len(v) <= 254 && strictEmail.MatchString(v)
+	})
 }
 
 func ValidateRequest(data interface{}) error {
