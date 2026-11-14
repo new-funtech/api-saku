@@ -52,7 +52,7 @@ func (h *UploadHandler) GetPresignedUploadURL(c *fiber.Ctx) error {
 		})
 	}
 
-	if id, perr := uuid.Parse(req.EntityID); perr != nil || !entityAllowed(c, context.Background(), id) {
+	if id, perr := uuid.Parse(req.EntityID); perr != nil || !entityAllowedOrNew(c, context.Background(), id) {
 		return forbiddenResponse(c)
 	}
 

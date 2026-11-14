@@ -383,3 +383,22 @@ func TestInstallmentPaymentIsAdminAndTenantScoped(t *testing.T) {
 		t.Errorf("a company admin ran the global mark-overdue (%d)", r.status)
 	}
 }
+
+// An admin adding a record uploads its photo before saving, under an id nothing owns yet. That must
+// work; an id that belongs to another company, or any id for an employee, must not.
+func TestUploadForARecordNotSavedYet(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+	req := func(id string) map[string]interface{} {
+		return map[string]interface{}{"filename": "x.jpg", "folder_type": "PERSONNELS", "entity_id": id, "subfolder": "photo"}
+	}
+	if r := w.do(a.admin, "POST", "/uploads/presigned-url", req(uuid.New().String())); !r.ok() {
+		t.Errorf("admin could not prepare an upload for a new record: %d %s", r.status, trim(r.body))
+	}
+	if r := w.do(a.admin, "POST", "/uploads/presigned-url", req(b.personnel.ID.String())); r.ok() {
+		t.Errorf("admin prepared an upload into another company's record (%d)", r.status)
+	}
+	if r := w.do(a.guard, "POST", "/uploads/presigned-url", req(uuid.New().String())); r.ok() {
+		t.Errorf("an employee prepared an upload for an unknown id (%d)", r.status)
+	}
+}

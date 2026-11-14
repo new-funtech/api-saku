@@ -181,6 +181,20 @@ func entityAllowed(c *fiber.Ctx, ctx context.Context, id uuid.UUID) bool {
 	return found && own != uuid.Nil && bujp == own
 }
 
+// entityAllowedOrNew is entityAllowed, plus an id that belongs to nothing yet: an admin adding a
+// record picks its id before saving so the first upload has a folder. An id that exists in another
+// company is still refused.
+func entityAllowedOrNew(c *fiber.Ctx, ctx context.Context, id uuid.UUID) bool {
+	if entityAllowed(c, ctx, id) {
+		return true
+	}
+	if utils.CallerRole(c) == "guard" {
+		return false
+	}
+	_, found := tenantOfEntity(ctx, id)
+	return !found
+}
+
 // fileKeyAllowed reports whether the caller may sign, move or delete this object key.
 func fileKeyAllowed(c *fiber.Ctx, ctx context.Context, key string) bool {
 	if utils.IsPusat(utils.CallerRole(c)) {
