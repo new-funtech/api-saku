@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/google/uuid"
 )
 
@@ -349,5 +350,36 @@ func TestPersonnelFormRoundTrip(t *testing.T) {
 	}
 	if !strings.Contains(got.body, "5000000") {
 		t.Errorf("salary lost: %s", trim(got.body))
+	}
+}
+
+// Recording an installment payment changes money: only an admin of the loan's own company (or a
+// central role) may, never an employee and never another company's admin.
+func TestInstallmentPaymentIsAdminAndTenantScoped(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+	inst := model.LoanInstallment{ID: uuid.New(), LoanID: a.loan.ID, InstallmentNumber: 1, DueDate: time.Now().AddDate(0, 1, 0),
+		PrincipalAmount: 150000, InterestAmount: 50000, InstallmentAmount: 200000, Status: "pending", RemainingAmount: 200000}
+	w.must(&inst)
+	path := "/loan-installments/" + inst.ID.String() + "/pay"
+
+	if r := w.do(a.guard, "POST", path, map[string]interface{}{"paid_amount": 200000}); r.ok() {
+		t.Errorf("a guard recorded a payment (%d)", r.status)
+	}
+	if r := w.do(b.admin, "POST", path, map[string]interface{}{"paid_amount": 200000}); r.ok() {
+		t.Errorf("another company's admin recorded a payment (%d)", r.status)
+	}
+	var fresh model.LoanInstallment
+	if err := w.db.First(&fresh, "id = ?", inst.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if fresh.Status != "pending" || fresh.PaidAmount != 0 {
+		t.Fatalf("installment changed by a forbidden caller: %s %v", fresh.Status, fresh.PaidAmount)
+	}
+	if r := w.do(a.admin, "POST", path, map[string]interface{}{"paid_amount": 200000, "payment_method": "transfer"}); !r.ok() {
+		t.Errorf("own admin could not record the payment: %d %s", r.status, trim(r.body))
+	}
+	if r := w.do(a.admin, "POST", "/loan-installments/mark-overdue", nil); r.ok() {
+		t.Errorf("a company admin ran the global mark-overdue (%d)", r.status)
 	}
 }

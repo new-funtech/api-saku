@@ -110,6 +110,15 @@ func (h *LoanInstallmentHandler) Pay(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusBadRequest, "invalid id")
 	}
+	// Recording a payment is an admin action on a loan of the caller's own company.
+	loanID, lerr := h.service.LoanIDOf(c.Context(), id)
+	if lerr != nil {
+		return utils.ErrorResponse(c, http.StatusNotFound, "installment not found")
+	}
+	loan, lerr := h.loanService.GetByID(c.Context(), loanID)
+	if lerr != nil || loan == nil || !h.canAccessLoan(c, loan) {
+		return utils.ErrorResponse(c, http.StatusNotFound, "installment not found")
+	}
 	var req model.LoanInstallmentPaymentRequest
 	if err := c.BodyParser(&req); err != nil {
 		return utils.ErrorResponse(c, http.StatusBadRequest, "invalid body")

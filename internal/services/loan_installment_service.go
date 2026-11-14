@@ -16,6 +16,8 @@ type LoanInstallmentService interface {
 	GetByLoan(ctx context.Context, loanID uuid.UUID) ([]model.LoanInstallmentResponse, error)
 	Pay(ctx context.Context, id uuid.UUID, req *model.LoanInstallmentPaymentRequest) (*model.LoanInstallmentResponse, error)
 	MarkOverdue(ctx context.Context) (int64, error)
+	// LoanIDOf is the loan an installment belongs to (for access checks before touching it).
+	LoanIDOf(ctx context.Context, installmentID uuid.UUID) (uuid.UUID, error)
 	DueStats(ctx context.Context, bujpID uuid.UUID, now time.Time) (overdue int64, overdueAmount float64, dueSoon int64, err error)
 	DashboardSummary(ctx context.Context, personnelID uuid.UUID, now time.Time) (*model.LoanDashboardSummary, error)
 }
@@ -39,6 +41,14 @@ func (s *loanInstallmentServiceImpl) GetByLoan(ctx context.Context, loanID uuid.
 		out[i] = ToLoanInstallmentResponse(&items[i])
 	}
 	return out, nil
+}
+
+func (s *loanInstallmentServiceImpl) LoanIDOf(ctx context.Context, installmentID uuid.UUID) (uuid.UUID, error) {
+	inst, err := s.repo.FindByID(ctx, installmentID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return inst.LoanID, nil
 }
 
 func (s *loanInstallmentServiceImpl) Pay(ctx context.Context, id uuid.UUID, req *model.LoanInstallmentPaymentRequest) (*model.LoanInstallmentResponse, error) {

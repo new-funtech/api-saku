@@ -288,8 +288,10 @@ func SetupRoutes(
 
 	// Loan Installment routes (all protected)
 	loanInstallmentRoutes := v1.Group("/loan-installments", protected()...)
-	loanInstallmentRoutes.Post("/:id/pay", loanInstallmentHdl.Pay)
-	loanInstallmentRoutes.Post("/mark-overdue", loanInstallmentHdl.MarkOverdue)
+	// Payments are recorded by admins (company admins only for their own company, checked in the
+	// handler). Marking overdue touches every company, so it is the central roles only.
+	loanInstallmentRoutes.Post("/:id/pay", middleware.RequireRoles("super_admin", "admin", "company_admin"), loanInstallmentHdl.Pay)
+	loanInstallmentRoutes.Post("/mark-overdue", middleware.RequireRoles("super_admin", "admin"), loanInstallmentHdl.MarkOverdue)
 	notificationRoutes := v1.Group("/notifications", protected()...)
 	notificationRoutes.Get("/", notificationHdl.GetAll)
 	notificationRoutes.Get("/preferences", preferenceHdl.Get)
