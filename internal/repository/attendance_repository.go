@@ -81,6 +81,10 @@ func scopedAttendances(db *gorm.DB, filters map[string]interface{}) (query *gorm
 	if status, ok := filters["status"].(string); ok && status != "" {
 		query = query.Where("attendances.status = ?", status)
 	}
+	if search, ok := filters["search"].(string); ok && search != "" {
+		like := "%" + search + "%"
+		query = query.Where("attendances.personnel_id IN (SELECT id FROM personnels WHERE full_name ILIKE ? OR id_number ILIKE ? OR n_ip ILIKE ?)", like, like, like)
+	}
 	if date, ok := filters["date"].(time.Time); ok && !date.IsZero() {
 		query = query.Where("attendances.date = ?", date)
 	}
@@ -133,8 +137,8 @@ func (r *attendanceRepositoryImpl) FindAll(ctx context.Context, page, limit int,
 	err := query.
 		Preload("Personnel").
 		Preload("Location").
-		Preload("Assignment").
-		Order("date DESC, check_in DESC").
+		Preload("Assignment.Shift").
+		Order("attendances.date DESC, attendances.check_in DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&attendances).Error

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -19,6 +20,8 @@ type MonthlyReportService interface {
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateMonthlyReportRequest) (*model.MonthlyReportResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	Generate(ctx context.Context, bujpID uuid.UUID, period string, force bool, createdBy *uuid.UUID) (*model.MonthlyReportResponse, error)
+	// Recap is the per-person attendance recap of a month (YYYY-MM) for one company.
+	Recap(ctx context.Context, bujpID uuid.UUID, period string, locationID, personnelID uuid.UUID, search string) (*model.AttendanceRecap, error)
 }
 
 type monthlyreportServiceImpl struct {
@@ -268,4 +271,39 @@ func toMonthlyReportResponse(report *model.MonthlyReport) model.MonthlyReportRes
 	}
 
 	return response
+}
+
+// Recap lists every person of the company with their month of attendance, leave and overtime,
+// plus the totals. The company is always the one passed in; nothing else is read.
+func (s *monthlyreportServiceImpl) Recap(ctx context.Context, bujpID uuid.UUID, period string, locationID, personnelID uuid.UUID, search string) (*model.AttendanceRecap, error) {
+	if bujpID == uuid.Nil {
+		return nil, errors.New("bujp_id is required")
+	}
+	start, err := time.Parse("2006-01", period)
+	if err != nil {
+		return nil, errors.New("invalid period, expected YYYY-MM")
+	}
+	end := start.AddDate(0, 1, -1)
+	rows, err := s.repo.Recap(ctx, repository.RecapQuery{
+		BujpID: bujpID, From: start, To: end, LocationID: locationID, PersonnelID: personnelID, Search: strings.TrimSpace(search),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := &model.AttendanceRecap{Period: period, BujpID: bujpID, Rows: rows}
+	if out.Rows == nil {
+		out.Rows = []model.AttendanceRecapRow{}
+	}
+	if locationID != uuid.Nil {
+		out.LocationID = &locationID
+	}
+	for _, r := range rows {
+		out.Totals.Hadir += r.Hadir
+		out.Totals.Telat += r.Telat
+		out.Totals.TidakHadir += r.TidakHadir
+		out.Totals.Izin += r.Izin
+		out.Totals.LemburJam += r.LemburJam
+		out.Totals.JamKerjaMenit += r.JamKerjaMenit
+	}
+	return out, nil
 }

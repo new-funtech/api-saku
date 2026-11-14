@@ -14,9 +14,21 @@ type MonthlyReportRepository interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*model.MonthlyReport, error)
 	FindByBujpAndPeriod(ctx context.Context, bujpID uuid.UUID, period string) (*model.MonthlyReport, error)
 	ComputeStats(ctx context.Context, bujpID uuid.UUID, periodStart, periodEnd time.Time, period string) (*MonthlyReportStats, error)
+	// Recap counts each person's attendance, leave and overtime in a date range (company scoped).
+	Recap(ctx context.Context, q RecapQuery) ([]model.AttendanceRecapRow, error)
 	Create(ctx context.Context, report *model.MonthlyReport) error
 	Update(ctx context.Context, report *model.MonthlyReport) error
 	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+// RecapQuery selects the people and the days of a recap. BujpID is always set by the caller's
+// session (or, for central roles, an explicit company); it is what keeps the recap inside a tenant.
+type RecapQuery struct {
+	BujpID      uuid.UUID
+	From, To    time.Time
+	LocationID  uuid.UUID // optional
+	PersonnelID uuid.UUID // optional
+	Search      string    // optional: name, NIK or NIP
 }
 
 // MonthlyReportStats is the aggregated counters for a single (bujp, period).
@@ -210,4 +222,51 @@ func (r *monthlyReportRepositoryImpl) ComputeStats(ctx context.Context, bujpID u
 	}
 
 	return stats, nil
+}
+
+func (r *monthlyReportRepositoryImpl) Recap(ctx context.Context, q RecapQuery) ([]model.AttendanceRecapRow, error) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	// Placeholders appear in this order in the SQL below: overtime dates, join dates, [office],
+	// company, then the optional where parts.
+	args := []interface{}{q.From, q.To, q.From, q.To}
+	attendanceFilter := ""
+	if q.LocationID != uuid.Nil {
+		attendanceFilter = " AND a.location_id = ?"
+		args = append(args, q.LocationID)
+	}
+	args = append(args, q.BujpID)
+	where := ""
+	if q.PersonnelID != uuid.Nil {
+		where += " AND p.id = ?"
+		args = append(args, q.PersonnelID)
+	}
+	if q.LocationID != uuid.Nil {
+		where += " AND (EXISTS (SELECT 1 FROM assignments s WHERE s.personnel_id = p.id AND s.location_id = ?) OR EXISTS (SELECT 1 FROM attendances x WHERE x.personnel_id = p.id AND x.location_id = ? AND x.date BETWEEN ? AND ?))"
+		args = append(args, q.LocationID, q.LocationID, q.From, q.To)
+	}
+	if q.Search != "" {
+		like := "%" + q.Search + "%"
+		where += " AND (p.full_name ILIKE ? OR p.id_number ILIKE ? OR p.n_ip ILIKE ?)"
+		args = append(args, like, like, like)
+	}
+
+	sql := `
+SELECT p.id AS personnel_id, p.full_name, p.id_number, p.n_ip AS nip,
+  COUNT(a.id) FILTER (WHERE a.status IN ('present','late')) AS hadir,
+  COUNT(a.id) FILTER (WHERE a.status = 'late') AS telat,
+  COUNT(a.id) FILTER (WHERE a.status = 'absent') AS tidak_hadir,
+  COUNT(a.id) FILTER (WHERE a.status IN ('permission','sick','leave')) AS izin,
+  COALESCE((SELECT SUM(o.total_hours) FROM overtimes o WHERE o.personnel_id = p.id AND o.status = 'approved' AND o.date BETWEEN ? AND ?), 0) AS lembur_jam,
+  COALESCE(SUM(a.work_duration), 0) AS jam_kerja_menit
+FROM personnels p
+LEFT JOIN attendances a ON a.personnel_id = p.id AND a.date BETWEEN ? AND ?` + attendanceFilter + `
+WHERE p.bujp_id = ?` + where + `
+GROUP BY p.id
+ORDER BY p.full_name`
+
+	var rows []model.AttendanceRecapRow
+	err := r.db.WithContext(ctx).Raw(sql, args...).Scan(&rows).Error
+	return rows, err
 }

@@ -135,7 +135,10 @@ func (h *AttendanceHandler) GetAll(c *fiber.Ctx) error {
 	defer cancel()
 
 	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
+	limit := c.QueryInt("limit", c.QueryInt("per_page", 10))
+	if limit > 200 {
+		limit = 200
+	}
 	personnelID := c.Query("personnel_id")
 	locationID := c.Query("location_id")
 	status := c.Query("status")
@@ -169,15 +172,19 @@ func (h *AttendanceHandler) GetAll(c *fiber.Ctx) error {
 			filters["date"] = d
 		}
 	}
-	if startDateStr := c.Query("start_date"); startDateStr != "" {
+	if startDateStr := firstNonEmpty(c.Query("start_date"), c.Query("date_from")); startDateStr != "" {
 		if d, err := time.Parse("2006-01-02", startDateStr); err == nil {
 			filters["start_date"] = d
 		}
 	}
-	if endDateStr := c.Query("end_date"); endDateStr != "" {
+	if endDateStr := firstNonEmpty(c.Query("end_date"), c.Query("date_to")); endDateStr != "" {
 		if d, err := time.Parse("2006-01-02", endDateStr); err == nil {
 			filters["end_date"] = d
 		}
+	}
+
+	if q := strings.TrimSpace(c.Query("search")); q != "" {
+		filters["search"] = q
 	}
 
 	utils.ApplyBujpScope(c, filters)
@@ -781,4 +788,13 @@ func callerMayAccessAttendance(c *fiber.Ctx, att *model.AttendanceResponse) bool
 		return personnelID != uuid.Nil && att.PersonnelID == personnelID
 	}
 	return false
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

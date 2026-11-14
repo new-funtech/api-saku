@@ -574,6 +574,10 @@ func toAttendanceResponse(attendance *model.Attendance) model.AttendanceResponse
 			endDate := attendance.Assignment.EndDate.Format("2006-01-02")
 			assignmentResponse.EndDate = &endDate
 		}
+		if attendance.Assignment.Shift != nil {
+			shift := toShiftResponse(attendance.Assignment.Shift)
+			assignmentResponse.Shift = &shift
+		}
 		response.Assignment = &assignmentResponse
 	}
 

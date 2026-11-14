@@ -13,6 +13,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/xuri/excelize/v2"
 )
 
 type MonthlyReportHandler struct {
@@ -376,4 +377,123 @@ func (h *MonthlyReportHandler) authorize(c *fiber.Ctx, ctx context.Context, id u
 		return true, forbiddenResponse(c)
 	}
 	return false, nil
+}
+
+// recapScope resolves the company, office and person of a recap request. The company comes from the
+// session; central roles must name one. An office or person outside that company is refused.
+func (h *MonthlyReportHandler) recapScope(c *fiber.Ctx, ctx context.Context) (company, location, person uuid.UUID, denied error, handled bool) {
+	company = utils.CallerBujpID(c)
+	if utils.IsPusat(utils.CallerRole(c)) {
+		company = uuid.Nil
+		if v := c.Query("bujp_id"); v != "" {
+			id, err := uuid.Parse(v)
+			if err != nil {
+				return uuid.Nil, uuid.Nil, uuid.Nil, c.Status(http.StatusBadRequest).JSON(model.APIResponse{Status: "error", Code: http.StatusBadRequest, Message: "bujp_id is invalid"}), true
+			}
+			company = id
+		}
+	}
+	if company == uuid.Nil {
+		return uuid.Nil, uuid.Nil, uuid.Nil, c.Status(http.StatusBadRequest).JSON(model.APIResponse{Status: "error", Code: http.StatusBadRequest, Message: "bujp_id wajib diisi"}), true
+	}
+	if v := c.Query("location_id"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil || !locationAllowed(c, ctx, id) {
+			return uuid.Nil, uuid.Nil, uuid.Nil, forbiddenResponse(c), true
+		}
+		location = id
+	}
+	if v := c.Query("personnel_id"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil || !personAllowed(c, ctx, id, nil) {
+			return uuid.Nil, uuid.Nil, uuid.Nil, forbiddenResponse(c), true
+		}
+		person = id
+	}
+	return company, location, person, nil, false
+}
+
+// Recap returns the per-person recap of a month: present, late, absent, leave and overtime.
+//
+// @Router /monthly-reports/recap [get]
+func (h *MonthlyReportHandler) Recap(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	company, location, person, err, handled := h.recapScope(c, ctx)
+	if handled {
+		return err
+	}
+	recap, rerr := h.service.Recap(ctx, company, c.Query("period"), location, person, c.Query("search"))
+	if rerr != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(rerr.Error(), "period") || strings.Contains(rerr.Error(), "required") {
+			status = http.StatusBadRequest
+		}
+		return c.Status(status).JSON(model.APIResponse{Status: "error", Code: status, Message: rerr.Error()})
+	}
+	return c.Status(http.StatusOK).JSON(model.APIResponse{Status: "success", Code: http.StatusOK, Message: "Rekap absensi bulanan", Data: recap})
+}
+
+// RecapExport is the recap as an Excel file.
+//
+// @Router /monthly-reports/recap/export [get]
+func (h *MonthlyReportHandler) RecapExport(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	company, location, person, err, handled := h.recapScope(c, ctx)
+	if handled {
+		return err
+	}
+	recap, rerr := h.service.Recap(ctx, company, c.Query("period"), location, person, c.Query("search"))
+	if rerr != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{Status: "error", Code: http.StatusBadRequest, Message: rerr.Error()})
+	}
+	data, werr := recapWorkbook(recap)
+	if werr != nil {
+		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{Status: "error", Code: http.StatusInternalServerError, Message: "Gagal membuat file Excel"})
+	}
+	c.Set(fiber.HeaderContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Set(fiber.HeaderContentDisposition, `attachment; filename="rekap-absensi-`+recap.Period+`.xlsx"`)
+	return c.Send(data)
+}
+
+// recapWorkbook renders the recap into an .xlsx (header, one row per person, totals).
+func recapWorkbook(r *model.AttendanceRecap) ([]byte, error) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	sheet := "Rekap " + r.Period
+	f.SetSheetName("Sheet1", sheet)
+	headers := []string{"Nama", "NIK", "NIP", "Hadir", "Telat", "Tidak Hadir", "Izin/Cuti/Sakit", "Lembur (jam)", "Jam Kerja (jam)"}
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		_ = f.SetCellValue(sheet, cell, h)
+	}
+	row := func(n int, name, nik, nip string, x model.AttendanceRecapRow) {
+		vals := []interface{}{name, nik, nip, x.Hadir, x.Telat, x.TidakHadir, x.Izin, x.LemburJam, float64(x.JamKerjaMenit) / 60}
+		for i, v := range vals {
+			cell, _ := excelize.CoordinatesToCellName(i+1, n)
+			_ = f.SetCellValue(sheet, cell, v)
+		}
+	}
+	for i, x := range r.Rows {
+		nip := ""
+		if x.NIP != nil {
+			nip = *x.NIP
+		}
+		row(i+2, spreadsheetSafe(x.FullName), spreadsheetSafe(x.IDNumber), spreadsheetSafe(nip), x)
+	}
+	row(len(r.Rows)+2, "TOTAL", "", "", r.Totals)
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// spreadsheetSafe stops a name that starts with = + - @ from being read as a formula.
+func spreadsheetSafe(s string) string {
+	if s != "" && strings.ContainsRune("=+-@", rune(s[0])) {
+		return "'" + s
+	}
+	return s
 }

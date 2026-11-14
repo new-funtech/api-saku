@@ -244,6 +244,8 @@ func SetupRoutes(
 	// Monthly Report routes (all protected)
 	monthlyReportRoutes := v1.Group("/monthly-reports", append(protected(), masterAdmin)...)
 	monthlyReportRoutes.Get("/", monthlyReportHdl.GetAll)
+	monthlyReportRoutes.Get("/recap", monthlyReportHdl.Recap)
+	monthlyReportRoutes.Get("/recap/export", middleware.RateLimitByUser(20, time.Minute), monthlyReportHdl.RecapExport)
 	monthlyReportRoutes.Post("/generate", monthlyReportHdl.Generate)
 	monthlyReportRoutes.Get("/:id", monthlyReportHdl.GetByID)
 	monthlyReportRoutes.Post("/", monthlyReportHdl.Create)

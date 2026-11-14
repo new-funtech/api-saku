@@ -87,3 +87,26 @@ type MonthlyReportResponse struct {
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 }
+
+// AttendanceRecapRow is one person's month: what the monthly attendance report lists.
+type AttendanceRecapRow struct {
+	PersonnelID   uuid.UUID `json:"personnel_id"`
+	FullName      string    `json:"full_name"`
+	IDNumber      string    `json:"id_number"`
+	NIP           *string   `json:"nip,omitempty"`
+	Hadir         int       `json:"hadir"`           // present + late
+	Telat         int       `json:"telat"`           // late (already counted in Hadir)
+	TidakHadir    int       `json:"tidak_hadir"`     // absent
+	Izin          int       `json:"izin"`            // permission + sick + leave
+	LemburJam     float64   `json:"lembur_jam"`      // approved overtime hours in the month
+	JamKerjaMenit int       `json:"jam_kerja_menit"` // sum of recorded work durations
+}
+
+// AttendanceRecap is the monthly recap of a company (optionally one office or one person).
+type AttendanceRecap struct {
+	Period     string               `json:"period"`
+	BujpID     uuid.UUID            `json:"bujp_id"`
+	LocationID *uuid.UUID           `json:"location_id,omitempty"`
+	Rows       []AttendanceRecapRow `json:"rows"`
+	Totals     AttendanceRecapRow   `json:"totals"`
+}
