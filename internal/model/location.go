@@ -39,8 +39,8 @@ type CreateLocationRequest struct {
 	Code             string    `json:"code" validate:"required,max=20" example:"LOC001"`
 	Name             string    `json:"name" validate:"required,max=200" example:"Bank BJB Kantor Pusat"`
 	Address          string    `json:"address" validate:"required" example:"Jl. Naripan No. 12-14, Bandung"`
-	Latitude         *float64  `json:"latitude" example:"-6.917464"`
-	Longitude        *float64  `json:"longitude" example:"107.609810"`
+	Latitude         *float64  `json:"latitude" validate:"required,gte=-90,lte=90" example:"-6.917464"`
+	Longitude        *float64  `json:"longitude" validate:"required,gte=-180,lte=180" example:"107.609810"`
 	AttendanceRadius int       `json:"attendance_radius" validate:"omitempty,min=10,max=1000" example:"100"`
 	GuardsNeeded     int       `json:"guards_needed" validate:"omitempty,min=1" example:"2"`
 	PicName          *string   `json:"pic_name" example:"Jane Doe"`
