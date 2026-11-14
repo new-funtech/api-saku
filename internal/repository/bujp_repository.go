@@ -54,7 +54,7 @@ func (r *bujpRepositoryImpl) FindAll(ctx context.Context, page, limit int, filte
 	}
 
 	offset := (page - 1) * limit
-	err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&bujps).Error
+	err := query.Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&bujps).Error
 	return bujps, total, err
 }
 

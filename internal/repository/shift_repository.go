@@ -59,7 +59,7 @@ func (r *shiftRepositoryImpl) FindAll(ctx context.Context, page, limit int, filt
 	}
 
 	offset := (page - 1) * limit
-	err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&shifts).Error
+	err := query.Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&shifts).Error
 	return shifts, total, err
 }
 

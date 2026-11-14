@@ -90,7 +90,7 @@ func (r *loanRepositoryImpl) FindAll(ctx context.Context, page, limit int, filte
 		return nil, 0, err
 	}
 	offset := (page - 1) * limit
-	err := q.Order("created_at DESC").Limit(limit).Offset(offset).Find(&loans).Error
+	err := q.Order("created_at DESC NULLS LAST, id").Limit(limit).Offset(offset).Find(&loans).Error
 	return loans, total, err
 }
 
@@ -111,7 +111,7 @@ func (r *loanRepositoryImpl) FindByPersonnelID(ctx context.Context, personnelID 
 		return nil, 0, err
 	}
 	offset := (page - 1) * limit
-	err := q.Order("created_at DESC").Limit(limit).Offset(offset).Find(&loans).Error
+	err := q.Order("created_at DESC NULLS LAST, id").Limit(limit).Offset(offset).Find(&loans).Error
 	return loans, total, err
 }
 
@@ -119,14 +119,10 @@ func (r *loanRepositoryImpl) Create(ctx context.Context, l *model.Loan) error {
 	return r.db.WithContext(ctx).Create(l).Error
 }
 
-// Update writes the loan row only. Preloaded relations (approvals,
-// installments, ...) are never re-saved from a possibly stale copy.
 func (r *loanRepositoryImpl) Update(ctx context.Context, l *model.Loan) error {
 	return r.db.WithContext(ctx).Omit(clause.Associations).Save(l).Error
 }
 
-// LockByID reads the loan row with SELECT ... FOR UPDATE; only meaningful
-// inside a transaction (WithTx).
 func (r *loanRepositoryImpl) LockByID(ctx context.Context, id uuid.UUID) (*model.Loan, error) {
 	var l model.Loan
 	if err := r.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -136,8 +132,6 @@ func (r *loanRepositoryImpl) LockByID(ctx context.Context, id uuid.UUID) (*model
 	return &l, nil
 }
 
-// ExpireUnconfirmed cancels a loan whose user-confirmation window has passed.
-// The status guard makes it a no-op when the user confirmed in the meantime.
 func (r *loanRepositoryImpl) ExpireUnconfirmed(ctx context.Context, id uuid.UUID, now time.Time, reason string) (bool, error) {
 	res := r.db.WithContext(ctx).Model(&model.Loan{}).
 		Where("id = ? AND status = ? AND user_confirmed_at IS NULL AND user_confirmation_deadline < ?",
@@ -188,14 +182,6 @@ func (r *loanRepositoryImpl) ClaimUserConfirmation(ctx context.Context, id uuid.
 	return result.RowsAffected > 0, nil
 }
 
-// ClaimDisbursement atomically transitions a loan straight to `active` so
-// two concurrent disbursement triggers for the same loan — a manual
-// admin "Cairkan" action (Disburse) racing the applicant's own accept
-// (UserConfirm) hitting this at nearly the same instant, or even just a
-// doubled click on either button — can't both pass. Only the caller that
-// flips this row wins and goes on to create the installment schedule;
-// the loser gets RowsAffected == 0 and must not create installments,
-// otherwise the loan ends up with a duplicated schedule.
 func (r *loanRepositoryImpl) ClaimDisbursement(ctx context.Context, id uuid.UUID) (bool, error) {
 	result := r.db.WithContext(ctx).Model(&model.Loan{}).
 		Where("id = ? AND status IN (?, ?)", id, model.LoanStatusPendingUserConfirmation, model.LoanStatusApprovedPusat).
@@ -206,12 +192,6 @@ func (r *loanRepositoryImpl) ClaimDisbursement(ctx context.Context, id uuid.UUID
 	return result.RowsAffected > 0, nil
 }
 
-// ClaimCancel atomically transitions a loan to `cancelled`, guarded
-// against the same set of terminal/non-cancellable statuses the service
-// layer already checks before calling this — closing the window where a
-// concurrent approval/disbursement action moves the loan into one of
-// those statuses between that check and this write, which a plain
-// unconditional Update() would otherwise silently clobber.
 func (r *loanRepositoryImpl) ClaimCancel(ctx context.Context, id uuid.UUID) (bool, error) {
 	result := r.db.WithContext(ctx).Model(&model.Loan{}).
 		Where("id = ? AND status NOT IN (?, ?, ?)", id,

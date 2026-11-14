@@ -44,7 +44,7 @@ func (r *loanProductRepositoryImpl) FindAll(ctx context.Context, page, limit int
 		return nil, 0, err
 	}
 	offset := (page - 1) * limit
-	err := q.Order("created_at DESC").Limit(limit).Offset(offset).Find(&items).Error
+	err := q.Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&items).Error
 	return items, total, err
 }
 

@@ -62,7 +62,7 @@ func (r *salaryComponentRepositoryImpl) FindAll(ctx context.Context, page, limit
 
 	// Get data with pagination and preload
 	offset := (page - 1) * limit
-	if err := query.Preload("Bujp").Offset(offset).Limit(limit).Find(&components).Error; err != nil {
+	if err := query.Preload("Bujp").Order("updated_at DESC, id").Offset(offset).Limit(limit).Find(&components).Error; err != nil {
 		return nil, 0, err
 	}
 

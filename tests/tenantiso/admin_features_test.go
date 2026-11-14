@@ -402,3 +402,24 @@ func TestUploadForARecordNotSavedYet(t *testing.T) {
 		t.Errorf("an employee prepared an upload for an unknown id (%d)", r.status)
 	}
 }
+
+func TestCentralAdminWorksAcrossCompanies(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+	body := func(id string) map[string]interface{} {
+		return map[string]interface{}{"bujp_id": id, "name": "Shift pusat " + id[:4], "start_time": "08:00", "end_time": "16:00", "status": "active"}
+	}
+	for _, id := range []string{a.bujp.ID.String(), b.bujp.ID.String()} {
+		if r := w.do(w.super, "POST", "/shifts", body(id)); !r.ok() {
+			t.Fatalf("central admin could not create a shift in %s: %d %s", id, r.status, trim(r.body))
+		}
+	}
+	one := w.do(w.super, "GET", "/shifts?bujp_id="+a.bujp.ID.String()+"&per_page=100", nil)
+	if !one.ok() || len(one.leaks(b.ids)) > 0 {
+		t.Errorf("narrowing to one company leaked the other: %d", one.status)
+	}
+	all := w.do(w.super, "GET", "/shifts?per_page=100", nil)
+	if !all.ok() || !strings.Contains(all.body, a.bujp.ID.String()) || !strings.Contains(all.body, b.bujp.ID.String()) {
+		t.Errorf("without a company the list should span both: %d", all.status)
+	}
+}

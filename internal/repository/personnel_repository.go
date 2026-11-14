@@ -72,7 +72,7 @@ func (r *personnelRepositoryImpl) FindAll(ctx context.Context, page, limit int, 
 	}
 
 	offset := (page - 1) * limit
-	err := query.Order("updated_at DESC").Limit(limit).Offset(offset).Find(&personnels).Error
+	err := query.Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&personnels).Error
 	return personnels, total, err
 }
 

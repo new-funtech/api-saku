@@ -62,7 +62,7 @@ func (r *locationRepositoryImpl) FindAll(ctx context.Context, page, limit int, f
 	}
 
 	offset := (page - 1) * limit
-	err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&locations).Error
+	err := query.Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&locations).Error
 	return locations, total, err
 }
 
