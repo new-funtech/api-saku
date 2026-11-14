@@ -317,3 +317,37 @@ func TestStatsAreScopedAndRoleLimited(t *testing.T) {
 		t.Errorf("attendance stats for pusat with bujp_id: %d %s", r.status, trim(r.body))
 	}
 }
+
+// The company portals (web and mobile) send the same personnel body as the admin app; it must be
+// accepted as is and come back unchanged.
+func TestPersonnelFormRoundTrip(t *testing.T) {
+	w := setup(t)
+	a := w.A
+	body := map[string]interface{}{
+		"bujp_id": a.bujp.ID.String(), "user_id": a.extraUser.user.ID.String(),
+		"full_name": "Budi Santoso", "mother_maiden_name": "Siti", "id_number": "3201234567890123", "nip": "NIP" + w.suffix,
+		"birth_date": "1990-01-15", "gender": "M", "phone": "812345678901", "emergency_phone": "812345678902",
+		"address": "Jl. Merdeka 1", "license_number": "LIC12345", "status": "active", "join_date": "2024-01-01",
+		"contract_end_date": "2030-01-01", "bank_name": "Bank BJB", "account_number": "0123456789", "base_salary": "5000000",
+	}
+	r := w.do(a.admin, "POST", "/personnels", body)
+	if !r.ok() {
+		t.Fatalf("create personnel: %d %s", r.status, trim(r.body))
+	}
+	var created struct {
+		Data struct {
+			ID         string `json:"id"`
+			Phone      string `json:"phone"`
+			BaseSalary string `json:"base_salary"`
+			UserID     string `json:"user_id"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(r.body), &created)
+	got := w.do(a.admin, "GET", "/personnels/"+created.Data.ID, nil)
+	if !got.ok() || !strings.Contains(got.body, "812345678901") || !strings.Contains(got.body, "Budi Santoso") {
+		t.Errorf("personnel did not round-trip: %d %s", got.status, trim(got.body))
+	}
+	if !strings.Contains(got.body, "5000000") {
+		t.Errorf("salary lost: %s", trim(got.body))
+	}
+}
