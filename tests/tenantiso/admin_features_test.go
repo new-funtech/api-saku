@@ -310,9 +310,8 @@ func TestStatsAreScopedAndRoleLimited(t *testing.T) {
 			t.Errorf("%s honoured a foreign bujp_id", path)
 		}
 	}
-	// central role must name a company for attendance
-	if r := w.do(w.super, "GET", "/attendances/stats", nil); r.status != 400 {
-		t.Errorf("attendance stats without bujp_id for pusat: want 400, got %d", r.status)
+	if r := w.do(w.super, "GET", "/attendances/stats", nil); !r.ok() {
+		t.Errorf("attendance stats for pusat (all companies): %d %s", r.status, trim(r.body))
 	}
 	if r := w.do(w.super, "GET", "/attendances/stats?bujp_id="+a.bujp.ID.String(), nil); !r.ok() {
 		t.Errorf("attendance stats for pusat with bujp_id: %d %s", r.status, trim(r.body))

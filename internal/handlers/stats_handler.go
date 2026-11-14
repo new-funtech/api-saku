@@ -87,7 +87,7 @@ type dayCount struct {
 func (h *StatsHandler) Attendance(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 20*time.Second)
 	defer cancel()
-	company, _, err, handled := statsCompany(c, false)
+	company, all, err, handled := statsCompany(c, true)
 	if handled {
 		return err
 	}
@@ -106,8 +106,12 @@ func (h *StatsHandler) Attendance(c *fiber.Ctx) error {
 		location = id
 	}
 
-	scope := "p.bujp_id = ? AND a.date BETWEEN ? AND ?"
-	args := []interface{}{company, from, to}
+	scope := "a.date BETWEEN ? AND ?"
+	args := []interface{}{from, to}
+	if !all {
+		scope = "p.bujp_id = ? AND " + scope
+		args = []interface{}{company, from, to}
+	}
 	if location != uuid.Nil {
 		scope += " AND a.location_id = ?"
 		args = append(args, location)
@@ -125,7 +129,11 @@ func (h *StatsHandler) Attendance(c *fiber.Ctx) error {
 	}
 	out.Total, out.Present, out.Late, out.Leave, out.Absent = tot.Total, tot.Present, tot.Late, tot.Leave, tot.Absent
 
-	_ = h.db.WithContext(ctx).Raw(`SELECT count(*) FROM personnels WHERE bujp_id = ? AND status IN ('active','on_leave')`, company).Scan(&out.People).Error
+	peopleQ, peopleArgs := `SELECT count(*) FROM personnels WHERE status IN ('active','on_leave')`, []interface{}{}
+	if !all {
+		peopleQ, peopleArgs = peopleQ+" AND bujp_id = ?", []interface{}{company}
+	}
+	_ = h.db.WithContext(ctx).Raw(peopleQ, peopleArgs...).Scan(&out.People).Error
 	_ = h.db.WithContext(ctx).Raw(`SELECT EXTRACT(dow FROM a.date)::int AS dow, count(*) FILTER (WHERE a.check_in IS NOT NULL) AS present`+from2+"WHERE "+scope+" GROUP BY 1 ORDER BY 1", args...).Scan(&out.ByWeekday).Error
 	_ = h.db.WithContext(ctx).Raw(`SELECT l.id AS location_id, l.name,
 		count(*) FILTER (WHERE a.status IN ('present','late')) AS present, count(*) AS total`+from2+"JOIN locations l ON l.id = a.location_id WHERE "+scope+" GROUP BY l.id, l.name ORDER BY total DESC LIMIT 20", args...).Scan(&out.ByLocation).Error
