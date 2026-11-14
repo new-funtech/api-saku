@@ -262,3 +262,32 @@ func TestWrongCurrentPasswordIsNotAnEndedSession(t *testing.T) {
 		t.Errorf("the account stopped working after a mistyped password (status %d)", after.status)
 	}
 }
+
+func TestPersonnelExportIsScoped(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+	resp, body := w.rawGet(a.admin, "/personnels/export")
+	if resp.StatusCode != 200 || len(body) < 1000 || string(body[:2]) != "PK" {
+		t.Fatalf("export: status %d size %d", resp.StatusCode, len(body))
+	}
+	if strings.Contains(string(body), "Guard B") || strings.Contains(string(body), b.personnel.IDNumber) {
+		t.Error("the export contains the other company's people")
+	}
+	for _, who := range []actor{a.supervisor, a.guard} {
+		if r, _ := w.rawGet(who, "/personnels/export"); r.StatusCode < 400 {
+			t.Errorf("%s must not export personnel (status %d)", who.user.Role, r.StatusCode)
+		}
+	}
+	if r := w.do(w.super, "GET", "/personnels/export", nil); r.status != 400 {
+		t.Errorf("a central role must name a company: status %d, want 400", r.status)
+	}
+	if r, body := w.rawGet(w.super, "/personnels/export?bujp_id="+b.bujp.ID.String()); r.StatusCode != 200 || len(body) < 1000 {
+		t.Errorf("a central role can export any company: %d", r.StatusCode)
+	}
+	// the template and the import are admin-only too
+	for _, who := range []actor{a.supervisor, a.guard} {
+		if r := w.do(who, "POST", "/personnels/bulk-import", map[string]interface{}{"bujp_id": b.bujp.ID.String()}); r.ok() {
+			t.Errorf("%s must not import personnel", who.user.Role)
+		}
+	}
+}
