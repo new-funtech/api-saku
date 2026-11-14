@@ -109,9 +109,11 @@ func main() {
 	}))
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.GetEnv("CORS_ORIGINS", "*"),
-		AllowMethods:     "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
+		AllowOrigins: config.GetEnv("CORS_ORIGINS", "*"),
+		AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization,X-Request-ID",
+		// Without this a browser cannot read Retry-After, so a web client cannot count the wait down.
+		ExposeHeaders:    "Retry-After,X-Request-ID",
 		AllowCredentials: false,
 		MaxAge:           300, // 5 minutes
 	}))
