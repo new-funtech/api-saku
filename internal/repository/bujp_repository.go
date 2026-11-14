@@ -36,6 +36,12 @@ func (r *bujpRepositoryImpl) FindAll(ctx context.Context, page, limit int, filte
 	query := r.withContext(ctx).Model(&model.Bujp{})
 
 	// Apply filters
+	if v, ok := filters["force_empty"].(bool); ok && v {
+		query = query.Where("1 = 0")
+	}
+	if id, ok := filters["id"].(uuid.UUID); ok && id != uuid.Nil {
+		query = query.Where("id = ?", id)
+	}
 	if status, ok := filters["status"].(string); ok && status != "" {
 		query = query.Where("status = ?", status)
 	}

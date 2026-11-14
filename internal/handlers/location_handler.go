@@ -113,6 +113,10 @@ func (h *LocationHandler) GetLocationByID(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, false); handled {
+		return err
+	}
+
 	location, err := h.service.GetByID(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -152,6 +156,12 @@ func (h *LocationHandler) CreateLocation(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
+
+	company, ok := ownCompany(c, req.BujpID)
+	if !ok {
+		return forbiddenResponse(c)
+	}
+	req.BujpID = company
 
 	location, err := h.service.Create(c.Context(), &req)
 	if err != nil {
@@ -205,6 +215,15 @@ func (h *LocationHandler) UpdateLocation(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, true); handled {
+		return err
+	}
+	if req.BujpID != nil {
+		if _, ok := ownCompany(c, *req.BujpID); !ok {
+			return forbiddenResponse(c)
+		}
+	}
+
 	location, err := h.service.Update(c.Context(), id, &req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -246,6 +265,10 @@ func (h *LocationHandler) DeleteLocation(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, true); handled {
+		return err
+	}
+
 	if err := h.service.Delete(c.Context(), id); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -259,4 +282,21 @@ func (h *LocationHandler) DeleteLocation(c *fiber.Ctx) error {
 		Code:    http.StatusOK,
 		Message: "Location deleted successfully",
 	})
+}
+
+// authorize loads the office and checks the caller's company (write = a change, which needs a
+// company-scoped or central role; reading is open to anyone in the same company).
+func (h *LocationHandler) authorize(c *fiber.Ctx, id uuid.UUID, write bool) (bool, error) {
+	rec, err := h.service.GetByID(c.Context(), id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Location")
+	}
+	allowed := utils.CanReadBujp(c, rec.BujpID)
+	if write {
+		allowed = utils.CanAccessBujp(c, rec.BujpID)
+	}
+	if !allowed {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

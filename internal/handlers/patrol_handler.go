@@ -119,6 +119,10 @@ func (h *PatrolHandler) GetByID(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	patrol, err := h.service.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -165,6 +169,15 @@ func (h *PatrolHandler) Create(c *fiber.Ctx) error {
 		return utils.UploadErrorResponse(c, "photo", uerr)
 	} else if key != nil {
 		req.Photo = key
+	}
+
+	if req.PersonnelID == uuid.Nil {
+		if pid, _ := c.Locals("personnelID").(uuid.UUID); pid != uuid.Nil {
+			req.PersonnelID = pid
+		}
+	}
+	if !personAllowed(c, ctx, req.PersonnelID, nil) || !locationAllowed(c, ctx, req.LocationID) {
+		return forbiddenResponse(c)
 	}
 
 	patrol, err := h.service.Create(ctx, req)
@@ -260,6 +273,10 @@ func (h *PatrolHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	patrol, err := h.service.Update(ctx, id, &req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -299,6 +316,10 @@ func (h *PatrolHandler) Delete(c *fiber.Ctx) error {
 			Code:    http.StatusInternalServerError,
 			Message: "Invalid patrol ID",
 		})
+	}
+
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
 	}
 
 	if err := h.service.Delete(ctx, id); err != nil {
@@ -366,6 +387,10 @@ func (h *PatrolHandler) Validate(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	updated, err := h.service.Validate(ctx, id, validatorID, req.ValidationStatus)
 	if err != nil {
 		statusCode := statusForServiceError(err)
@@ -380,4 +405,16 @@ func (h *PatrolHandler) Validate(c *fiber.Ctx) error {
 		Message: "Patrol validation updated successfully",
 		Data:    updated,
 	})
+}
+
+// authorize loads the patrol and checks the caller may touch it.
+func (h *PatrolHandler) authorize(c *fiber.Ctx, ctx context.Context, id uuid.UUID) (bool, error) {
+	rec, err := h.service.GetByID(ctx, id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Patrol")
+	}
+	if !personAllowed(c, ctx, rec.PersonnelID, rec.Personnel) {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

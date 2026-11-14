@@ -113,6 +113,10 @@ func (h *ShiftHandler) GetShiftByID(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, false); handled {
+		return err
+	}
+
 	shift, err := h.service.GetByID(c.Context(), id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -152,6 +156,12 @@ func (h *ShiftHandler) CreateShift(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
+
+	company, ok := ownCompanyPtr(c, req.BujpID)
+	if !ok {
+		return forbiddenResponse(c)
+	}
+	req.BujpID = company
 
 	shift, err := h.service.Create(c.Context(), &req)
 	if err != nil {
@@ -205,6 +215,15 @@ func (h *ShiftHandler) UpdateShift(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, true); handled {
+		return err
+	}
+	if req.BujpID != nil {
+		if _, ok := ownCompany(c, *req.BujpID); !ok {
+			return forbiddenResponse(c)
+		}
+	}
+
 	shift, err := h.service.Update(c.Context(), id, &req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -246,6 +265,10 @@ func (h *ShiftHandler) DeleteShift(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, id, true); handled {
+		return err
+	}
+
 	if err := h.service.Delete(c.Context(), id); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
 			Status:  "error",
@@ -259,4 +282,27 @@ func (h *ShiftHandler) DeleteShift(c *fiber.Ctx) error {
 		Code:    http.StatusOK,
 		Message: "Shift deleted successfully",
 	})
+}
+
+// authorize loads the shift and checks the caller's company. A shift without a company is global:
+// anyone may read it, only central roles change it.
+func (h *ShiftHandler) authorize(c *fiber.Ctx, id uuid.UUID, write bool) (bool, error) {
+	rec, err := h.service.GetByID(c.Context(), id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Shift")
+	}
+	if rec.BujpID == nil {
+		if write && !utils.IsPusat(utils.CallerRole(c)) {
+			return true, forbiddenResponse(c)
+		}
+		return false, nil
+	}
+	allowed := utils.CanReadBujp(c, *rec.BujpID)
+	if write {
+		allowed = utils.CanAccessBujp(c, *rec.BujpID)
+	}
+	if !allowed {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

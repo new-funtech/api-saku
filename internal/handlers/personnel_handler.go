@@ -204,7 +204,7 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 
 	if req.PhotoTempPath != nil && req.PhotoFinalPath != nil && *req.PhotoTempPath != "" && *req.PhotoFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.PhotoFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.PhotoTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.PhotoTempPath, finalKey); merr == nil {
 			update := &model.UpdatePersonnelRequest{Photo: &finalKey}
 			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
 				personnel = updated
@@ -213,7 +213,7 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 	}
 	if req.KtpTempPath != nil && req.KtpFinalPath != nil && *req.KtpTempPath != "" && *req.KtpFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.KtpFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.KtpTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.KtpTempPath, finalKey); merr == nil {
 			update := &model.UpdatePersonnelRequest{KtpDocument: &finalKey}
 			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
 				personnel = updated
@@ -222,7 +222,7 @@ func (h *PersonnelHandler) CreatePersonnel(c *fiber.Ctx) error {
 	}
 	if req.NpwpTempPath != nil && req.NpwpFinalPath != nil && *req.NpwpTempPath != "" && *req.NpwpFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.NpwpFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.NpwpTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.NpwpTempPath, finalKey); merr == nil {
 			update := &model.UpdatePersonnelRequest{NpwpDocument: &finalKey}
 			if updated, uerr := h.service.Update(ctx, personnel.ID, update); uerr == nil {
 				personnel = updated
@@ -330,7 +330,7 @@ func (h *PersonnelHandler) UpdatePersonnel(c *fiber.Ctx) error {
 	// document silently "disappears" even though the admin did upload it.
 	if req.PhotoTempPath != nil && req.PhotoFinalPath != nil && *req.PhotoTempPath != "" && *req.PhotoFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.PhotoFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.PhotoTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.PhotoTempPath, finalKey); merr == nil {
 			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{Photo: &finalKey}); uerr == nil {
 				personnel = updated
 			}
@@ -338,7 +338,7 @@ func (h *PersonnelHandler) UpdatePersonnel(c *fiber.Ctx) error {
 	}
 	if req.KtpTempPath != nil && req.KtpFinalPath != nil && *req.KtpTempPath != "" && *req.KtpFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.KtpFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.KtpTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.KtpTempPath, finalKey); merr == nil {
 			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{KtpDocument: &finalKey}); uerr == nil {
 				personnel = updated
 			}
@@ -346,7 +346,7 @@ func (h *PersonnelHandler) UpdatePersonnel(c *fiber.Ctx) error {
 	}
 	if req.NpwpTempPath != nil && req.NpwpFinalPath != nil && *req.NpwpTempPath != "" && *req.NpwpFinalPath != "" {
 		finalKey := strings.ReplaceAll(*req.NpwpFinalPath, "{personnel_id}", personnel.ID.String())
-		if merr := utils.MoveFileInS3(ctx, *req.NpwpTempPath, finalKey); merr == nil {
+		if merr := moveOwnedFile(c, ctx, *req.NpwpTempPath, finalKey); merr == nil {
 			if updated, uerr := h.service.Update(ctx, personnel.ID, &model.UpdatePersonnelRequest{NpwpDocument: &finalKey}); uerr == nil {
 				personnel = updated
 			}

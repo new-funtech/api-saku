@@ -107,3 +107,35 @@ func CanAccessPersonnel(c *fiber.Ctx, personnelID, personnelBujpID uuid.UUID) bo
 	}
 	return false
 }
+
+// CallerBujpID is the caller's company, taken from the server-side user record (never from the
+// request). uuid.Nil for roles without a company (central roles).
+func CallerBujpID(c *fiber.Ctx) uuid.UUID {
+	id, _ := c.Locals("bujpID").(uuid.UUID)
+	return id
+}
+
+// CallerRole is the role from the verified token.
+func CallerRole(c *fiber.Ctx) string {
+	role, _ := c.Locals("role").(string)
+	return role
+}
+
+// CanReadBujp is the read rule for company-owned records: central roles read everything, every
+// other role (including a guard) reads only its own company.
+func CanReadBujp(c *fiber.Ctx, bujpID uuid.UUID) bool {
+	if IsPusat(CallerRole(c)) {
+		return true
+	}
+	caller := CallerBujpID(c)
+	return caller != uuid.Nil && caller == bujpID
+}
+
+// CanReadOptionalBujp is CanReadBujp for records whose company is optional; a record without a
+// company is global and only central roles read it.
+func CanReadOptionalBujp(c *fiber.Ctx, bujpID *uuid.UUID) bool {
+	if IsPusat(CallerRole(c)) {
+		return true
+	}
+	return bujpID != nil && CanReadBujp(c, *bujpID)
+}

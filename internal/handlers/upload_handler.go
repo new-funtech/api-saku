@@ -52,6 +52,10 @@ func (h *UploadHandler) GetPresignedUploadURL(c *fiber.Ctx) error {
 		})
 	}
 
+	if id, perr := uuid.Parse(req.EntityID); perr != nil || !entityAllowed(c, context.Background(), id) {
+		return forbiddenResponse(c)
+	}
+
 	// Default subfolder to "photo" if not provided
 	if req.Subfolder == "" {
 		req.Subfolder = "photo"
@@ -165,6 +169,10 @@ func (h *UploadHandler) GetPresignedDownloadURL(c *fiber.Ctx) error {
 			"message": constants.ErrInvalidRequest,
 			"data":    nil,
 		})
+	}
+
+	if !fileKeyAllowed(c, context.Background(), req.ObjectKey) {
+		return forbiddenResponse(c)
 	}
 
 	ctx := context.Background()
@@ -314,6 +322,10 @@ func (h *UploadHandler) DeleteFile(c *fiber.Ctx) error {
 		})
 	}
 
+	if !fileKeyAllowed(c, context.Background(), req.ObjectKey) {
+		return forbiddenResponse(c)
+	}
+
 	ctx := context.Background()
 	if err := utils.DeleteFileFromS3(ctx, req.ObjectKey); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -357,6 +369,10 @@ func (h *UploadHandler) MoveFile(c *fiber.Ctx) error {
 			"message": constants.ErrInvalidRequest,
 			"data":    nil,
 		})
+	}
+
+	if !fileKeyAllowed(c, context.Background(), req.SourceKey) || !fileKeyAllowed(c, context.Background(), req.DestKey) {
+		return forbiddenResponse(c)
 	}
 
 	ctx := context.Background()

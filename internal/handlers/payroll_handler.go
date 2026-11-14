@@ -181,6 +181,12 @@ func (h *PayrollHandler) Create(c *fiber.Ctx) error {
 		}
 	}
 
+	company, ok := ownCompany(c, req.BujpID)
+	if !ok || company == uuid.Nil || !personAllowed(c, ctx, req.PersonnelID, nil) {
+		return forbiddenResponse(c)
+	}
+	req.BujpID = company
+
 	payroll, err := h.service.Create(ctx, &req, createdBy)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{

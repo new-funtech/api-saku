@@ -104,6 +104,10 @@ func (h *MonthlyReportHandler) GetByID(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	report, err := h.service.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -153,6 +157,12 @@ func (h *MonthlyReportHandler) Create(c *fiber.Ctx) error {
 			createdBy = &uid
 		}
 	}
+
+	company, ok := ownCompany(c, req.BujpID)
+	if !ok {
+		return forbiddenResponse(c)
+	}
+	req.BujpID = company
 
 	report, err := h.service.Create(ctx, &req, createdBy)
 	if err != nil {
@@ -206,6 +216,10 @@ func (h *MonthlyReportHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	report, err := h.service.Update(ctx, id, &req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -245,6 +259,10 @@ func (h *MonthlyReportHandler) Delete(c *fiber.Ctx) error {
 			Code:    http.StatusBadRequest,
 			Message: "Invalid UUID format",
 		})
+	}
+
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
 	}
 
 	if err := h.service.Delete(ctx, id); err != nil {
@@ -317,6 +335,12 @@ func (h *MonthlyReportHandler) Generate(c *fiber.Ctx) error {
 		})
 	}
 
+	company, ok := ownCompany(c, req.BujpID)
+	if !ok || company == uuid.Nil {
+		return forbiddenResponse(c)
+	}
+	req.BujpID = company
+
 	report, err := h.service.Generate(ctx, req.BujpID, req.Period, req.Force, createdBy)
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -340,4 +364,16 @@ func (h *MonthlyReportHandler) Generate(c *fiber.Ctx) error {
 		Message: "Laporan bulanan berhasil dibuat",
 		Data:    report,
 	})
+}
+
+// authorize loads the report and checks it belongs to the caller's company.
+func (h *MonthlyReportHandler) authorize(c *fiber.Ctx, ctx context.Context, id uuid.UUID) (bool, error) {
+	rec, err := h.service.GetByID(ctx, id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Monthly report")
+	}
+	if !utils.CanAccessBujp(c, rec.BujpID) {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

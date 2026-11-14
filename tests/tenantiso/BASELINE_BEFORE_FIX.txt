@@ -1,0 +1,262 @@
+--- FAIL: TestOutsidersCannotTouchAnotherCompany (1.44s)
+    isolation_test.go:144: ALLOWED       GET bujps [company_admin of A] GET /bujps/7e6152de-b0a3-4af4-aaba-10d149b3d545: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [company_admin of A] PUT /bujps/7e6152de-b0a3-4af4-aaba-10d149b3d545: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [company_admin of A] PUT /bujps/7e6152de-b0a3-4af4-aaba-10d149b3d545: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [company_admin of A] DELETE /bujps/7e6152de-b0a3-4af4-aaba-10d149b3d545: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [company_admin of A] GET /locations/e44ac98e-3e95-42b4-97fe-5b8603889d45: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [company_admin of A] PUT /locations/e44ac98e-3e95-42b4-97fe-5b8603889d45: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [company_admin of A] PUT /locations/e44ac98e-3e95-42b4-97fe-5b8603889d45: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [company_admin of A] DELETE /locations/e44ac98e-3e95-42b4-97fe-5b8603889d45: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [company_admin of A] DELETE /locations/e44ac98e-3e95-42b4-97fe-5b8603889d45: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [company_admin of A] GET /shifts/7f5c44ea-55fc-4e3c-b9ec-f60feecb12d1: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [company_admin of A] PUT /shifts/7f5c44ea-55fc-4e3c-b9ec-f60feecb12d1: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [company_admin of A] PUT /shifts/7f5c44ea-55fc-4e3c-b9ec-f60feecb12d1: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [company_admin of A] DELETE /shifts/7f5c44ea-55fc-4e3c-b9ec-f60feecb12d1: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [company_admin of A] DELETE /shifts/7f5c44ea-55fc-4e3c-b9ec-f60feecb12d1: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [company_admin of A] GET /attendance-corrections/3f388891-839b-483f-ab3b-a955f8541daf: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [company_admin of A] PUT /attendance-corrections/3f388891-839b-483f-ab3b-a955f8541daf: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [company_admin of A] PUT /attendance-corrections/3f388891-839b-483f-ab3b-a955f8541daf: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [company_admin of A] DELETE /attendance-corrections/3f388891-839b-483f-ab3b-a955f8541daf: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [company_admin of A] DELETE /attendance-corrections/3f388891-839b-483f-ab3b-a955f8541daf: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [company_admin of A] GET /leaves/dc6673af-c4c5-43ff-bb92-819e96e91d75: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [company_admin of A] PUT /leaves/dc6673af-c4c5-43ff-bb92-819e96e91d75: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [company_admin of A] PUT /leaves/dc6673af-c4c5-43ff-bb92-819e96e91d75: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [company_admin of A] DELETE /leaves/dc6673af-c4c5-43ff-bb92-819e96e91d75: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [company_admin of A] DELETE /leaves/dc6673af-c4c5-43ff-bb92-819e96e91d75: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [company_admin of A] PUT /patrols/c35e60c6-6883-40e6-af2b-22ffede65aa5: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [company_admin of A] DELETE /patrols/c35e60c6-6883-40e6-af2b-22ffede65aa5: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [company_admin of A] GET /monthly-reports/ecd5d6e4-3e0c-4a84-a923-0d79ec43a3b9: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [company_admin of A] PUT /monthly-reports/ecd5d6e4-3e0c-4a84-a923-0d79ec43a3b9: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [company_admin of A] PUT /monthly-reports/ecd5d6e4-3e0c-4a84-a923-0d79ec43a3b9: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [company_admin of A] DELETE /monthly-reports/ecd5d6e4-3e0c-4a84-a923-0d79ec43a3b9: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [company_admin of A] DELETE /monthly-reports/ecd5d6e4-3e0c-4a84-a923-0d79ec43a3b9: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [company_admin of A] GET /loans/history/897feccf-35c6-4595-b6e4-3e2db7390005: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [company_admin of A] DELETE /notifications/16e7c59c-6ec1-40d2-b42f-e32cae03e000: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [company_admin of A] POST /notifications/16e7c59c-6ec1-40d2-b42f-e32cae03e000/read: status 200
+    isolation_test.go:144: ALLOWED       GET bujps [supervisor of A] GET /bujps/fad3b989-6527-447b-81ca-01b013293b59: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [supervisor of A] PUT /bujps/fad3b989-6527-447b-81ca-01b013293b59: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [supervisor of A] PUT /bujps/fad3b989-6527-447b-81ca-01b013293b59: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [supervisor of A] DELETE /bujps/fad3b989-6527-447b-81ca-01b013293b59: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [supervisor of A] GET /locations/afae8155-3652-43e5-9942-50c652de7506: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [supervisor of A] PUT /locations/afae8155-3652-43e5-9942-50c652de7506: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [supervisor of A] PUT /locations/afae8155-3652-43e5-9942-50c652de7506: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [supervisor of A] DELETE /locations/afae8155-3652-43e5-9942-50c652de7506: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [supervisor of A] DELETE /locations/afae8155-3652-43e5-9942-50c652de7506: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [supervisor of A] GET /shifts/ef790817-0a4f-437f-b637-eb8b63d2e197: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [supervisor of A] PUT /shifts/ef790817-0a4f-437f-b637-eb8b63d2e197: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [supervisor of A] PUT /shifts/ef790817-0a4f-437f-b637-eb8b63d2e197: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [supervisor of A] DELETE /shifts/ef790817-0a4f-437f-b637-eb8b63d2e197: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [supervisor of A] DELETE /shifts/ef790817-0a4f-437f-b637-eb8b63d2e197: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [supervisor of A] GET /attendance-corrections/4cabfe07-9a2f-49c0-81b2-b8f851271278: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [supervisor of A] PUT /attendance-corrections/4cabfe07-9a2f-49c0-81b2-b8f851271278: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [supervisor of A] PUT /attendance-corrections/4cabfe07-9a2f-49c0-81b2-b8f851271278: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [supervisor of A] DELETE /attendance-corrections/4cabfe07-9a2f-49c0-81b2-b8f851271278: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [supervisor of A] DELETE /attendance-corrections/4cabfe07-9a2f-49c0-81b2-b8f851271278: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [supervisor of A] GET /leaves/f541c593-d4a3-41eb-b706-3af80b2cb62f: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [supervisor of A] PUT /leaves/f541c593-d4a3-41eb-b706-3af80b2cb62f: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [supervisor of A] PUT /leaves/f541c593-d4a3-41eb-b706-3af80b2cb62f: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [supervisor of A] DELETE /leaves/f541c593-d4a3-41eb-b706-3af80b2cb62f: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [supervisor of A] DELETE /leaves/f541c593-d4a3-41eb-b706-3af80b2cb62f: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [supervisor of A] PUT /patrols/7b77718f-027a-4006-81b2-e1968dddade5: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [supervisor of A] DELETE /patrols/7b77718f-027a-4006-81b2-e1968dddade5: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [supervisor of A] GET /monthly-reports/9c0b2d34-5a50-41ca-b14b-143d29088672: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [supervisor of A] PUT /monthly-reports/9c0b2d34-5a50-41ca-b14b-143d29088672: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [supervisor of A] PUT /monthly-reports/9c0b2d34-5a50-41ca-b14b-143d29088672: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [supervisor of A] DELETE /monthly-reports/9c0b2d34-5a50-41ca-b14b-143d29088672: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [supervisor of A] DELETE /monthly-reports/9c0b2d34-5a50-41ca-b14b-143d29088672: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [supervisor of A] GET /loans/history/1b97bc0b-43cc-4624-9bf1-a85582532936: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [supervisor of A] DELETE /notifications/5d064c8e-2743-455b-b9df-afd476ad7e7d: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [supervisor of A] POST /notifications/5d064c8e-2743-455b-b9df-afd476ad7e7d/read: status 200
+    isolation_test.go:144: ALLOWED       GET bujps [guard of A] GET /bujps/157fe4a8-6c43-4c4a-a4be-346348fd793d: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [guard of A] PUT /bujps/157fe4a8-6c43-4c4a-a4be-346348fd793d: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [guard of A] PUT /bujps/157fe4a8-6c43-4c4a-a4be-346348fd793d: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [guard of A] DELETE /bujps/157fe4a8-6c43-4c4a-a4be-346348fd793d: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [guard of A] GET /locations/f49be678-4b00-484d-8a7d-857755c5d33b: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [guard of A] PUT /locations/f49be678-4b00-484d-8a7d-857755c5d33b: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [guard of A] PUT /locations/f49be678-4b00-484d-8a7d-857755c5d33b: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [guard of A] DELETE /locations/f49be678-4b00-484d-8a7d-857755c5d33b: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [guard of A] DELETE /locations/f49be678-4b00-484d-8a7d-857755c5d33b: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [guard of A] GET /shifts/397ea4a9-95a8-4c8d-8051-6b9ced5e9f84: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [guard of A] PUT /shifts/397ea4a9-95a8-4c8d-8051-6b9ced5e9f84: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [guard of A] PUT /shifts/397ea4a9-95a8-4c8d-8051-6b9ced5e9f84: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [guard of A] DELETE /shifts/397ea4a9-95a8-4c8d-8051-6b9ced5e9f84: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [guard of A] DELETE /shifts/397ea4a9-95a8-4c8d-8051-6b9ced5e9f84: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [guard of A] GET /attendance-corrections/845ae602-b1f0-4821-8150-26c41a8ea5bb: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [guard of A] PUT /attendance-corrections/845ae602-b1f0-4821-8150-26c41a8ea5bb: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [guard of A] PUT /attendance-corrections/845ae602-b1f0-4821-8150-26c41a8ea5bb: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [guard of A] DELETE /attendance-corrections/845ae602-b1f0-4821-8150-26c41a8ea5bb: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [guard of A] DELETE /attendance-corrections/845ae602-b1f0-4821-8150-26c41a8ea5bb: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [guard of A] GET /leaves/bc98fdde-3f43-4e8a-a204-b1fce8d1b1f4: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [guard of A] PUT /leaves/bc98fdde-3f43-4e8a-a204-b1fce8d1b1f4: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [guard of A] PUT /leaves/bc98fdde-3f43-4e8a-a204-b1fce8d1b1f4: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [guard of A] DELETE /leaves/bc98fdde-3f43-4e8a-a204-b1fce8d1b1f4: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [guard of A] DELETE /leaves/bc98fdde-3f43-4e8a-a204-b1fce8d1b1f4: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [guard of A] PUT /patrols/73c0b4e3-42ec-417f-971c-6b8292e500f7: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [guard of A] DELETE /patrols/73c0b4e3-42ec-417f-971c-6b8292e500f7: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [guard of A] GET /monthly-reports/19ac2d23-0105-4a46-bacf-4441cc29e0c9: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [guard of A] PUT /monthly-reports/19ac2d23-0105-4a46-bacf-4441cc29e0c9: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [guard of A] PUT /monthly-reports/19ac2d23-0105-4a46-bacf-4441cc29e0c9: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [guard of A] DELETE /monthly-reports/19ac2d23-0105-4a46-bacf-4441cc29e0c9: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [guard of A] DELETE /monthly-reports/19ac2d23-0105-4a46-bacf-4441cc29e0c9: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [guard of A] GET /loans/history/8111886e-030e-4196-be1d-409ef30fad8e: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [guard of A] DELETE /notifications/caec7234-1b00-4d9b-a59a-f1541cae30bd: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [guard of A] POST /notifications/caec7234-1b00-4d9b-a59a-f1541cae30bd/read: status 200
+    isolation_test.go:144: ALLOWED       GET bujps [company_admin of B] GET /bujps/67bde124-288f-47f6-9cc5-85dacb470ac0: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [company_admin of B] PUT /bujps/67bde124-288f-47f6-9cc5-85dacb470ac0: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [company_admin of B] PUT /bujps/67bde124-288f-47f6-9cc5-85dacb470ac0: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [company_admin of B] DELETE /bujps/67bde124-288f-47f6-9cc5-85dacb470ac0: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [company_admin of B] GET /locations/6f3fa22d-5f27-438c-aa1f-ef311a645047: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [company_admin of B] PUT /locations/6f3fa22d-5f27-438c-aa1f-ef311a645047: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [company_admin of B] PUT /locations/6f3fa22d-5f27-438c-aa1f-ef311a645047: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [company_admin of B] DELETE /locations/6f3fa22d-5f27-438c-aa1f-ef311a645047: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [company_admin of B] DELETE /locations/6f3fa22d-5f27-438c-aa1f-ef311a645047: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [company_admin of B] GET /shifts/fb54206c-8ef7-4886-b598-9c0c80536045: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [company_admin of B] PUT /shifts/fb54206c-8ef7-4886-b598-9c0c80536045: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [company_admin of B] PUT /shifts/fb54206c-8ef7-4886-b598-9c0c80536045: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [company_admin of B] DELETE /shifts/fb54206c-8ef7-4886-b598-9c0c80536045: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [company_admin of B] DELETE /shifts/fb54206c-8ef7-4886-b598-9c0c80536045: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [company_admin of B] GET /attendance-corrections/4c283188-d837-4761-a1a6-3e4f36f8b82b: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [company_admin of B] PUT /attendance-corrections/4c283188-d837-4761-a1a6-3e4f36f8b82b: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [company_admin of B] PUT /attendance-corrections/4c283188-d837-4761-a1a6-3e4f36f8b82b: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [company_admin of B] DELETE /attendance-corrections/4c283188-d837-4761-a1a6-3e4f36f8b82b: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [company_admin of B] DELETE /attendance-corrections/4c283188-d837-4761-a1a6-3e4f36f8b82b: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [company_admin of B] GET /leaves/6682d9d4-0644-431f-a55f-a482c70f703b: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [company_admin of B] PUT /leaves/6682d9d4-0644-431f-a55f-a482c70f703b: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [company_admin of B] PUT /leaves/6682d9d4-0644-431f-a55f-a482c70f703b: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [company_admin of B] DELETE /leaves/6682d9d4-0644-431f-a55f-a482c70f703b: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [company_admin of B] DELETE /leaves/6682d9d4-0644-431f-a55f-a482c70f703b: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [company_admin of B] PUT /patrols/b19c8223-fe5d-44cc-8abb-fdc91455690d: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [company_admin of B] DELETE /patrols/b19c8223-fe5d-44cc-8abb-fdc91455690d: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [company_admin of B] GET /monthly-reports/e21679d9-1f6f-48bb-9a3c-d37dc01e2a02: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [company_admin of B] PUT /monthly-reports/e21679d9-1f6f-48bb-9a3c-d37dc01e2a02: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [company_admin of B] PUT /monthly-reports/e21679d9-1f6f-48bb-9a3c-d37dc01e2a02: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [company_admin of B] DELETE /monthly-reports/e21679d9-1f6f-48bb-9a3c-d37dc01e2a02: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [company_admin of B] DELETE /monthly-reports/e21679d9-1f6f-48bb-9a3c-d37dc01e2a02: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [company_admin of B] GET /loans/history/9951f064-257c-4fee-a07f-1bffdca0d129: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [company_admin of B] DELETE /notifications/d1a409a4-9236-4f75-b07e-b4801969f991: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [company_admin of B] POST /notifications/d1a409a4-9236-4f75-b07e-b4801969f991/read: status 200
+    isolation_test.go:144: ALLOWED       GET bujps [supervisor of B] GET /bujps/6ea30e47-2a03-4212-b721-a6378339d765: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [supervisor of B] PUT /bujps/6ea30e47-2a03-4212-b721-a6378339d765: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [supervisor of B] PUT /bujps/6ea30e47-2a03-4212-b721-a6378339d765: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [supervisor of B] DELETE /bujps/6ea30e47-2a03-4212-b721-a6378339d765: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [supervisor of B] GET /locations/7c6881ec-a3ed-49c7-b790-e102244a959b: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [supervisor of B] PUT /locations/7c6881ec-a3ed-49c7-b790-e102244a959b: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [supervisor of B] PUT /locations/7c6881ec-a3ed-49c7-b790-e102244a959b: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [supervisor of B] DELETE /locations/7c6881ec-a3ed-49c7-b790-e102244a959b: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [supervisor of B] DELETE /locations/7c6881ec-a3ed-49c7-b790-e102244a959b: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [supervisor of B] GET /shifts/d1d1425a-21da-4df6-b549-629a98c85506: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [supervisor of B] PUT /shifts/d1d1425a-21da-4df6-b549-629a98c85506: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [supervisor of B] PUT /shifts/d1d1425a-21da-4df6-b549-629a98c85506: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [supervisor of B] DELETE /shifts/d1d1425a-21da-4df6-b549-629a98c85506: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [supervisor of B] DELETE /shifts/d1d1425a-21da-4df6-b549-629a98c85506: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [supervisor of B] GET /attendance-corrections/7318d4ed-9d7a-431d-9771-26c6e2ce0651: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [supervisor of B] PUT /attendance-corrections/7318d4ed-9d7a-431d-9771-26c6e2ce0651: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [supervisor of B] PUT /attendance-corrections/7318d4ed-9d7a-431d-9771-26c6e2ce0651: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [supervisor of B] DELETE /attendance-corrections/7318d4ed-9d7a-431d-9771-26c6e2ce0651: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [supervisor of B] DELETE /attendance-corrections/7318d4ed-9d7a-431d-9771-26c6e2ce0651: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [supervisor of B] GET /leaves/705070a2-7d0a-4f1c-b9bd-7bb2f92eba10: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [supervisor of B] PUT /leaves/705070a2-7d0a-4f1c-b9bd-7bb2f92eba10: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [supervisor of B] PUT /leaves/705070a2-7d0a-4f1c-b9bd-7bb2f92eba10: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [supervisor of B] DELETE /leaves/705070a2-7d0a-4f1c-b9bd-7bb2f92eba10: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [supervisor of B] DELETE /leaves/705070a2-7d0a-4f1c-b9bd-7bb2f92eba10: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [supervisor of B] PUT /patrols/0446e6ec-96bb-44ae-bb4d-f770af7e809e: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [supervisor of B] DELETE /patrols/0446e6ec-96bb-44ae-bb4d-f770af7e809e: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [supervisor of B] GET /monthly-reports/54939483-ab85-4178-8e65-59c3fe1b054b: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [supervisor of B] PUT /monthly-reports/54939483-ab85-4178-8e65-59c3fe1b054b: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [supervisor of B] PUT /monthly-reports/54939483-ab85-4178-8e65-59c3fe1b054b: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [supervisor of B] DELETE /monthly-reports/54939483-ab85-4178-8e65-59c3fe1b054b: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [supervisor of B] DELETE /monthly-reports/54939483-ab85-4178-8e65-59c3fe1b054b: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [supervisor of B] GET /loans/history/e820dafb-8476-4f1f-80ae-92f9d30f0dfb: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [supervisor of B] DELETE /notifications/66301d88-3902-4fd4-9858-65249aa3e115: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [supervisor of B] POST /notifications/66301d88-3902-4fd4-9858-65249aa3e115/read: status 200
+    isolation_test.go:144: ALLOWED       GET bujps [guard of B] GET /bujps/4d92615c-8cfd-4844-ba0a-d15a17bf4ade: status 200
+    isolation_test.go:144: ALLOWED       PUT bujps [guard of B] PUT /bujps/4d92615c-8cfd-4844-ba0a-d15a17bf4ade: status 200
+    isolation_test.go:153: DATA CHANGED  PUT bujps [guard of B] PUT /bujps/4d92615c-8cfd-4844-ba0a-d15a17bf4ade: bujps row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  DELETE bujps [guard of B] DELETE /bujps/4d92615c-8cfd-4844-ba0a-d15a17bf4ade: status 500 ({"status":"error","code":500,"message":"failed to delete bujp: ERROR: update or delete on table \"bujps\" violates foreign key constraint \"fk_bujps_users\" on ...)
+    isolation_test.go:144: ALLOWED       GET locations [guard of B] GET /locations/6547b713-1e5c-47ee-a8b3-3a306cb27b2a: status 200
+    isolation_test.go:144: ALLOWED       PUT locations [guard of B] PUT /locations/6547b713-1e5c-47ee-a8b3-3a306cb27b2a: status 200
+    isolation_test.go:153: DATA CHANGED  PUT locations [guard of B] PUT /locations/6547b713-1e5c-47ee-a8b3-3a306cb27b2a: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE locations [guard of B] DELETE /locations/6547b713-1e5c-47ee-a8b3-3a306cb27b2a: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE locations [guard of B] DELETE /locations/6547b713-1e5c-47ee-a8b3-3a306cb27b2a: locations row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET shifts [guard of B] GET /shifts/717f333f-af6c-4c94-80b2-1e43164e3ac6: status 200
+    isolation_test.go:144: ALLOWED       PUT shifts [guard of B] PUT /shifts/717f333f-af6c-4c94-80b2-1e43164e3ac6: status 200
+    isolation_test.go:153: DATA CHANGED  PUT shifts [guard of B] PUT /shifts/717f333f-af6c-4c94-80b2-1e43164e3ac6: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE shifts [guard of B] DELETE /shifts/717f333f-af6c-4c94-80b2-1e43164e3ac6: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE shifts [guard of B] DELETE /shifts/717f333f-af6c-4c94-80b2-1e43164e3ac6: shifts row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET attendance-corrections [guard of B] GET /attendance-corrections/fe90b2a3-3261-4afa-aa6a-42bf0d3ff6cd: status 200
+    isolation_test.go:144: ALLOWED       PUT attendance-corrections [guard of B] PUT /attendance-corrections/fe90b2a3-3261-4afa-aa6a-42bf0d3ff6cd: status 200
+    isolation_test.go:153: DATA CHANGED  PUT attendance-corrections [guard of B] PUT /attendance-corrections/fe90b2a3-3261-4afa-aa6a-42bf0d3ff6cd: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE attendance-corrections [guard of B] DELETE /attendance-corrections/fe90b2a3-3261-4afa-aa6a-42bf0d3ff6cd: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE attendance-corrections [guard of B] DELETE /attendance-corrections/fe90b2a3-3261-4afa-aa6a-42bf0d3ff6cd: attendance_corrections row was modified or deleted
+    isolation_test.go:144: ALLOWED       GET leaves [guard of B] GET /leaves/b8496ec2-7b66-44ad-87dd-3e1b321346dd: status 200
+    isolation_test.go:144: ALLOWED       PUT leaves [guard of B] PUT /leaves/b8496ec2-7b66-44ad-87dd-3e1b321346dd: status 200
+    isolation_test.go:153: DATA CHANGED  PUT leaves [guard of B] PUT /leaves/b8496ec2-7b66-44ad-87dd-3e1b321346dd: leaves row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE leaves [guard of B] DELETE /leaves/b8496ec2-7b66-44ad-87dd-3e1b321346dd: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE leaves [guard of B] DELETE /leaves/b8496ec2-7b66-44ad-87dd-3e1b321346dd: leaves row was modified or deleted
+    isolation_test.go:146: SERVER ERROR  PUT patrols [guard of B] PUT /patrols/5333da20-1d4f-46c4-b5d1-4f559c6bb6ec: status 500 ({"status":"error","code":500,"message":"Failed to update patrol"})
+    isolation_test.go:146: SERVER ERROR  DELETE patrols [guard of B] DELETE /patrols/5333da20-1d4f-46c4-b5d1-4f559c6bb6ec: status 500 ({"status":"error","code":500,"message":"Failed to delete patrol"})
+    isolation_test.go:144: ALLOWED       GET monthly-reports [guard of B] GET /monthly-reports/f97592f0-2e1d-49d1-9bdd-b420f82c44e0: status 200
+    isolation_test.go:144: ALLOWED       PUT monthly-reports [guard of B] PUT /monthly-reports/f97592f0-2e1d-49d1-9bdd-b420f82c44e0: status 200
+    isolation_test.go:153: DATA CHANGED  PUT monthly-reports [guard of B] PUT /monthly-reports/f97592f0-2e1d-49d1-9bdd-b420f82c44e0: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       DELETE monthly-reports [guard of B] DELETE /monthly-reports/f97592f0-2e1d-49d1-9bdd-b420f82c44e0: status 200
+    isolation_test.go:153: DATA CHANGED  DELETE monthly-reports [guard of B] DELETE /monthly-reports/f97592f0-2e1d-49d1-9bdd-b420f82c44e0: monthly_reports row was modified or deleted
+    isolation_test.go:144: ALLOWED       loan history of their personnel [guard of B] GET /loans/history/6635760c-69ee-4a2d-bd98-05bdb0c2c346: status 200
+    isolation_test.go:144: ALLOWED       read their notification (delete) [guard of B] DELETE /notifications/70e99013-3b47-4203-ad5c-fbb5aee19f3e: status 200
+    isolation_test.go:144: ALLOWED       mark their notification read [guard of B] POST /notifications/70e99013-3b47-4203-ad5c-fbb5aee19f3e/read: status 200
+--- FAIL: TestOutsidersCannotCreateIntoAnotherCompanyOrEscalate (1.02s)
+    isolation_test.go:168: ALLOWED  create location in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Location created successfully","data":{"id":"8c83d3a0-16d9-4475-aa8f-a75055de5ec5","bujp_id":"cb2db1fc-a8d4-4f17-9766-...)
+    isolation_test.go:168: ALLOWED  create shift in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Shift created successfully","data":{"id":"6c3c41cb-934c-4227-8c69-be87571fbf67","bujp_id":"cb2db1fc-a8d4-4f17-9766-707...)
+    isolation_test.go:168: ALLOWED  create personnel in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Personnel created successfully","data":{"id":"0e4c79f9-eba8-4498-be46-cb6736683d77","bujp_id":"ec1c4c93-9845-4cc1-95d4...)
+    isolation_test.go:168: ALLOWED  create user in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"8279f5be-07ab-4a8e-adbf-f7b09b7ff618","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create user with a platform role by company_admin of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"9e3600c9-7bfd-443e-bcc2-4df23d6ebe33","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create a platform admin in own company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"f49bf219-8d7e-4dc9-bf29-a76393d8d5b9","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create salary component in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"Successfully created salary component","data":{"id":"17059761-7316-4539-aacb-89274c681b14","bujp_id":"ec1c4c93-9845-4c...)
+    isolation_test.go:168: ALLOWED  create loan product in the other company by company_admin of A: status 201 ({"status":"success","code":201,"message":"loan product created","data":{"id":"181192e0-59b0-4117-92d7-adc0c1ac0490","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b252e02d...)
+    isolation_test.go:168: ALLOWED  create a company by company_admin of A: status 201 ({"status":"success","code":201,"message":"BUJP created successfully","data":{"id":"766f562a-7584-4d27-9c9e-0e91d3b226d1","code":"B6438e8c97","name":"planted com...)
+    isolation_test.go:168: ALLOWED  generate payroll for the other company by company_admin of A: status 200 ({"status":"success","code":200,"message":"Payroll generated","data":{"generated":["Guard A","Extra A","Sup A","planted"],"skipped":null,"payrolls":[{"id":"9b330...)
+    isolation_test.go:168: ALLOWED  generate report for the other company by company_admin of A: status 200 ({"status":"success","code":200,"message":"Laporan bulanan berhasil dibuat","data":{"id":"61a0a28c-08a0-4f79-b237-0416399a35c9","bujp_id":"ec1c4c93-9845-4cc1-95d...)
+    isolation_test.go:168: ALLOWED  create payroll for the other company's personnel by company_admin of A: status 201 ({"status":"success","code":201,"message":"Successfully created payroll","data":{"id":"03b62a82-92e8-4e0c-8e6c-d9cc5b7f9c38","personnel_id":"8b213c96-2b4e-466f-b...)
+    isolation_test.go:168: ALLOWED  create leave for the other company's personnel by company_admin of A: status 201 ({"status":"success","code":201,"message":"Leave created successfully","data":{"id":"761146af-0007-4533-ae3a-a79c9196ef35","personnel_id":"8b213c96-2b4e-466f-bfa...)
+    isolation_test.go:168: ALLOWED  create location in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Location created successfully","data":{"id":"5917fcb4-6aa5-4630-9c63-8bd133e057bb","bujp_id":"cb2db1fc-a8d4-4f17-9766-...)
+    isolation_test.go:168: ALLOWED  create shift in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Shift created successfully","data":{"id":"6f1b3199-aabf-4128-9aaf-b62d0ccba5b4","bujp_id":"cb2db1fc-a8d4-4f17-9766-707...)
+    isolation_test.go:168: ALLOWED  create personnel in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Personnel created successfully","data":{"id":"c0470109-f5e9-4ad8-8bc9-2fe83f58bc79","bujp_id":"ec1c4c93-9845-4cc1-95d4...)
+    isolation_test.go:168: ALLOWED  create user in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"7877c193-8053-4cc2-b9a9-e00fa8ffbe1e","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create user with a platform role by supervisor of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"c092e284-4293-4ef9-9782-7711974a5295","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create a platform admin in own company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"26d55ae7-8c16-4157-907a-180043f938d5","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create salary component in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"Successfully created salary component","data":{"id":"172d53b3-c44b-419c-b27e-2c81393e6f51","bujp_id":"ec1c4c93-9845-4c...)
+    isolation_test.go:168: ALLOWED  create loan product in the other company by supervisor of A: status 201 ({"status":"success","code":201,"message":"loan product created","data":{"id":"2e965bb7-10af-48ff-a833-b9485a53ef41","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b252e02d...)
+    isolation_test.go:168: ALLOWED  create a company by supervisor of A: status 201 ({"status":"success","code":201,"message":"BUJP created successfully","data":{"id":"a662fa1b-db1d-4f1b-81f7-87dc6c74503f","code":"B6438e84e6","name":"planted com...)
+    isolation_test.go:168: ALLOWED  create location in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"Location created successfully","data":{"id":"103b5538-a3a3-473f-9d91-efe96b253c00","bujp_id":"cb2db1fc-a8d4-4f17-9766-...)
+    isolation_test.go:168: ALLOWED  create shift in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"Shift created successfully","data":{"id":"6b0e5fae-3cc3-4994-a4ab-331cd99ccefc","bujp_id":"cb2db1fc-a8d4-4f17-9766-707...)
+    isolation_test.go:168: ALLOWED  create personnel in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"Personnel created successfully","data":{"id":"a8e9eb76-52f5-4f68-8e1f-00c22fb5cd24","bujp_id":"ec1c4c93-9845-4cc1-95d4...)
+    isolation_test.go:168: ALLOWED  create user in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"8bb4c00e-f04e-46df-966b-97d6ce3947fc","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create user with a platform role by guard of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"3748095d-c2d8-4db4-aad3-beb9d39eabe3","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create a platform admin in own company by guard of A: status 201 ({"status":"success","code":201,"message":"Successfully created user","data":{"id":"5e7c2056-9047-4f44-b9a6-439487e7d924","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b25...)
+    isolation_test.go:168: ALLOWED  create salary component in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"Successfully created salary component","data":{"id":"7600a692-9d6d-4451-9bd9-f4d1a29cf46f","bujp_id":"ec1c4c93-9845-4c...)
+    isolation_test.go:168: ALLOWED  create loan product in the other company by guard of A: status 201 ({"status":"success","code":201,"message":"loan product created","data":{"id":"dbb454d9-ad9a-43ac-aede-9daf2f9b8d83","bujp_id":"ec1c4c93-9845-4cc1-95d4-7b252e02d...)
+    isolation_test.go:168: ALLOWED  create a company by guard of A: status 201 ({"status":"success","code":201,"message":"BUJP created successfully","data":{"id":"3231025b-e2ed-4774-b0e3-48bd5fb51fb7","code":"B6438e8bc9","name":"planted com...)
+    isolation_test.go:185: ESCALATED  6 platform-level user(s) were created by tenant users
+--- FAIL: TestListsNeverContainAnotherCompany (0.62s)
+    isolation_test.go:205: LIST LEAKS  GET /bujps as company_admin of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as company_admin of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b 78e7d39d-4491-4a22-b386-586cd2aa310d P8f6895B]
+    isolation_test.go:205: LIST LEAKS  GET /bujps as supervisor of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as supervisor of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b 78e7d39d-4491-4a22-b386-586cd2aa310d P8f6895B]
+    isolation_test.go:205: LIST LEAKS  GET /bujps as guard of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as guard of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b 78e7d39d-4491-4a22-b386-586cd2aa310d P8f6895B]
+    isolation_test.go:205: LIST LEAKS  GET /loan-approvals/pending as guard of A shows other company's data: [613f06ba-d011-4d5e-8e3c-8e3139457c8b 05a82e58-1ab2-4884-8904-1fec8fba124c 348f745b-3ac6-4a78-a06a-3704365434c5 17b9d4dd-f501-4e79-9fca-7882f8033fcc 45316549-31a5-4014-8571-fb0ca4a1a362 P8f6895B LN8f6895B]
+    isolation_test.go:205: LIST LEAKS  GET /bujps as company_admin of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as company_admin of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253 cc1a220c-d28c-4c3e-962e-227fd9586cf6 P8f6895A]
+    isolation_test.go:205: LIST LEAKS  GET /bujps as supervisor of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as supervisor of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253 cc1a220c-d28c-4c3e-962e-227fd9586cf6 P8f6895A]
+    isolation_test.go:205: LIST LEAKS  GET /bujps as guard of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253]
+    isolation_test.go:205: LIST LEAKS  GET /loan-products/active as guard of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253 cc1a220c-d28c-4c3e-962e-227fd9586cf6 P8f6895A]
+    isolation_test.go:205: LIST LEAKS  GET /loan-approvals/pending as guard of B shows other company's data: [c980cd52-69e6-4126-aca0-3a9471715253 a420aa44-1544-401b-8046-a85c604041bb 74c355e5-0bd7-4482-82a4-0adaacbd5888 2eb93a4b-af03-4591-bbf9-978072854a1d b0676bfc-3755-4d40-a9de-d84981d52baa P8f6895A LN8f6895A]
+--- FAIL: TestPlatformEndpointsAreNotForTenantUsers (0.11s)
+    isolation_test.go:220: supervisor can list other companies: {"status":"success","code":200,"message":"Successfully retrieved BUJPs","data":[{"id":"c1b4654c-8d45-4ee8-a396-c95c24be9338","code":"Ieb4d57B","name":"Company B...
+    isolation_test.go:220: guard can list other companies: {"status":"success","code":200,"message":"Successfully retrieved BUJPs","data":[{"id":"c1b4654c-8d45-4ee8-a396-c95c24be9338","code":"Ieb4d57B","name":"Company B...
+    isolation_test.go:226: company_admin created a company (status 201)
+    isolation_test.go:226: supervisor created a company (status 201)
+    isolation_test.go:226: guard created a company (status 201)
+FAIL
+FAIL	github.com/ganiramadhan/ganipedia/backend/tests/tenantiso	3.909s
+FAIL

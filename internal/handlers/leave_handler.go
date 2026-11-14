@@ -115,6 +115,10 @@ func (h *LeaveHandler) GetByID(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	leave, err := h.service.GetByID(ctx, id)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(model.APIResponse{
@@ -166,6 +170,15 @@ func (h *LeaveHandler) Create(c *fiber.Ctx) error {
 			req.SupportingDocument = key
 			break
 		}
+	}
+
+	if req.PersonnelID == uuid.Nil {
+		if pid, _ := c.Locals("personnelID").(uuid.UUID); pid != uuid.Nil {
+			req.PersonnelID = pid
+		}
+	}
+	if !personAllowed(c, ctx, req.PersonnelID, nil) {
+		return forbiddenResponse(c)
 	}
 
 	leave, err := h.service.Create(ctx, req)
@@ -247,6 +260,10 @@ func (h *LeaveHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	leave, err := h.service.Update(ctx, id, &req)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -286,6 +303,10 @@ func (h *LeaveHandler) Delete(c *fiber.Ctx) error {
 			Code:    http.StatusInternalServerError,
 			Message: "Invalid leave ID",
 		})
+	}
+
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
 	}
 
 	if err := h.service.Delete(ctx, id); err != nil {
@@ -398,6 +419,10 @@ func (h *LeaveHandler) processApproval(c *fiber.Ctx, defaultStatus string) error
 		notes = *req.ApproverNotes
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	leave, err := h.service.Approve(ctx, id, approverID, req.Status, notes)
 	if err != nil {
 		status := statusForServiceError(err)
@@ -412,4 +437,16 @@ func (h *LeaveHandler) processApproval(c *fiber.Ctx, defaultStatus string) error
 		Message: "Leave " + req.Status + " successfully",
 		Data:    leave,
 	})
+}
+
+// authorize loads the leave and checks the caller may touch it (same company; a guard only their own).
+func (h *LeaveHandler) authorize(c *fiber.Ctx, ctx context.Context, id uuid.UUID) (bool, error) {
+	rec, err := h.service.GetByID(ctx, id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Leave")
+	}
+	if !personAllowed(c, ctx, rec.PersonnelID, rec.Personnel) {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

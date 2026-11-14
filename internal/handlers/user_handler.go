@@ -165,6 +165,23 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		}
 	}
 
+	if !assignableRoles(utils.CallerRole(c))[req.Role] {
+		return c.Status(http.StatusForbidden).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusForbidden, Message: "Anda tidak berhak membuat pengguna dengan peran tersebut",
+		})
+	}
+	if !utils.IsPusat(utils.CallerRole(c)) {
+		// a company admin creates users in their own company only, whatever the body says
+		if req.BujpID != nil && *req.BujpID != utils.CallerBujpID(c) {
+			return forbiddenResponse(c)
+		}
+		own := utils.CallerBujpID(c)
+		if own == uuid.Nil {
+			return forbiddenResponse(c)
+		}
+		req.BujpID = &own
+	}
+
 	user, err := h.service.CreateUser(c.Context(), req)
 	if err != nil {
 		statusCode := statusForServiceError(err)
@@ -231,6 +248,16 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return forbiddenResponse(c)
 	}
 	// Prevent BUJP-scoped callers from re-homing a user to another tenant.
+	callerID, _ := c.Locals("userID").(uuid.UUID)
+	if existing.ID != callerID && !assignableRoles(utils.CallerRole(c))[existing.Role] {
+		return forbiddenResponse(c) // not a user this caller manages (e.g. another admin)
+	}
+	if req.Role != nil && *req.Role != existing.Role {
+		if existing.ID == callerID || !assignableRoles(utils.CallerRole(c))[*req.Role] {
+			return forbiddenResponse(c) // no self-promotion, no assigning a role above one's own
+		}
+	}
+
 	role, _ := c.Locals("role").(string)
 	if !utils.IsPusat(role) {
 		req.BujpID = existing.BujpID
@@ -292,6 +319,11 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 	if !utils.CanAccessOptionalBujp(c, existing.BujpID) {
+		return forbiddenResponse(c)
+	}
+
+	callerID, _ := c.Locals("userID").(uuid.UUID)
+	if existing.ID == callerID || !assignableRoles(utils.CallerRole(c))[existing.Role] {
 		return forbiddenResponse(c)
 	}
 

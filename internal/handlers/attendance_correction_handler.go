@@ -98,6 +98,10 @@ func (h *AttendanceCorrectionHandler) GetByID(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, http.StatusBadRequest, "Invalid attendance correction ID format")
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	correction, err := h.service.GetByID(ctx, id)
 	if err != nil {
 		return utils.HandleError(c, err)
@@ -143,6 +147,10 @@ func (h *AttendanceCorrectionHandler) Create(c *fiber.Ctx) error {
 			req.SupportingDocument = key
 			break
 		}
+	}
+
+	if !personAllowed(c, ctx, req.PersonnelID, nil) {
+		return forbiddenResponse(c)
 	}
 
 	correction, err := h.service.Create(ctx, req)
@@ -207,6 +215,10 @@ func (h *AttendanceCorrectionHandler) Update(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request body")
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	correction, err := h.service.Update(ctx, id, &req)
 	if err != nil {
 		return utils.HandleError(c, err)
@@ -233,6 +245,10 @@ func (h *AttendanceCorrectionHandler) Delete(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusBadRequest, "Invalid attendance correction ID format")
+	}
+
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
 	}
 
 	if err := h.service.Delete(ctx, id); err != nil {
@@ -325,10 +341,26 @@ func (h *AttendanceCorrectionHandler) processApproval(c *fiber.Ctx, defaultStatu
 		notes = *req.ApproverNotes
 	}
 
+	if handled, err := h.authorize(c, ctx, id); handled {
+		return err
+	}
+
 	correction, err := h.service.Approve(ctx, id, approverID, req.Status, notes)
 	if err != nil {
 		return utils.HandleError(c, err)
 	}
 
 	return utils.SuccessResponse(c, http.StatusOK, "Attendance correction "+req.Status+" successfully", correction)
+}
+
+// authorize loads the correction and checks the caller may touch it.
+func (h *AttendanceCorrectionHandler) authorize(c *fiber.Ctx, ctx context.Context, id uuid.UUID) (bool, error) {
+	rec, err := h.service.GetByID(ctx, id)
+	if err != nil || rec == nil {
+		return true, notFoundResponse(c, "Attendance correction")
+	}
+	if !personAllowed(c, ctx, rec.PersonnelID, rec.Personnel) {
+		return true, forbiddenResponse(c)
+	}
+	return false, nil
 }

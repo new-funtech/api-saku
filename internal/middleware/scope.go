@@ -1,18 +1,25 @@
 package middleware
 
 import (
+	"errors"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type callerScope struct {
 	bujpID, personnelID uuid.UUID
+	role                string // the role stored for the user (the token's role can be up to a day old)
+	inactive            bool   // the account was switched off or removed
 	expires             time.Time
 }
 
@@ -71,8 +78,16 @@ func LoadCallerScope(userRepo repository.UserRepository, personnelRepo repositor
 
 		scope, ok := cache.get(uid)
 		if !ok {
-			if user, err := userRepo.FindByID(c.Context(), uid); err == nil && user != nil && user.BujpID != nil {
-				scope.bujpID = *user.BujpID
+			user, err := userRepo.FindByID(c.Context(), uid)
+			switch {
+			case err != nil && errors.Is(err, gorm.ErrRecordNotFound):
+				scope.inactive = true // the account no longer exists
+			case err == nil && user != nil:
+				scope.role = user.Role
+				scope.inactive = strings.EqualFold(user.Status, "inactive")
+				if user.BujpID != nil {
+					scope.bujpID = *user.BujpID
+				}
 			}
 			if p, err := personnelRepo.FindByUserID(c.Context(), uid); err == nil && p != nil {
 				scope.personnelID = p.ID
@@ -80,6 +95,14 @@ func LoadCallerScope(userRepo repository.UserRepository, personnelRepo repositor
 			cache.put(uid, scope)
 		}
 
+		if scope.inactive {
+			return c.Status(http.StatusUnauthorized).JSON(model.APIResponse{
+				Status: "error", Code: http.StatusUnauthorized, Message: "Akun Anda tidak aktif. Hubungi administrator.",
+			})
+		}
+		if scope.role != "" {
+			c.Locals("role", scope.role) // a changed role applies at once, not when the token expires
+		}
 		c.Locals("bujpID", scope.bujpID)
 		c.Locals("personnelID", scope.personnelID)
 		return c.Next()

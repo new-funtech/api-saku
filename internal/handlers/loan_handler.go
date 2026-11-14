@@ -159,6 +159,9 @@ func (h *LoanHandler) History(c *fiber.Ctx) error {
 		}
 		personnelID = id
 	}
+	if personnelID != uuid.Nil && utils.CallerRole(c) != "bprks" && !personAllowed(c, c.Context(), personnelID, nil) {
+		return forbiddenResponse(c)
+	}
 	page, limit := utils.ParsePagination(c)
 
 	role, _ := c.Locals("role").(string)

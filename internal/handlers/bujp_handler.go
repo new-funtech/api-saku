@@ -45,6 +45,16 @@ func (h *BujpHandler) GetAllBujps(c *fiber.Ctx) error {
 		filters["search"] = search
 	}
 
+	if !utils.IsPusat(utils.CallerRole(c)) {
+		// a company sees only itself
+		own := utils.CallerBujpID(c)
+		if own == uuid.Nil {
+			filters["force_empty"] = true
+		} else {
+			filters["id"] = own
+		}
+	}
+
 	bujps, total, err := h.service.GetAll(c.Context(), page, limit, filters)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(model.APIResponse{
@@ -95,6 +105,10 @@ func (h *BujpHandler) GetBujpByID(c *fiber.Ctx) error {
 			Code:    http.StatusBadRequest,
 			Message: constants.ErrInvalidUUID,
 		})
+	}
+
+	if !utils.CanReadBujp(c, id) {
+		return forbiddenResponse(c)
 	}
 
 	bujp, err := h.service.GetByID(c.Context(), id)

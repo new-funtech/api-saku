@@ -71,6 +71,12 @@ func (h *LoanProductHandler) GetActive(c *fiber.Ctx) error {
 			bujpID = &id
 		}
 	}
+	if !utils.IsPusat(utils.CallerRole(c)) {
+		// the company comes from the session; ?bujp_id= is honoured for central roles only
+		own := utils.CallerBujpID(c)
+		bujpID = &own
+	}
+
 	items, err := h.service.GetActive(c.Context(), bujpID)
 	if err != nil {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())

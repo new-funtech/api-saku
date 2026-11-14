@@ -178,6 +178,7 @@ func main() {
 	shiftSvc := services.NewShiftService(shiftRepo)
 	personnelSvc := services.NewPersonnelService(personnelRepo, loanRepo, userRepo)
 	assignmentSvc := services.NewAssignmentService(assignmentRepo)
+	handlers.UseDirectories(personnelRepo, locationRepo)
 	attendanceSvc := services.NewAttendanceService(attendanceRepo, personnelRepo, assignmentRepo)
 	if attendanceq.AsyncEnabled() {
 		if config.RabbitClient == nil {
