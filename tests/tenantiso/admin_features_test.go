@@ -243,3 +243,22 @@ func TestListSearchesStayInsideTheCompany(t *testing.T) {
 		}
 	}
 }
+
+// A wrong current password is a mistake on a form, not an ended session: it must not be a 401
+// (the apps sign the person out on 401) and the account must keep working.
+func TestWrongCurrentPasswordIsNotAnEndedSession(t *testing.T) {
+	w := setup(t)
+	a := w.A
+	r := w.do(a.guard, "POST", "/users/change-password", map[string]interface{}{
+		"current_password": "not-my-password", "new_password": "Newpassw0rd!", "new_password_confirmation": "Newpassw0rd!",
+	})
+	if r.status == 401 {
+		t.Fatalf("a wrong current password answered 401, which signs the person out in the apps")
+	}
+	if r.status != 400 || !strings.Contains(r.body, "Password saat ini salah") {
+		t.Errorf("status %d body %s, want 400 with the wrong-password message", r.status, trim(r.body))
+	}
+	if after := w.do(a.guard, "GET", "/locations", nil); !after.ok() {
+		t.Errorf("the account stopped working after a mistyped password (status %d)", after.status)
+	}
+}

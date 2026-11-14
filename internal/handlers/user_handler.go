@@ -459,10 +459,12 @@ func (h *UserHandler) ChangePassword(c *fiber.Ctx) error {
 
 	if err := h.service.ChangePassword(c.Context(), userID, req); err != nil {
 		if err.Error() == "current password is incorrect" {
-			return c.Status(http.StatusUnauthorized).JSON(model.APIResponse{
+			// 400, not 401: the caller IS authenticated; they only typed the wrong current password.
+			// A 401 made the apps treat it as an expired session and sign the person out.
+			return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
 				Status:  "error",
-				Code:    http.StatusUnauthorized,
-				Message: "Current password is incorrect",
+				Code:    http.StatusBadRequest,
+				Message: "Password saat ini salah",
 			})
 		}
 		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
