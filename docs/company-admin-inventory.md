@@ -76,3 +76,32 @@ Hanya untuk lokal (loopback). Tes mencakup: akses silang CRUD (company_admin, su
 - Role `bprks` (pemeriksa lintas perusahaan) tidak diuji pada endpoint non-pinjaman.
 - Ekspor laporan (PDF/Excel) belum ada di API; akan dibuat di Tahap 2/3 dengan filter tenant yang sama.
 - Cache scope per instance (60 dtk): perubahan role/status/perusahaan terlihat paling lama setelah TTL pada instance lain. Atur `SCOPE_CACHE_TTL_SECONDS=0` bila ingin seketika.
+
+## 6. Status setelah Tahap 2-4
+
+| Fitur | Endpoint (Tahap 2) | client-web (Tahap 3) | Mobile (Tahap 4) | Portal admin |
+|---|---|---|---|---|
+| Lokasi, Shift, Komponen Gaji | ada, kini terisolasi per tenant | `/company/locations`, `/company/shifts`, `/company/salary-components` | Kelola > Lokasi, Shift, Komponen Gaji | bisa dimatikan |
+| Personel (tambah, ubah, nonaktifkan) | ada | `/company/personnel` | Kelola > Personel | bisa dimatikan; **impor massal Excel** (`/personnels/bulk-import`) belum ada di client |
+| Pengguna (tambah, ubah, nonaktifkan) | ada, dengan batas role | `/company/users` | Kelola > Pengguna | bisa dimatikan |
+| Riwayat absen seluruh personel | filter dan pencarian baru | `/admin/attendance` (halaman baru) | Riwayat Absensi | bisa dimatikan |
+| Laporan bulanan | `GET /monthly-reports/recap` + `/export` (baru) | `/company/reports`, Excel dan cetak PDF | Laporan Bulanan, bagikan PDF | bisa dimatikan |
+| Generate payroll, status bayar | ada | `/payroll` (sudah ada) | Penggajian (baru) | bisa dimatikan |
+| Approval cuti, koreksi, lembur, kredit | ada | `/approval` (sudah ada) | inbox approval + rute Approval Lembur | bisa dimatikan |
+| Penugasan | ada | `/admin/patrol-assignments` (sudah ada) | **belum** | tetap sampai ada di mobile |
+| Validasi patroli | ada | **belum** | **belum** | tetap |
+| Produk pinjaman | ada | **belum** (tidak diminta) | **belum** | tetap |
+| Perusahaan (BUJP) | hanya Pusat | tidak ada | tidak ada | **platform: tetap** |
+| Pengguna dan data lintas tenant, role Pusat | ada | tidak ada | tidak ada | **platform: tetap** |
+
+Penyederhanaan di mobile (disengaja, bukan terlewat):
+- **Ekspor Excel** tidak ada di mobile: berkas Excel tidak bisa dikelola di ponsel tanpa aplikasi lain. Gantinya **PDF yang bisa dibagikan**; Excel tetap di web.
+- **Filter personel** di laporan bulanan diganti **pencarian nama/NIK/NIP** (daftar dropdown ratusan personel tidak praktis di layar kecil); filter lokasi tetap ada.
+- Formulir personel di mobile memuat kolom inti (nama, NIK, NIP, kontak, tanggal bergabung, gaji pokok, rekening, status). **Unggah foto dan dokumen KTP/NPWP** serta **impor massal** tetap di web atau portal admin.
+
+Asumsi untuk dikonfirmasi:
+1. Admin perusahaan hanya mengelola `guard` dan `supervisor`; membuat atau mengubah sesama admin perusahaan tetap lewat Pusat.
+2. Personel tidak bisa dihapus lewat client (hanya dinonaktifkan) agar riwayat absensi dan gaji tetap utuh.
+3. Peran Pusat (`super_admin`, `admin`) tetap memakai portal admin; halaman Kelola tidak muncul untuk mereka.
+4. Produk pinjaman, validasi patroli, dan impor massal belum dipindahkan: tidak diminta di tugas ini.
+5. Portal admin **belum dihapus**. Sebelum dimatikan: uji tiap halaman baru di browser dan ponsel, dan putuskan nasib impor massal, validasi patroli, dan produk pinjaman.
