@@ -38,15 +38,13 @@ func SetupRoutes(
 	deviceHdl *handlers.DeviceHandler,
 	preferenceHdl *handlers.NotificationPreferenceHandler,
 	realtimeHdl *handlers.RealtimeHandler,
+	statsHdl *handlers.StatsHandler,
 	userRepo repository.UserRepository,
 	personnelRepo repository.PersonnelRepository,
 ) {
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 
-	// Authenticated requests must also resolve the caller's tenant scope
-	// (BUJP / personnel) so handlers can apply row-level filtering.
-	// One budget per signed-in user across the API, plus tighter ones for uploads and payroll below.
 	userLimiter := middleware.RateLimitByUser(240, time.Minute)
 	protected := func() []fiber.Handler {
 		return []fiber.Handler{
@@ -56,7 +54,6 @@ func SetupRoutes(
 		}
 	}
 
-	// Stricter rate limit on auth endpoints to deter brute-force attempts.
 	authLimiter := middleware.RateLimitByIP(10, time.Minute)
 
 	v1.Post("/login", authLimiter, authHdl.Login)
@@ -104,8 +101,6 @@ func SetupRoutes(
 	bujpRoutes := v1.Group("/bujps", protected()...)
 	bujpRoutes.Get("/", bujpHdl.GetAllBujps)
 	bujpRoutes.Get("/:id", bujpHdl.GetBujpByID)
-	// Companies are platform data: only the central roles create, change or remove them. Everyone else
-	// can read only their own (see the handler).
 	platformOnly := middleware.RequireRoles("super_admin", "admin")
 	bujpRoutes.Post("/", platformOnly, bujpHdl.CreateBujp)
 	bujpRoutes.Put("/:id", platformOnly, bujpHdl.UpdateBujp)
@@ -115,7 +110,6 @@ func SetupRoutes(
 	locationRoutes := v1.Group("/locations", protected()...)
 	locationRoutes.Get("/", locationHdl.GetAllLocations)
 	locationRoutes.Get("/:id", locationHdl.GetLocationByID)
-	// Master data is changed by admins only (company admins inside their own company).
 	masterAdmin := masterAdminRoles
 	locationRoutes.Post("/", masterAdmin, locationHdl.CreateLocation)
 	locationRoutes.Put("/:id", masterAdmin, locationHdl.UpdateLocation)
@@ -163,6 +157,7 @@ func SetupRoutes(
 	attendanceRoutes := v1.Group("/attendances", protected()...)
 	attendanceRoutes.Get("/", attendanceHdl.GetAll)
 	attendanceRoutes.Get("/summary", attendanceHdl.Summary)
+	attendanceRoutes.Get("/stats", masterAdminRoles, statsHdl.Attendance)
 	attendanceRoutes.Put("/checkout", attendanceHdl.Checkout)
 	attendanceRoutes.Get("/status/:key", attendanceHdl.QueueStatus)
 	attendanceRoutes.Get("/:id", attendanceHdl.GetByID)
@@ -269,6 +264,7 @@ func SetupRoutes(
 	loanRoutes.Get("/my-summary", loanInstallmentHdl.MySummary)
 	loanRoutes.Get("/admin-summary", middleware.RequireRoles("super_admin", "admin", "company_admin"), loanInstallmentHdl.AdminSummary)
 	loanRoutes.Get("/statistics", loanHdl.Statistics)
+	loanRoutes.Get("/stats", masterAdminRoles, statsHdl.Loans)
 	loanRoutes.Get("/history", loanHdl.History)
 	loanRoutes.Get("/history/:personnel_id", loanHdl.History)
 	loanRoutes.Get("/:id", loanHdl.GetByID)

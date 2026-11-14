@@ -90,7 +90,7 @@ func TestAttendanceRowsAreProtectedByRoleAndCompany(t *testing.T) {
 
 	app := fiber.New()
 	SetupRoutes(app, nil, nil, nil, nil, nil, nil, nil, nil, handlers.NewAttendanceHandler(svc), nil, nil, nil, nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, nil, nil, nil, fakeUsers{p: ppl}, fakePersonnel{p: ppl})
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, fakeUsers{p: ppl}, fakePersonnel{p: ppl})
 
 	call := func(a actor, method, id string) int {
 		req := httptest.NewRequest(method, "/api/v1/attendances/"+id, strings.NewReader(`{"notes":"x"}`))

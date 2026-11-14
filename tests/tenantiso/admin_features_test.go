@@ -244,8 +244,6 @@ func TestListSearchesStayInsideTheCompany(t *testing.T) {
 	}
 }
 
-// A wrong current password is a mistake on a form, not an ended session: it must not be a 401
-// (the apps sign the person out on 401) and the account must keep working.
 func TestWrongCurrentPasswordIsNotAnEndedSession(t *testing.T) {
 	w := setup(t)
 	a := w.A
@@ -289,5 +287,34 @@ func TestPersonnelExportIsScoped(t *testing.T) {
 		if r := w.do(who, "POST", "/personnels/bulk-import", map[string]interface{}{"bujp_id": b.bujp.ID.String()}); r.ok() {
 			t.Errorf("%s must not import personnel", who.user.Role)
 		}
+	}
+}
+
+func TestStatsAreScopedAndRoleLimited(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+
+	for _, path := range []string{"/attendances/stats", "/loans/stats"} {
+		r := w.do(a.admin, "GET", path, nil)
+		if !r.ok() {
+			t.Fatalf("%s as company admin: %d %s", path, r.status, trim(r.body))
+		}
+		if hit := r.leaks(b.ids); len(hit) > 0 {
+			t.Errorf("%s leaks the other company: %v", path, hit)
+		}
+		if g := w.do(a.guard, "GET", path, nil); g.ok() {
+			t.Errorf("%s must not be open to a guard (got %d)", path, g.status)
+		}
+		// a company admin cannot pick another company
+		if o := w.do(a.admin, "GET", path+"?bujp_id="+b.bujp.ID.String(), nil); o.ok() && len(o.leaks(b.ids)) > 0 {
+			t.Errorf("%s honoured a foreign bujp_id", path)
+		}
+	}
+	// central role must name a company for attendance
+	if r := w.do(w.super, "GET", "/attendances/stats", nil); r.status != 400 {
+		t.Errorf("attendance stats without bujp_id for pusat: want 400, got %d", r.status)
+	}
+	if r := w.do(w.super, "GET", "/attendances/stats?bujp_id="+a.bujp.ID.String(), nil); !r.ok() {
+		t.Errorf("attendance stats for pusat with bujp_id: %d %s", r.status, trim(r.body))
 	}
 }

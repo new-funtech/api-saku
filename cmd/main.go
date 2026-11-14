@@ -227,6 +227,7 @@ func main() {
 	deviceHdl := handlers.NewDeviceHandler(deviceTokenRepo)
 	preferenceHdl := handlers.NewNotificationPreferenceHandler(preferenceRepo)
 	realtimeHdl := handlers.NewRealtimeHandler(realtimeHub)
+	statsHdl := handlers.NewStatsHandler(config.DB)
 	uploadHdl := handlers.NewUploadHandler()
 	dashboardHdl := handlers.NewDashboardHandler(dashboardSvc)
 
@@ -252,7 +253,7 @@ func main() {
 	)
 
 	// Setup routes
-	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, overtimeHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, deviceHdl, preferenceHdl, realtimeHdl, userRepo, personnelRepo)
+	routes.SetupRoutes(app, authHdl, productHdl, userHdl, bujpHdl, locationHdl, shiftHdl, personnelHdl, assignmentHdl, attendanceHdl, attendanceCorrectionHdl, patrolHdl, leaveHdl, overtimeHdl, salaryComponentHdl, payrollHdl, monthlyReportHdl, uploadHdl, dashboardHdl, loanProductHdl, loanHdl, loanApprovalHdl, loanInstallmentHdl, notificationHdl, deviceHdl, preferenceHdl, realtimeHdl, statsHdl, userRepo, personnelRepo)
 
 	// Start server with graceful shutdown
 	port := config.GetEnv("APP_PORT", "4000")
