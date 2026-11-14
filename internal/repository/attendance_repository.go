@@ -19,8 +19,27 @@ type AttendanceRepository interface {
 	FindByLocationID(ctx context.Context, locationID uuid.UUID, page, limit int) ([]model.Attendance, int64, error)
 	FindByDateRange(ctx context.Context, startDate, endDate time.Time, page, limit int) ([]model.Attendance, int64, error)
 	Create(ctx context.Context, attendance *model.Attendance) error
+	// ExistsByPersonnelAndDate is the cheap duplicate check (no relations loaded).
+	ExistsByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (bool, error)
+	// Insert writes one row with a single statement (no wrapping transaction).
+	Insert(ctx context.Context, attendance *model.Attendance) error
+	// FindOpenForCheckout returns the rows of the given dates with the shift and office loaded in one query.
+	FindOpenForCheckout(ctx context.Context, personnelID uuid.UUID, from, to time.Time) ([]model.Attendance, error)
+	// CompleteCheckOut sets the check-out only if it is still empty; false when it was already set.
+	CompleteCheckOut(ctx context.Context, id uuid.UUID, c CheckOutUpdate) (bool, error)
 	Update(ctx context.Context, attendance *model.Attendance) error
 	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+// CheckOutUpdate is everything a check-out writes.
+type CheckOutUpdate struct {
+	At           time.Time
+	Latitude     *string
+	Longitude    *string
+	Photo        *string
+	Document     *string
+	Notes        *string
+	WorkDuration int
 }
 
 type attendanceRepositoryImpl struct {
@@ -253,4 +272,49 @@ func (r *attendanceRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) err
 		return fmt.Errorf("attendance not found")
 	}
 	return nil
+}
+
+func (r *attendanceRepositoryImpl) ExistsByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (bool, error) {
+	var n int64
+	err := r.withContext(ctx).Model(&model.Attendance{}).
+		Where("personnel_id = ? AND date = ?", personnelID, date).Limit(1).Count(&n).Error
+	return n > 0, err
+}
+
+func (r *attendanceRepositoryImpl) Insert(ctx context.Context, attendance *model.Attendance) error {
+	return r.withContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).Create(attendance).Error
+}
+
+func (r *attendanceRepositoryImpl) FindOpenForCheckout(ctx context.Context, personnelID uuid.UUID, from, to time.Time) ([]model.Attendance, error) {
+	var rows []model.Attendance
+	err := r.withContext(ctx).
+		Joins("Location").
+		Joins("Assignment").
+		Joins("Assignment.Shift").
+		Where("attendances.personnel_id = ? AND attendances.date >= ? AND attendances.date <= ?", personnelID, from, to).
+		Order("attendances.date DESC").
+		Find(&rows).Error
+	return rows, err
+}
+
+func (r *attendanceRepositoryImpl) CompleteCheckOut(ctx context.Context, id uuid.UUID, c CheckOutUpdate) (bool, error) {
+	updates := map[string]interface{}{
+		"check_out":           c.At,
+		"check_out_latitude":  c.Latitude,
+		"check_out_longitude": c.Longitude,
+		"work_duration":       c.WorkDuration,
+		"updated_at":          time.Now(),
+	}
+	if c.Photo != nil {
+		updates["check_out_photo"] = *c.Photo
+	}
+	if c.Document != nil {
+		updates["supporting_document"] = *c.Document
+	}
+	if c.Notes != nil {
+		updates["notes"] = *c.Notes
+	}
+	res := r.withContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
+		Model(&model.Attendance{}).Where("id = ? AND check_out IS NULL", id).Updates(updates)
+	return res.RowsAffected > 0, res.Error
 }

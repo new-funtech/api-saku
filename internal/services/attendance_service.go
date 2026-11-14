@@ -45,8 +45,8 @@ type AttendanceService interface {
 	GetByLocationID(ctx context.Context, locationID uuid.UUID, page, limit int) ([]model.AttendanceResponse, int64, error)
 	GetByDateRange(ctx context.Context, startDate, endDate time.Time, page, limit int) ([]model.AttendanceResponse, int64, error)
 	Create(ctx context.Context, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error)
-	CreateForUser(ctx context.Context, userID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error)
-	CheckoutForUser(ctx context.Context, userID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
+	ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error)
+	ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -320,87 +320,136 @@ func (s *attendanceServiceImpl) Delete(ctx context.Context, id uuid.UUID) error 
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *attendanceServiceImpl) CreateForUser(ctx context.Context, userID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error) {
-	if userID == uuid.Nil {
-		return nil, errors.New("unauthenticated")
-	}
-	personnel, err := s.personnelRepo.FindByUserID(ctx, userID)
-	if err != nil || personnel == nil {
+// ClockIn records the signed-in employee's check-in. The server decides the day, the time and the
+// status: whatever the client sends for date, check_in, check_out or status is ignored.
+// Cost: the active assignment (office and shift in one query), a duplicate check and one INSERT.
+func (s *attendanceServiceImpl) ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error) {
+	if personnelID == uuid.Nil {
 		return nil, errors.New("personnel record for current user not found")
 	}
-	req.PersonnelID = personnel.ID
+	now := time.Now()
+	day := attendanceDay(now)
 
-	if req.AssignmentID == nil || *req.AssignmentID == uuid.Nil || req.LocationID == uuid.Nil {
-		assignment, aerr := s.assignmentRepo.FindActiveByPersonnelID(ctx, personnel.ID)
-		if aerr != nil || assignment == nil {
-			return nil, errors.New("no active assignment for current user")
-		}
-		if req.AssignmentID == nil || *req.AssignmentID == uuid.Nil {
-			id := assignment.ID
-			req.AssignmentID = &id
-		}
-		if req.LocationID == uuid.Nil {
-			req.LocationID = assignment.LocationID
-		}
+	assignment, err := s.assignmentRepo.FindActiveForAttendance(ctx, personnelID, day)
+	if err != nil || assignment == nil {
+		return nil, errors.New("no active assignment for current user")
+	}
+	if err := checkGeofence(assignment.Location, req.CheckInLatitude, req.CheckInLongitude); err != nil {
+		return nil, err
+	}
+	if exists, err := s.repo.ExistsByPersonnelAndDate(ctx, personnelID, day); err != nil {
+		return nil, err
+	} else if exists {
+		return nil, errors.New("attendance record already exists for this personnel on this date")
 	}
 
-	if req.Date == "" {
-		req.Date = time.Now().Format("2006-01-02")
+	status := "present"
+	if assignment.Shift != nil && !assignment.Shift.StartTime.IsZero() &&
+		isLateCheckIn(day, assignment.Shift.StartTime.Time, now, attendanceLateGraceMinutes) {
+		status = "late"
 	}
-	if req.CheckIn == nil || *req.CheckIn == "" {
-		now := time.Now().Format(time.RFC3339)
-		req.CheckIn = &now
+
+	attendance := &model.Attendance{
+		PersonnelID:        personnelID,
+		LocationID:         assignment.LocationID,
+		AssignmentID:       &assignment.ID,
+		Date:               day,
+		CheckIn:            &now,
+		CheckInLatitude:    req.CheckInLatitude.PtrString(),
+		CheckInLongitude:   req.CheckInLongitude.PtrString(),
+		CheckInPhoto:       req.CheckInPhoto,
+		SupportingDocument: req.SupportingDocument,
+		Status:             status,
+		Notes:              req.Notes,
 	}
-	return s.Create(ctx, req)
+	if err := s.repo.Insert(ctx, attendance); err != nil {
+		return nil, err
+	}
+	attendance.Location = assignment.Location
+	attendance.Assignment = assignment
+
+	response := toAttendanceResponse(attendance)
+	presignAttendancePhotos(ctx, &response)
+	return &response, nil
 }
 
-func (s *attendanceServiceImpl) CheckoutForUser(ctx context.Context, userID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error) {
-	if userID == uuid.Nil {
-		return nil, errors.New("unauthenticated")
-	}
-	personnel, err := s.personnelRepo.FindByUserID(ctx, userID)
-	if err != nil || personnel == nil {
+// ClockOut records the check-out for the employee's open attendance. The time is the server's; the
+// update only applies while check_out is still empty, so a repeat can never overwrite the first.
+func (s *attendanceServiceImpl) ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error) {
+	if personnelID == uuid.Nil {
 		return nil, errors.New("personnel record for current user not found")
 	}
-	today := time.Now().Truncate(24 * time.Hour)
-	att, err := s.repo.FindByPersonnelAndDate(ctx, personnel.ID, today)
-	if err != nil || att == nil {
-		return nil, errors.New("no attendance record for today; please check-in first")
-	}
+	now := time.Now()
+	day := attendanceDay(now)
 
-	checkOutTime := time.Now()
-	if req.CheckOut != nil && *req.CheckOut != "" {
-		if parsed, perr := time.Parse(time.RFC3339, *req.CheckOut); perr == nil {
-			checkOutTime = parsed
-		}
+	rows, err := s.repo.FindOpenForCheckout(ctx, personnelID, day.AddDate(0, 0, -1), day)
+	if err != nil {
+		return nil, err
+	}
+	att := pickAttendanceToCheckOut(rows, day)
+	if att == nil {
+		return nil, ErrNoOpenAttendance
+	}
+	if att.CheckOut != nil {
+		return nil, ErrAlreadyCheckedOut
 	}
 
 	if att.Assignment != nil && att.Assignment.Shift != nil {
-		shiftEnd := att.Assignment.Shift.EndTime.Time
-		shiftStart := att.Assignment.Shift.StartTime.Time
-		if !shiftEnd.IsZero() {
-			end := time.Date(
-				att.Date.Year(), att.Date.Month(), att.Date.Day(),
-				shiftEnd.Hour(), shiftEnd.Minute(), shiftEnd.Second(), 0,
-				checkOutTime.Location(),
-			)
-			if !shiftStart.IsZero() && !shiftEnd.After(shiftStart) {
-				end = end.Add(24 * time.Hour)
-			}
-			if checkOutTime.Before(end) {
-				return nil, fmt.Errorf(
-					"belum waktunya checkout, shift Anda berakhir pukul %s",
-					shiftEnd.Format("15:04"),
-				)
-			}
+		start, end := att.Assignment.Shift.StartTime.Time, att.Assignment.Shift.EndTime.Time
+		if !end.IsZero() && now.Before(shiftEnd(att.Date, start, end)) {
+			return nil, fmt.Errorf("belum waktunya checkout, shift Anda berakhir pukul %s", end.Format("15:04"))
 		}
 	}
-
-	if req.CheckOut == nil || *req.CheckOut == "" {
-		now := checkOutTime.Format(time.RFC3339)
-		req.CheckOut = &now
+	if err := checkGeofence(att.Location, req.CheckOutLatitude, req.CheckOutLongitude); err != nil {
+		return nil, err
 	}
-	return s.Update(ctx, att.ID, req)
+
+	duration := 0
+	if att.CheckIn != nil {
+		if d := int(now.Sub(*att.CheckIn).Minutes()); d > 0 {
+			duration = d
+		}
+	}
+	update := repository.CheckOutUpdate{
+		At: now, Latitude: req.CheckOutLatitude.PtrString(), Longitude: req.CheckOutLongitude.PtrString(),
+		Photo: req.CheckOutPhoto, Document: req.SupportingDocument, Notes: req.Notes, WorkDuration: duration,
+	}
+	done, err := s.repo.CompleteCheckOut(ctx, att.ID, update)
+	if err != nil {
+		return nil, err
+	}
+	if !done {
+		return nil, ErrAlreadyCheckedOut
+	}
+
+	att.CheckOut = &now
+	att.CheckOutLatitude, att.CheckOutLongitude = update.Latitude, update.Longitude
+	if req.CheckOutPhoto != nil {
+		att.CheckOutPhoto = req.CheckOutPhoto
+	}
+	att.WorkDuration = &duration
+	response := toAttendanceResponse(att)
+	presignAttendancePhotos(ctx, &response)
+	return &response, nil
+}
+
+// pickAttendanceToCheckOut chooses today's row, or yesterday's only when it is still open and its
+// shift runs overnight (so a 22:00-06:00 guard can check out after midnight).
+func pickAttendanceToCheckOut(rows []model.Attendance, day time.Time) *model.Attendance {
+	var yesterday *model.Attendance
+	for i := range rows {
+		switch {
+		case rows[i].Date.Equal(day):
+			return &rows[i]
+		case rows[i].Date.Equal(day.AddDate(0, 0, -1)):
+			yesterday = &rows[i]
+		}
+	}
+	if yesterday != nil && yesterday.CheckOut == nil && yesterday.Assignment != nil && yesterday.Assignment.Shift != nil &&
+		isOvernight(yesterday.Assignment.Shift.StartTime.Time, yesterday.Assignment.Shift.EndTime.Time) {
+		return yesterday
+	}
+	return nil
 }
 
 // Helper functions
@@ -490,7 +539,7 @@ const attendanceLateGraceMinutes = 5
 // isLateCheckIn reports whether checkIn falls after shiftStart (a time of day) on the given date,
 // allowing the grace period.
 func isLateCheckIn(date time.Time, shiftStart time.Time, checkIn time.Time, graceMinutes int) bool {
-	startAt := time.Date(date.Year(), date.Month(), date.Day(), shiftStart.Hour(), shiftStart.Minute(), shiftStart.Second(), 0, time.Local)
+	startAt := shiftClock(date, shiftStart)
 	return checkIn.After(startAt.Add(time.Duration(graceMinutes) * time.Minute))
 }
 

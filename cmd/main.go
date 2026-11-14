@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -78,18 +79,28 @@ func main() {
 	defer config.CloseConnections()
 
 	// Initialize Fiber with production-ready config
+	proxy := loadProxySettings()
 	app := fiber.New(fiber.Config{
-		AppName:      "HRMIS API v1.0",
-		BodyLimit:    10 * 1024 * 1024, // 10MB
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-		ErrorHandler: customErrorHandler,
+		AppName:                 "HRMIS API v1.0",
+		ProxyHeader:             proxy.Header,
+		EnableTrustedProxyCheck: proxy.EnableCheck,
+		TrustedProxies:          proxy.Trusted,
+		BodyLimit:               10 * 1024 * 1024, // 10MB
+		ReadTimeout:             15 * time.Second,
+		WriteTimeout:            15 * time.Second,
+		IdleTimeout:             60 * time.Second,
+		ErrorHandler:            customErrorHandler,
 	})
 
 	// Middleware
 	app.Use(requestid.New())
-	globalLimiter := middleware.RateLimitByIP(600, time.Minute)
+	// A loose per-address ceiling only: many employees share one office or carrier address, so the
+	// real budget is per signed-in user (routes.go). RATE_LIMIT_IP_PER_MIN overrides the default.
+	ipLimit, _ := strconv.Atoi(config.GetEnv("RATE_LIMIT_IP_PER_MIN", "6000"))
+	if ipLimit <= 0 {
+		ipLimit = 6000
+	}
+	globalLimiter := middleware.RateLimitByIP(ipLimit, time.Minute)
 	app.Use(logger.New(logger.Config{
 		Format:     "[${time}] ${locals:requestid} | ${status} | ${latency} | ${ip} | ${method} ${path} | ${error}\n",
 		TimeFormat: "2006-01-02 15:04:05",

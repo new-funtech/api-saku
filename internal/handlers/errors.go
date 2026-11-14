@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
+	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,6 +26,12 @@ func statusForServiceError(err error) int {
 	}
 	msg := strings.ToLower(err.Error())
 	switch {
+	case errors.Is(err, services.ErrAlreadyCheckedOut):
+		return http.StatusConflict
+	case errors.Is(err, services.ErrOutsideGeofence):
+		return http.StatusForbidden
+	case errors.Is(err, services.ErrCoordinatesRequired), errors.Is(err, services.ErrNoOpenAttendance):
+		return http.StatusBadRequest
 	case strings.Contains(msg, "already exists"),
 		strings.Contains(msg, "duplicate"),
 		strings.Contains(msg, "overlapping"),

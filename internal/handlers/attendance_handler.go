@@ -373,7 +373,8 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	attendance, err := h.service.CreateForUser(ctx, uid, req)
+	personnelID, _ := c.Locals("personnelID").(uuid.UUID)
+	attendance, err := h.service.ClockIn(ctx, personnelID, req)
 	if err != nil {
 		status := statusForServiceError(err)
 		return c.Status(status).JSON(model.APIResponse{
@@ -570,7 +571,8 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 		})
 	}
 
-	attendance, err := h.service.CheckoutForUser(ctx, uid, req)
+	personnelID, _ := c.Locals("personnelID").(uuid.UUID)
+	attendance, err := h.service.ClockOut(ctx, personnelID, req)
 	if err != nil {
 		status := statusForServiceError(err)
 		return c.Status(status).JSON(model.APIResponse{

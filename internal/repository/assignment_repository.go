@@ -16,6 +16,8 @@ type AssignmentRepository interface {
 	FindByPersonnelID(ctx context.Context, personnelID uuid.UUID, page, limit int) ([]model.Assignment, int64, error)
 	FindByLocationID(ctx context.Context, locationID uuid.UUID, page, limit int) ([]model.Assignment, int64, error)
 	FindActiveByPersonnelID(ctx context.Context, personnelID uuid.UUID) (*model.Assignment, error)
+	// FindActiveForAttendance is the assignment valid on `day`, with the office and shift loaded in one query.
+	FindActiveForAttendance(ctx context.Context, personnelID uuid.UUID, day time.Time) (*model.Assignment, error)
 	FindCurrentByPersonnelID(ctx context.Context, personnelID uuid.UUID) (*model.Assignment, error)
 	Create(ctx context.Context, assignment *model.Assignment) error
 	Update(ctx context.Context, assignment *model.Assignment) error
@@ -216,4 +218,19 @@ func (r *assignmentRepositoryImpl) DeleteByPersonnelID(ctx context.Context, pers
 	return r.withContext(ctx).
 		Where("personnel_id = ?", personnelID).
 		Delete(&model.Assignment{}).Error
+}
+
+func (r *assignmentRepositoryImpl) FindActiveForAttendance(ctx context.Context, personnelID uuid.UUID, day time.Time) (*model.Assignment, error) {
+	var assignment model.Assignment
+	err := r.withContext(ctx).
+		Joins("Location").
+		Joins("Shift").
+		Where("assignments.personnel_id = ? AND assignments.status = ?", personnelID, "active").
+		Where("assignments.start_date <= ? AND (assignments.end_date IS NULL OR assignments.end_date >= ?)", day, day).
+		Order("assignments.start_date DESC").
+		First(&assignment).Error
+	if err != nil {
+		return nil, err
+	}
+	return &assignment, nil
 }
