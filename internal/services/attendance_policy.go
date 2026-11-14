@@ -13,6 +13,7 @@ import (
 	_ "time/tzdata" // the zone must resolve even on an image without system tzdata
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
+	"github.com/google/uuid"
 )
 
 // Errors the handler maps to a status code (see handlers/errors.go).
@@ -125,4 +126,13 @@ func checkGeofence(loc *model.Location, lat, lng model.NumberString) error {
 		return geofenceError{fmt.Sprintf("Anda berada sekitar %d m dari %s, batas radius absen %d m", int(math.Round(d)), loc.Name, radius)}
 	}
 	return nil
+}
+
+// idempotencyNamespace makes the derived keys stable across restarts and instances.
+var idempotencyNamespace = uuid.MustParse("6f1d2c1a-5b0e-4f55-9a53-2a7e8b9c1d44")
+
+// deriveIdempotencyKey is the key used when the client sends none: one per employee, day and action,
+// so a plain retry of the same action is still recognised.
+func deriveIdempotencyKey(personnelID uuid.UUID, day time.Time, action string) string {
+	return uuid.NewSHA1(idempotencyNamespace, []byte(personnelID.String()+"|"+day.Format("2006-01-02")+"|"+action)).String()
 }

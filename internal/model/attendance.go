@@ -25,8 +25,11 @@ type Attendance struct {
 	Status             string     `json:"status" gorm:"type:varchar(20);default:'present'"`
 	Notes              *string    `json:"notes" gorm:"type:text"`
 	WorkDuration       *int       `json:"work_duration"` // in minutes
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	// Idempotency: set by the API, never read from the client body. The indexes are created by sql/0001.
+	IdempotencyKey         *string   `json:"-" gorm:"type:varchar(64)"`
+	CheckOutIdempotencyKey *string   `json:"-" gorm:"type:varchar(64)"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 
 	// Relations
 	Personnel  *Personnel  `json:"personnel,omitempty" gorm:"foreignKey:PersonnelID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
@@ -42,6 +45,7 @@ func (a *Attendance) BeforeCreate(tx *gorm.DB) error {
 }
 
 type CreateAttendanceRequest struct {
+	IdempotencyKey     string       `json:"-"` // from the Idempotency-Key header
 	PersonnelID        uuid.UUID    `json:"personnel_id" validate:"required"`
 	LocationID         uuid.UUID    `json:"location_id" validate:"required"`
 	AssignmentID       *uuid.UUID   `json:"assignment_id"`
@@ -60,6 +64,7 @@ type CreateAttendanceRequest struct {
 }
 
 type UpdateAttendanceRequest struct {
+	IdempotencyKey     string       `json:"-"` // from the Idempotency-Key header
 	CheckOut           *string      `json:"check_out"`
 	CheckOutLatitude   NumberString `json:"check_out_latitude"`
 	CheckOutLongitude  NumberString `json:"check_out_longitude"`

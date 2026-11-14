@@ -8,6 +8,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AttendanceRepository interface {
@@ -19,10 +20,11 @@ type AttendanceRepository interface {
 	FindByLocationID(ctx context.Context, locationID uuid.UUID, page, limit int) ([]model.Attendance, int64, error)
 	FindByDateRange(ctx context.Context, startDate, endDate time.Time, page, limit int) ([]model.Attendance, int64, error)
 	Create(ctx context.Context, attendance *model.Attendance) error
-	// ExistsByPersonnelAndDate is the cheap duplicate check (no relations loaded).
-	ExistsByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (bool, error)
-	// Insert writes one row with a single statement (no wrapping transaction).
-	Insert(ctx context.Context, attendance *model.Attendance) error
+	// InsertIdempotent writes one row with a single INSERT ... ON CONFLICT DO NOTHING; false means a
+	// row for that employee and day (or that key) already exists and nothing was written.
+	InsertIdempotent(ctx context.Context, attendance *model.Attendance) (bool, error)
+	// FindPlainByPersonnelAndDate loads the day's row without relations (used to answer a duplicate).
+	FindPlainByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (*model.Attendance, error)
 	// FindOpenForCheckout returns the rows of the given dates with the shift and office loaded in one query.
 	FindOpenForCheckout(ctx context.Context, personnelID uuid.UUID, from, to time.Time) ([]model.Attendance, error)
 	// CompleteCheckOut sets the check-out only if it is still empty; false when it was already set.
@@ -40,6 +42,7 @@ type CheckOutUpdate struct {
 	Document     *string
 	Notes        *string
 	WorkDuration int
+	Key          string // idempotency key of the clock-out
 }
 
 type attendanceRepositoryImpl struct {
@@ -274,15 +277,18 @@ func (r *attendanceRepositoryImpl) Delete(ctx context.Context, id uuid.UUID) err
 	return nil
 }
 
-func (r *attendanceRepositoryImpl) ExistsByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (bool, error) {
-	var n int64
-	err := r.withContext(ctx).Model(&model.Attendance{}).
-		Where("personnel_id = ? AND date = ?", personnelID, date).Limit(1).Count(&n).Error
-	return n > 0, err
+func (r *attendanceRepositoryImpl) InsertIdempotent(ctx context.Context, attendance *model.Attendance) (bool, error) {
+	res := r.withContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).
+		Clauses(clause.OnConflict{DoNothing: true}).Create(attendance)
+	return res.RowsAffected > 0, res.Error
 }
 
-func (r *attendanceRepositoryImpl) Insert(ctx context.Context, attendance *model.Attendance) error {
-	return r.withContext(ctx).Session(&gorm.Session{SkipDefaultTransaction: true}).Create(attendance).Error
+func (r *attendanceRepositoryImpl) FindPlainByPersonnelAndDate(ctx context.Context, personnelID uuid.UUID, date time.Time) (*model.Attendance, error) {
+	var a model.Attendance
+	if err := r.withContext(ctx).Where("personnel_id = ? AND date = ?", personnelID, date).First(&a).Error; err != nil {
+		return nil, err
+	}
+	return &a, nil
 }
 
 func (r *attendanceRepositoryImpl) FindOpenForCheckout(ctx context.Context, personnelID uuid.UUID, from, to time.Time) ([]model.Attendance, error) {
@@ -304,6 +310,9 @@ func (r *attendanceRepositoryImpl) CompleteCheckOut(ctx context.Context, id uuid
 		"check_out_longitude": c.Longitude,
 		"work_duration":       c.WorkDuration,
 		"updated_at":          time.Now(),
+	}
+	if c.Key != "" {
+		updates["check_out_idempotency_key"] = c.Key
 	}
 	if c.Photo != nil {
 		updates["check_out_photo"] = *c.Photo

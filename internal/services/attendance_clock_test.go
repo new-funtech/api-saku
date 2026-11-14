@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 type fakeAttendanceRepo struct {
 	repository.AttendanceRepository
+	mu        sync.Mutex
 	rows      map[uuid.UUID]*model.Attendance
 	inserted  []*model.Attendance
 	calls     int
@@ -25,25 +27,41 @@ func newFakeAttendanceRepo() *fakeAttendanceRepo {
 	return &fakeAttendanceRepo{rows: map[uuid.UUID]*model.Attendance{}}
 }
 
-func (f *fakeAttendanceRepo) ExistsByPersonnelAndDate(_ context.Context, p uuid.UUID, d time.Time) (bool, error) {
+// InsertIdempotent behaves like the real ON CONFLICT DO NOTHING: one row per employee and day, and
+// one per employee and key.
+func (f *fakeAttendanceRepo) InsertIdempotent(_ context.Context, a *model.Attendance) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls++
+	for _, r := range f.rows {
+		sameKey := a.IdempotencyKey != nil && r.IdempotencyKey != nil && *a.IdempotencyKey == *r.IdempotencyKey
+		if r.PersonnelID == a.PersonnelID && (r.Date.Equal(a.Date) || sameKey) {
+			return false, nil
+		}
+	}
+	a.ID = uuid.New()
+	cp := *a
+	f.rows[a.ID] = &cp
+	f.inserted = append(f.inserted, &cp)
+	return true, nil
+}
+
+func (f *fakeAttendanceRepo) FindPlainByPersonnelAndDate(_ context.Context, p uuid.UUID, d time.Time) (*model.Attendance, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.calls++
 	for _, r := range f.rows {
 		if r.PersonnelID == p && r.Date.Equal(d) {
-			return true, nil
+			cp := *r
+			return &cp, nil
 		}
 	}
-	return false, nil
-}
-
-func (f *fakeAttendanceRepo) Insert(_ context.Context, a *model.Attendance) error {
-	f.calls++
-	a.ID = uuid.New()
-	f.rows[a.ID] = a
-	f.inserted = append(f.inserted, a)
-	return nil
+	return nil, errors.New("not found")
 }
 
 func (f *fakeAttendanceRepo) FindOpenForCheckout(_ context.Context, p uuid.UUID, from, to time.Time) ([]model.Attendance, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.calls++
 	var out []model.Attendance
 	for _, r := range f.rows {
@@ -55,13 +73,15 @@ func (f *fakeAttendanceRepo) FindOpenForCheckout(_ context.Context, p uuid.UUID,
 }
 
 func (f *fakeAttendanceRepo) CompleteCheckOut(_ context.Context, id uuid.UUID, c repository.CheckOutUpdate) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.calls++
 	r := f.rows[id]
 	if r == nil || r.CheckOut != nil {
 		return false, nil
 	}
-	at := c.At
-	r.CheckOut = &at
+	at, key := c.At, c.Key
+	r.CheckOut, r.CheckOutIdempotencyKey = &at, &key
 	f.completed++
 	return true, nil
 }
@@ -69,11 +89,14 @@ func (f *fakeAttendanceRepo) CompleteCheckOut(_ context.Context, id uuid.UUID, c
 type fakeAssignmentRepo struct {
 	repository.AssignmentRepository
 	assignment *model.Assignment
+	mu         sync.Mutex
 	calls      int
 }
 
 func (f *fakeAssignmentRepo) FindActiveForAttendance(context.Context, uuid.UUID, time.Time) (*model.Assignment, error) {
+	f.mu.Lock()
 	f.calls++
+	f.mu.Unlock()
 	if f.assignment == nil {
 		return nil, errors.New("not found")
 	}
@@ -109,7 +132,7 @@ func TestClockInIgnoresWhatTheClientSaysAboutTimeAndStatus(t *testing.T) {
 	req := atOffice()
 	req.Date, req.CheckIn, req.CheckOut, req.Status = "2000-01-01", &forged, &forged, "present"
 
-	resp, err := svc.ClockIn(context.Background(), uuid.New(), req)
+	resp, _, err := svc.ClockIn(context.Background(), uuid.New(), req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,37 +156,26 @@ func TestClockInIgnoresWhatTheClientSaysAboutTimeAndStatus(t *testing.T) {
 
 func TestClockInUsesFewQueries(t *testing.T) {
 	svc, repo, asg := newClockService(officeAssignment(tod(0, 1), tod(23, 59)))
-	if _, err := svc.ClockIn(context.Background(), uuid.New(), atOffice()); err != nil {
+	if _, _, err := svc.ClockIn(context.Background(), uuid.New(), atOffice()); err != nil {
 		t.Fatal(err)
 	}
-	// assignment (office+shift in one) + duplicate check + insert = 3; the scope lookup is cached upstream.
-	if total := asg.calls + repo.calls; total > 3 {
-		t.Errorf("%d queries for a clock-in, want at most 3 (scope lookups come on top, at most 2 on a cache miss)", total)
-	}
-}
-
-func TestClockInRejectsADuplicateDay(t *testing.T) {
-	svc, _, _ := newClockService(officeAssignment(tod(0, 1), tod(23, 59)))
-	p := uuid.New()
-	if _, err := svc.ClockIn(context.Background(), p, atOffice()); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := svc.ClockIn(context.Background(), p, atOffice()); err == nil {
-		t.Fatal("a second clock-in the same day must be refused")
+	// assignment (office+shift in one) + insert = 2; the scope lookup is cached upstream (2 more on a miss).
+	if total := asg.calls + repo.calls; total > 2 {
+		t.Errorf("%d queries for a clock-in, want at most 2 (scope lookups come on top, at most 2 on a cache miss)", total)
 	}
 }
 
 func TestGeofence(t *testing.T) {
 	svc, repo, _ := newClockService(officeAssignment(tod(0, 1), tod(23, 59)))
 	far := &model.CreateAttendanceRequest{CheckInLatitude: "-6.21", CheckInLongitude: "106.816666"} // ~1.1 km away
-	if _, err := svc.ClockIn(context.Background(), uuid.New(), far); !errors.Is(err, ErrOutsideGeofence) {
+	if _, _, err := svc.ClockIn(context.Background(), uuid.New(), far); !errors.Is(err, ErrOutsideGeofence) {
 		t.Fatalf("far away: err = %v, want ErrOutsideGeofence", err)
 	}
-	if _, err := svc.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); !errors.Is(err, ErrCoordinatesRequired) {
+	if _, _, err := svc.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); !errors.Is(err, ErrCoordinatesRequired) {
 		t.Fatalf("no coordinates: err = %v, want ErrCoordinatesRequired", err)
 	}
 	near := &model.CreateAttendanceRequest{CheckInLatitude: "-6.2005", CheckInLongitude: "106.816666"} // ~55 m
-	if _, err := svc.ClockIn(context.Background(), uuid.New(), near); err != nil {
+	if _, _, err := svc.ClockIn(context.Background(), uuid.New(), near); err != nil {
 		t.Fatalf("inside the radius: %v", err)
 	}
 	if len(repo.inserted) != 1 {
@@ -174,14 +186,14 @@ func TestGeofence(t *testing.T) {
 func TestGeofenceCanBeSwitchedOffAndSkipsOfficesWithoutCoordinates(t *testing.T) {
 	t.Setenv("ATTENDANCE_GEOFENCE_ENABLED", "false")
 	svc, _, _ := newClockService(officeAssignment(tod(0, 1), tod(23, 59)))
-	if _, err := svc.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); err != nil {
+	if _, _, err := svc.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); err != nil {
 		t.Fatalf("geofence off: %v", err)
 	}
 	t.Setenv("ATTENDANCE_GEOFENCE_ENABLED", "")
 	a := officeAssignment(tod(0, 1), tod(23, 59))
 	a.Location.Latitude, a.Location.Longitude = nil, nil
 	svc2, _, _ := newClockService(a)
-	if _, err := svc2.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); err != nil {
+	if _, _, err := svc2.ClockIn(context.Background(), uuid.New(), &model.CreateAttendanceRequest{}); err != nil {
 		t.Fatalf("office without coordinates cannot be verified and must pass: %v", err)
 	}
 }
@@ -201,13 +213,14 @@ func TestClockOutDoesNotOverwriteTheFirst(t *testing.T) {
 	row := openRow(p, a)
 	repo.rows[row.ID] = row
 
-	out := &model.UpdateAttendanceRequest{CheckOutLatitude: "-6.2", CheckOutLongitude: "106.816666"}
-	if _, err := svc.ClockOut(context.Background(), p, out); err != nil {
+	key := uuid.NewString()
+	out := &model.UpdateAttendanceRequest{IdempotencyKey: key, CheckOutLatitude: "-6.2", CheckOutLongitude: "106.816666"}
+	if _, _, err := svc.ClockOut(context.Background(), p, out); err != nil {
 		t.Fatal(err)
 	}
 	first := *repo.rows[row.ID].CheckOut
-	if _, err := svc.ClockOut(context.Background(), p, out); !errors.Is(err, ErrAlreadyCheckedOut) {
-		t.Fatalf("second clock-out: err = %v, want ErrAlreadyCheckedOut", err)
+	if _, _, err := svc.ClockOut(context.Background(), p, &model.UpdateAttendanceRequest{IdempotencyKey: uuid.NewString(), CheckOutLatitude: "-6.2", CheckOutLongitude: "106.816666"}); !errors.Is(err, ErrAlreadyCheckedOut) {
+		t.Fatalf("second clock-out with another key: err = %v, want ErrAlreadyCheckedOut", err)
 	}
 	if !repo.rows[row.ID].CheckOut.Equal(first) || repo.completed != 1 {
 		t.Errorf("the first check-out was overwritten")
@@ -222,7 +235,7 @@ func TestClockOutIgnoresTheClientTime(t *testing.T) {
 	repo.rows[row.ID] = row
 	forged := "2031-01-01T23:00:00+07:00"
 	req := &model.UpdateAttendanceRequest{CheckOut: &forged, CheckOutLatitude: "-6.2", CheckOutLongitude: "106.816666"}
-	if _, err := svc.ClockOut(context.Background(), p, req); err != nil {
+	if _, _, err := svc.ClockOut(context.Background(), p, req); err != nil {
 		t.Fatal(err)
 	}
 	if got := repo.rows[row.ID].CheckOut; time.Since(*got) > time.Minute || time.Since(*got) < 0 {
@@ -241,14 +254,14 @@ func TestClockOutBeforeTheShiftEnds(t *testing.T) {
 	row := openRow(p, a)
 	repo.rows[row.ID] = row
 	req := &model.UpdateAttendanceRequest{CheckOutLatitude: "-6.2", CheckOutLongitude: "106.816666"}
-	if _, err := svc.ClockOut(context.Background(), p, req); err == nil {
+	if _, _, err := svc.ClockOut(context.Background(), p, req); err == nil {
 		t.Fatal("must refuse a check-out before the shift ends")
 	}
 }
 
 func TestClockOutWithoutClockIn(t *testing.T) {
 	svc, _, _ := newClockService(officeAssignment(tod(0, 0), tod(0, 1)))
-	if _, err := svc.ClockOut(context.Background(), uuid.New(), &model.UpdateAttendanceRequest{}); !errors.Is(err, ErrNoOpenAttendance) {
+	if _, _, err := svc.ClockOut(context.Background(), uuid.New(), &model.UpdateAttendanceRequest{}); !errors.Is(err, ErrNoOpenAttendance) {
 		t.Fatalf("err = %v, want ErrNoOpenAttendance", err)
 	}
 }

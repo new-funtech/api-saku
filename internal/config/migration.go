@@ -113,7 +113,6 @@ func RunMigrations() {
 		`CREATE INDEX IF NOT EXISTS idx_assignments_start_date ON assignments(start_date)`,
 
 		// Attendances
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_attendances_personnel_date ON attendances(personnel_id, date)`,
 		`CREATE INDEX IF NOT EXISTS idx_attendances_location_id ON attendances(location_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_attendances_assignment_id ON attendances(assignment_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_attendances_date ON attendances(date)`,
@@ -193,6 +192,8 @@ func RunMigrations() {
 		`CREATE INDEX IF NOT EXISTS idx_notifications_entity_id ON notifications(entity_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_event_recipient_type ON notifications(event_id, recipient_user_id, type)`,
 	}
+
+	applySQLMigrations(DB)
 
 	for _, idx := range indexes {
 		if err := DB.Exec(idx).Error; err != nil {

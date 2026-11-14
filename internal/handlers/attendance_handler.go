@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -343,6 +344,13 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	key, kerr := idempotencyKey(c)
+	if kerr != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest, Message: kerr.Error(),
+		})
+	}
+
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_in_photo", folder); uerr != nil {
@@ -374,7 +382,8 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 	}
 
 	personnelID, _ := c.Locals("personnelID").(uuid.UUID)
-	attendance, err := h.service.ClockIn(ctx, personnelID, req)
+	req.IdempotencyKey = key
+	attendance, replayed, err := h.service.ClockIn(ctx, personnelID, req)
 	if err != nil {
 		status := statusForServiceError(err)
 		return c.Status(status).JSON(model.APIResponse{
@@ -384,6 +393,7 @@ func (h *AttendanceHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	setIdempotencyHeaders(c, key, replayed)
 	return c.Status(http.StatusCreated).JSON(model.APIResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
@@ -546,6 +556,13 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 		})
 	}
 
+	key, kerr := idempotencyKey(c)
+	if kerr != nil {
+		return c.Status(http.StatusBadRequest).JSON(model.APIResponse{
+			Status: "error", Code: http.StatusBadRequest, Message: kerr.Error(),
+		})
+	}
+
 	uid, _ := c.Locals("userID").(uuid.UUID)
 	folder := fmt.Sprintf("ATTENDANCES/%s", uid.String())
 	if key, uerr := utils.UploadFormFile(ctx, c, "check_out_photo", folder); uerr != nil {
@@ -572,7 +589,8 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 	}
 
 	personnelID, _ := c.Locals("personnelID").(uuid.UUID)
-	attendance, err := h.service.ClockOut(ctx, personnelID, req)
+	req.IdempotencyKey = key
+	attendance, replayed, err := h.service.ClockOut(ctx, personnelID, req)
 	if err != nil {
 		status := statusForServiceError(err)
 		return c.Status(status).JSON(model.APIResponse{
@@ -582,6 +600,7 @@ func (h *AttendanceHandler) Checkout(c *fiber.Ctx) error {
 		})
 	}
 
+	setIdempotencyHeaders(c, key, replayed)
 	return c.Status(http.StatusOK).JSON(model.APIResponse{
 		Status:  "success",
 		Code:    http.StatusOK,
@@ -689,4 +708,28 @@ func (h *AttendanceHandler) Delete(c *fiber.Ctx) error {
 		Code:    http.StatusOK,
 		Message: "Attendance deleted successfully",
 	})
+}
+
+// idempotencyKey reads the optional Idempotency-Key header. It must be a UUID; an empty value means
+// the server derives one (see services.deriveIdempotencyKey).
+func idempotencyKey(c *fiber.Ctx) (string, error) {
+	raw := strings.TrimSpace(c.Get("Idempotency-Key"))
+	if raw == "" {
+		return "", nil
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return "", errors.New("Idempotency-Key must be a UUID")
+	}
+	return id.String(), nil
+}
+
+// setIdempotencyHeaders lets a client see whether this answer is a replay of an earlier result.
+func setIdempotencyHeaders(c *fiber.Ctx, key string, replayed bool) {
+	if key != "" {
+		c.Set("Idempotency-Key", key)
+	}
+	if replayed {
+		c.Set("Idempotent-Replay", "true")
+	}
 }

@@ -45,8 +45,9 @@ type AttendanceService interface {
 	GetByLocationID(ctx context.Context, locationID uuid.UUID, page, limit int) ([]model.AttendanceResponse, int64, error)
 	GetByDateRange(ctx context.Context, startDate, endDate time.Time, page, limit int) ([]model.AttendanceResponse, int64, error)
 	Create(ctx context.Context, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error)
-	ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error)
-	ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
+	// ClockIn/ClockOut are idempotent: replayed is true when the answer is an earlier result, not a new write.
+	ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (resp *model.AttendanceResponse, replayed bool, err error)
+	ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (resp *model.AttendanceResponse, replayed bool, err error)
 	Update(ctx context.Context, id uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -322,31 +323,34 @@ func (s *attendanceServiceImpl) Delete(ctx context.Context, id uuid.UUID) error 
 
 // ClockIn records the signed-in employee's check-in. The server decides the day, the time and the
 // status: whatever the client sends for date, check_in, check_out or status is ignored.
-// Cost: the active assignment (office and shift in one query), a duplicate check and one INSERT.
-func (s *attendanceServiceImpl) ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, error) {
+//
+// It is idempotent. The row is written with INSERT ... ON CONFLICT DO NOTHING; if the employee
+// already has a row for the day (a retry, a double tap, two requests at once) the existing row is
+// answered as a success and replayed is true. Cost: the active assignment (office and shift in one
+// query) and one INSERT.
+func (s *attendanceServiceImpl) ClockIn(ctx context.Context, personnelID uuid.UUID, req *model.CreateAttendanceRequest) (*model.AttendanceResponse, bool, error) {
 	if personnelID == uuid.Nil {
-		return nil, errors.New("personnel record for current user not found")
+		return nil, false, errors.New("personnel record for current user not found")
 	}
 	now := time.Now()
 	day := attendanceDay(now)
 
 	assignment, err := s.assignmentRepo.FindActiveForAttendance(ctx, personnelID, day)
 	if err != nil || assignment == nil {
-		return nil, errors.New("no active assignment for current user")
+		return nil, false, errors.New("no active assignment for current user")
 	}
 	if err := checkGeofence(assignment.Location, req.CheckInLatitude, req.CheckInLongitude); err != nil {
-		return nil, err
-	}
-	if exists, err := s.repo.ExistsByPersonnelAndDate(ctx, personnelID, day); err != nil {
-		return nil, err
-	} else if exists {
-		return nil, errors.New("attendance record already exists for this personnel on this date")
+		return nil, false, err
 	}
 
 	status := "present"
 	if assignment.Shift != nil && !assignment.Shift.StartTime.IsZero() &&
 		isLateCheckIn(day, assignment.Shift.StartTime.Time, now, attendanceLateGraceMinutes) {
 		status = "late"
+	}
+	key := req.IdempotencyKey
+	if key == "" {
+		key = deriveIdempotencyKey(personnelID, day, "checkin")
 	}
 
 	attendance := &model.Attendance{
@@ -361,47 +365,63 @@ func (s *attendanceServiceImpl) ClockIn(ctx context.Context, personnelID uuid.UU
 		SupportingDocument: req.SupportingDocument,
 		Status:             status,
 		Notes:              req.Notes,
+		IdempotencyKey:     &key,
 	}
-	if err := s.repo.Insert(ctx, attendance); err != nil {
-		return nil, err
+	inserted, err := s.repo.InsertIdempotent(ctx, attendance)
+	if err != nil {
+		return nil, false, err
+	}
+	if !inserted {
+		existing, err := s.repo.FindPlainByPersonnelAndDate(ctx, personnelID, day)
+		if err != nil {
+			return nil, false, err
+		}
+		attendance = existing
 	}
 	attendance.Location = assignment.Location
 	attendance.Assignment = assignment
 
 	response := toAttendanceResponse(attendance)
 	presignAttendancePhotos(ctx, &response)
-	return &response, nil
+	return &response, !inserted, nil
 }
 
-// ClockOut records the check-out for the employee's open attendance. The time is the server's; the
-// update only applies while check_out is still empty, so a repeat can never overwrite the first.
-func (s *attendanceServiceImpl) ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, error) {
+// ClockOut records the check-out for the employee's open attendance. The time is the server's. The
+// UPDATE only applies while check_out is still empty, so it is atomic: of any number of concurrent
+// requests exactly one writes. A repeat that carries the same idempotency key (the header, or the
+// per-day derived key when there is none) is answered with the stored result; a different key on an
+// already-closed attendance is a conflict.
+func (s *attendanceServiceImpl) ClockOut(ctx context.Context, personnelID uuid.UUID, req *model.UpdateAttendanceRequest) (*model.AttendanceResponse, bool, error) {
 	if personnelID == uuid.Nil {
-		return nil, errors.New("personnel record for current user not found")
+		return nil, false, errors.New("personnel record for current user not found")
 	}
 	now := time.Now()
 	day := attendanceDay(now)
 
 	rows, err := s.repo.FindOpenForCheckout(ctx, personnelID, day.AddDate(0, 0, -1), day)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	att := pickAttendanceToCheckOut(rows, day)
 	if att == nil {
-		return nil, ErrNoOpenAttendance
+		return nil, false, ErrNoOpenAttendance
+	}
+	key := req.IdempotencyKey
+	if key == "" {
+		key = deriveIdempotencyKey(personnelID, att.Date, "checkout")
 	}
 	if att.CheckOut != nil {
-		return nil, ErrAlreadyCheckedOut
+		return s.replayCheckOut(ctx, att, key)
 	}
 
 	if att.Assignment != nil && att.Assignment.Shift != nil {
 		start, end := att.Assignment.Shift.StartTime.Time, att.Assignment.Shift.EndTime.Time
 		if !end.IsZero() && now.Before(shiftEnd(att.Date, start, end)) {
-			return nil, fmt.Errorf("belum waktunya checkout, shift Anda berakhir pukul %s", end.Format("15:04"))
+			return nil, false, fmt.Errorf("belum waktunya checkout, shift Anda berakhir pukul %s", end.Format("15:04"))
 		}
 	}
 	if err := checkGeofence(att.Location, req.CheckOutLatitude, req.CheckOutLongitude); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	duration := 0
@@ -412,14 +432,22 @@ func (s *attendanceServiceImpl) ClockOut(ctx context.Context, personnelID uuid.U
 	}
 	update := repository.CheckOutUpdate{
 		At: now, Latitude: req.CheckOutLatitude.PtrString(), Longitude: req.CheckOutLongitude.PtrString(),
-		Photo: req.CheckOutPhoto, Document: req.SupportingDocument, Notes: req.Notes, WorkDuration: duration,
+		Photo: req.CheckOutPhoto, Document: req.SupportingDocument, Notes: req.Notes, WorkDuration: duration, Key: key,
 	}
 	done, err := s.repo.CompleteCheckOut(ctx, att.ID, update)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if !done {
-		return nil, ErrAlreadyCheckedOut
+		// Lost the race: someone closed it between our read and our write. Answer from what is stored.
+		rows, err := s.repo.FindOpenForCheckout(ctx, personnelID, day.AddDate(0, 0, -1), day)
+		if err != nil {
+			return nil, false, err
+		}
+		if again := pickAttendanceToCheckOut(rows, day); again != nil && again.CheckOut != nil {
+			return s.replayCheckOut(ctx, again, key)
+		}
+		return nil, false, ErrAlreadyCheckedOut
 	}
 
 	att.CheckOut = &now
@@ -430,7 +458,17 @@ func (s *attendanceServiceImpl) ClockOut(ctx context.Context, personnelID uuid.U
 	att.WorkDuration = &duration
 	response := toAttendanceResponse(att)
 	presignAttendancePhotos(ctx, &response)
-	return &response, nil
+	return &response, false, nil
+}
+
+// replayCheckOut answers a clock-out for an attendance that is already closed.
+func (s *attendanceServiceImpl) replayCheckOut(ctx context.Context, att *model.Attendance, key string) (*model.AttendanceResponse, bool, error) {
+	if att.CheckOutIdempotencyKey == nil || *att.CheckOutIdempotencyKey != key {
+		return nil, false, ErrAlreadyCheckedOut
+	}
+	response := toAttendanceResponse(att)
+	presignAttendancePhotos(ctx, &response)
+	return &response, true, nil
 }
 
 // pickAttendanceToCheckOut chooses today's row, or yesterday's only when it is still open and its
