@@ -44,6 +44,10 @@ func (r *salaryComponentRepositoryImpl) FindAll(ctx context.Context, page, limit
 	} else if bujpID, ok := filters["bujp_id"].(string); ok && bujpID != "" {
 		query = query.Where("bujp_id = ?", bujpID)
 	}
+	if search, ok := filters["search"].(string); ok && search != "" {
+		like := "%" + search + "%"
+		query = query.Where("code ILIKE ? OR name ILIKE ?", like, like)
+	}
 	if componentType, ok := filters["type"].(string); ok && componentType != "" {
 		query = query.Where("type = ?", componentType)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
@@ -50,6 +51,9 @@ func (h *SalaryComponentHandler) GetAll(c *fiber.Ctx) error {
 	}
 	if isActiveStr := c.Query("is_active"); isActiveStr != "" {
 		filters["is_active"] = isActiveStr == "true"
+	}
+	if search := strings.TrimSpace(c.Query("search")); search != "" {
+		filters["search"] = search
 	}
 
 	utils.ApplyBujpScope(c, filters)

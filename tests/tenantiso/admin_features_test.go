@@ -223,3 +223,23 @@ func TestCompanyAdminCanRunTheirMasterData(t *testing.T) {
 	must("delete salary component", w.do(admin, "DELETE", "/salary-components/"+scID, nil))
 	must("delete shift", w.do(admin, "DELETE", "/shifts/"+shID, nil))
 }
+
+func TestListSearchesStayInsideTheCompany(t *testing.T) {
+	w := setup(t)
+	a, b := w.A, w.B
+	for path, want := range map[string]string{
+		"/salary-components?search=Component": "Component A",
+		"/locations?search=Location":          "Location A",
+		"/shifts?search=Shift":                "Shift A",
+		"/personnels?search=Guard":            "Guard A",
+		"/users?search=guard":                 "guardA",
+	} {
+		r := w.do(a.admin, "GET", path, nil)
+		if !r.ok() || !strings.Contains(r.body, want) {
+			t.Errorf("GET %s should find %q: %d %s", path, want, r.status, trim(r.body))
+		}
+		if hit := r.leaks(b.ids); len(hit) > 0 {
+			t.Errorf("GET %s leaks the other company: %v", path, hit)
+		}
+	}
+}
