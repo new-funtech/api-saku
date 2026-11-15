@@ -1,15 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	"github.com/ganiramadhan/ganipedia/backend/internal/services"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/xuri/excelize/v2"
 )
 
 type LoanHandler struct {
@@ -470,6 +473,133 @@ func (h *LoanHandler) Statistics(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 	}
 	return utils.SuccessResponse(c, http.StatusOK, "loan statistics", stats)
+}
+
+// ExportBPRKS returns lifecycle loans in an Excel workbook for BPRKS.
+// @Summary      Export BPRKS credit data
+// @Description  Exports disbursed, active, and completed loans to an Excel workbook.
+// @Tags         Loans
+// @Produce      application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Success      200 {file} file
+// @Security     BearerAuth
+// @Router       /api/v1/loans/export [get]
+func (h *LoanHandler) ExportBPRKS(c *fiber.Ctx) error {
+	if utils.CallerRole(c) != "bprks" {
+		return forbiddenResponse(c)
+	}
+
+	ctx, cancel := context.WithTimeout(c.Context(), 30*time.Second)
+	defer cancel()
+
+	const pageSize = 1000
+	filters := map[string]interface{}{
+		"status_in": []string{
+			model.LoanStatusDisbursed,
+			model.LoanStatusActive,
+			model.LoanStatusCompleted,
+		},
+	}
+	loans := make([]model.LoanResponse, 0)
+	for page := 1; ; page++ {
+		batch, total, err := h.service.GetAll(ctx, page, pageSize, filters)
+		if err != nil {
+			return utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal memuat data kredit")
+		}
+		loans = append(loans, batch...)
+		if len(batch) < pageSize || int64(len(loans)) >= total {
+			break
+		}
+	}
+
+	data, err := bprksLoanWorkbook(loans)
+	if err != nil {
+		return utils.ErrorResponse(c, http.StatusInternalServerError, "Gagal membuat file Excel")
+	}
+	c.Set(fiber.HeaderContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Set(fiber.HeaderContentDisposition, `attachment; filename="data-kredit-bprks.xlsx"`)
+	return c.Send(data)
+}
+
+func bprksLoanWorkbook(loans []model.LoanResponse) ([]byte, error) {
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	const sheet = "Kredit BPRKS"
+	if err := f.SetSheetName("Sheet1", sheet); err != nil {
+		return nil, err
+	}
+	headers := []string{
+		"No", "NIP", "NIK", "Nama Lengkap", "Rekening BJB", "Gaji Kotor",
+		"No. Kredit", "Status", "Jumlah Pinjaman", "Bunga (%)", "Tenor (Bulan)",
+		"Angsuran/Bulan", "Pembayaran",
+	}
+	for i, header := range headers {
+		cell, err := excelize.CoordinatesToCellName(i+1, 1)
+		if err != nil {
+			return nil, err
+		}
+		if err := f.SetCellValue(sheet, cell, header); err != nil {
+			return nil, err
+		}
+	}
+
+	headerStyle, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
+	if err != nil {
+		return nil, err
+	}
+	lastColumn, err := excelize.ColumnNumberToName(len(headers))
+	if err != nil {
+		return nil, err
+	}
+	if err := f.SetCellStyle(sheet, "A1", lastColumn+"1", headerStyle); err != nil {
+		return nil, err
+	}
+
+	safe := func(value *string) string {
+		if value == nil {
+			return ""
+		}
+		return spreadsheetSafe(*value)
+	}
+	for i, loan := range loans {
+		var nip, nik, name, account, bank string
+		var salary float64
+		if loan.Personnel != nil {
+			nip = safe(loan.Personnel.NIP)
+			nik = spreadsheetSafe(loan.Personnel.IDNumber)
+			name = spreadsheetSafe(loan.Personnel.FullName)
+			account = safe(loan.Personnel.AccountNumber)
+			bank = safe(loan.Personnel.BankName)
+			salary = loan.Personnel.BaseSalary
+		}
+		if !strings.Contains(strings.ToLower(bank), "bjb") {
+			account = "-"
+		}
+		amount := loan.LoanAmount
+		if loan.ApprovedAmount != nil && *loan.ApprovedAmount > 0 {
+			amount = *loan.ApprovedAmount
+		}
+		values := []interface{}{
+			i + 1, nip, nik, name, account, salary, spreadsheetSafe(loan.LoanNumber),
+			loan.Status, amount, loan.InterestRate, loan.TenorMonths,
+			loan.MonthlyInstallment, loan.TotalRepayment,
+		}
+		for j, value := range values {
+			cell, err := excelize.CoordinatesToCellName(j+1, i+2)
+			if err != nil {
+				return nil, err
+			}
+			if err := f.SetCellValue(sheet, cell, value); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // Delete godoc

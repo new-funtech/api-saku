@@ -3,6 +3,7 @@ package services
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // This repo has no existing test infrastructure at all (no test DB/fixtures,
@@ -71,5 +72,24 @@ func TestWithDetailGoesAfterTheFirstSentence(t *testing.T) {
 	}
 	if got := withDetail("Disetujui.", " "); got != "Disetujui." {
 		t.Fatalf("body = %q", got)
+	}
+}
+
+func TestOvertimeNotificationFormatsWholeHoursWithoutDecimal(t *testing.T) {
+	date := time.Date(2026, time.November, 15, 0, 0, 0, 0, time.UTC)
+
+	_, body := notifOvertimeReviewRequired("Budi", date, 2)
+	if !strings.Contains(body, "(2 jam)") {
+		t.Fatalf("whole-hour notification body = %q", body)
+	}
+	if got := overtimeDetail(date, 2.5); !strings.HasSuffix(got, "2.5 jam") {
+		t.Fatalf("fractional overtime detail = %q", got)
+	}
+}
+
+func TestNormalizeOvertimeNotificationBodyRemovesStoredTrailingZero(t *testing.T) {
+	body := "Pengajuan lembur (2.0 jam).\n15-11-2026 · 2.0 jam"
+	if got, want := normalizeOvertimeNotificationBody(body), "Pengajuan lembur (2 jam).\n15-11-2026 · 2 jam"; got != want {
+		t.Fatalf("normalized body = %q, want %q", got, want)
 	}
 }

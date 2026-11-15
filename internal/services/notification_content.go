@@ -39,7 +39,7 @@ func notifLoanCancelled() (title, body string) {
 }
 
 func notifOvertimeReviewRequired(applicantName string, date time.Time, hours float64) (title, body string) {
-	return "Pengajuan lembur baru", fmt.Sprintf("%s mengajukan lembur %s (%.1f jam) dan membutuhkan persetujuan Anda.", applicantName, date.Format("02-01-2006"), hours)
+	return "Pengajuan lembur baru", fmt.Sprintf("%s mengajukan lembur %s (%s jam) dan membutuhkan persetujuan Anda.", applicantName, date.Format("02-01-2006"), formatOvertimeHours(hours))
 }
 
 func notifOvertimeDecision(approved bool, date time.Time, notes *string) (title, body string) {
@@ -83,7 +83,15 @@ func withDetail(body, detail string) string {
 }
 
 func overtimeDetail(date time.Time, hours float64) string {
-	return fmt.Sprintf("%s · %.1f jam", date.Format("02-01-2006"), hours)
+	return fmt.Sprintf("%s · %s jam", date.Format("02-01-2006"), formatOvertimeHours(hours))
+}
+
+func formatOvertimeHours(hours float64) string {
+	return strings.TrimSuffix(fmt.Sprintf("%.1f", hours), ".0")
+}
+
+func normalizeOvertimeNotificationBody(body string) string {
+	return strings.ReplaceAll(body, ".0 jam", " jam")
 }
 
 var leaveTypeLabels = map[string]string{"leave": "Cuti", "permission": "Izin", "sick": "Sakit"}

@@ -10,19 +10,22 @@ import (
 )
 
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
-	Role   string    `json:"role"`
+	UserID             uuid.UUID `json:"user_id"`
+	Email              string    `json:"email"`
+	Role               string    `json:"role"`
+	MustChangePassword bool      `json:"must_change_password,omitempty"`
 	jwtlib.RegisteredClaims
 }
 
-func GenerateToken(userID uuid.UUID, email, role string) (string, error) {
+func GenerateToken(userID uuid.UUID, email, role string, mustChangePassword ...bool) (string, error) {
 	secret := config.GetEnvRequired("JWT_SECRET")
+	required := len(mustChangePassword) > 0 && mustChangePassword[0]
 
 	claims := Claims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
+		UserID:             userID,
+		Email:              email,
+		Role:               role,
+		MustChangePassword: required,
 		RegisteredClaims: jwtlib.RegisteredClaims{
 			ExpiresAt: jwtlib.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwtlib.NewNumericDate(time.Now()),

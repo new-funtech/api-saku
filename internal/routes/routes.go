@@ -265,6 +265,7 @@ func SetupRoutes(
 	loanRoutes.Get("/admin-summary", middleware.RequireRoles("super_admin", "admin", "company_admin"), loanInstallmentHdl.AdminSummary)
 	loanRoutes.Get("/statistics", loanHdl.Statistics)
 	loanRoutes.Get("/stats", masterAdminRoles, statsHdl.Loans)
+	loanRoutes.Get("/export", middleware.RequireRoles("bprks"), middleware.RateLimitByUser(10, time.Minute), loanHdl.ExportBPRKS)
 	loanRoutes.Get("/history", loanHdl.History)
 	loanRoutes.Get("/history/:personnel_id", loanHdl.History)
 	loanRoutes.Get("/:id", loanHdl.GetByID)
@@ -277,7 +278,6 @@ func SetupRoutes(
 	loanRoutes.Delete("/:id", loanHdl.Delete)
 
 	// Loan Approval routes (all protected)
-	// Only reviewers (central roles, company admin / supervisor, BPRKS) work the approval queue.
 	loanApprovalRoutes := v1.Group("/loan-approvals", append(protected(), middleware.RequireRoles("super_admin", "admin", "company_admin", "supervisor", "bprks"))...)
 	loanApprovalRoutes.Get("/pending", loanApprovalHdl.Pending)
 	loanApprovalRoutes.Get("/loan/:loan_id", loanApprovalHdl.ByLoan)
@@ -288,8 +288,6 @@ func SetupRoutes(
 
 	// Loan Installment routes (all protected)
 	loanInstallmentRoutes := v1.Group("/loan-installments", protected()...)
-	// Payments are recorded by admins (company admins only for their own company, checked in the
-	// handler). Marking overdue touches every company, so it is the central roles only.
 	loanInstallmentRoutes.Post("/:id/pay", middleware.RequireRoles("super_admin", "admin", "company_admin"), loanInstallmentHdl.Pay)
 	loanInstallmentRoutes.Post("/mark-overdue", middleware.RequireRoles("super_admin", "admin"), loanInstallmentHdl.MarkOverdue)
 	notificationRoutes := v1.Group("/notifications", protected()...)

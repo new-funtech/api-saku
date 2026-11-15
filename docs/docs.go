@@ -73,13 +73,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -108,7 +108,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateBujpRequest"
+                            "$ref": "#/definitions/model.CreateBujpRequest"
                         }
                     }
                 ],
@@ -116,19 +116,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -165,19 +165,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -213,7 +213,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateBujpRequest"
+                            "$ref": "#/definitions/model.UpdateBujpRequest"
                         }
                     }
                 ],
@@ -221,25 +221,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -274,25 +274,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -320,19 +320,53 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forgot-password": {
+            "post": {
+                "description": "Mengirim OTP 6-digit ke email user untuk reset password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Forgot password",
+                "parameters": [
+                    {
+                        "description": "Email akun",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -362,7 +396,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -391,7 +425,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -429,7 +463,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -463,7 +497,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest"
+                            "$ref": "#/definitions/model.LoanApprovalRequest"
                         }
                     }
                 ],
@@ -471,7 +505,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -504,7 +538,7 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest"
+                            "$ref": "#/definitions/model.LoanApprovalRequest"
                         }
                     }
                 ],
@@ -512,7 +546,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -545,7 +579,7 @@ const docTemplate = `{
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest"
+                            "$ref": "#/definitions/model.LoanApprovalRequest"
                         }
                     }
                 ],
@@ -553,7 +587,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -574,7 +608,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -608,7 +642,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanInstallmentPaymentRequest"
+                            "$ref": "#/definitions/model.LoanInstallmentPaymentRequest"
                         }
                     }
                 ],
@@ -616,7 +650,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -668,7 +702,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -696,7 +730,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanProductRequest"
+                            "$ref": "#/definitions/model.CreateLoanProductRequest"
                         }
                     }
                 ],
@@ -704,7 +738,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -728,7 +762,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -761,7 +795,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -796,7 +830,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanProductRequest"
+                            "$ref": "#/definitions/model.UpdateLoanProductRequest"
                         }
                     }
                 ],
@@ -804,7 +838,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -832,7 +866,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -900,7 +934,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -929,7 +963,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanRequest"
+                            "$ref": "#/definitions/model.CreateLoanRequest"
                         }
                     }
                 ],
@@ -937,7 +971,54 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/loans/admin-summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Applications by status plus overdue and soon-due installments, in the caller's scope.",
+                "tags": [
+                    "LoanInstallments"
+                ],
+                "summary": "Loan statistics for the admin Beranda",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/loans/export": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exports disbursed, active, and completed loans to an Excel workbook.",
+                "produces": [
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ],
+                "tags": [
+                    "Loans"
+                ],
+                "summary": "Export BPRKS credit data",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -982,7 +1063,29 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/loans/my-summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Outstanding balance, next due installment and what is overdue or due within a week.",
+                "tags": [
+                    "LoanInstallments"
+                ],
+                "summary": "Loan summary for the Beranda",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -995,6 +1098,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "Returns counts grouped by loan status. Numbers are scoped by",
                 "tags": [
                     "Loans"
                 ],
@@ -1003,7 +1107,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1036,7 +1140,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1071,7 +1175,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanRequest"
+                            "$ref": "#/definitions/model.UpdateLoanRequest"
                         }
                     }
                 ],
@@ -1079,7 +1183,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1107,7 +1211,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1137,7 +1241,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1167,7 +1271,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1201,7 +1305,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoanUserConfirmationRequest"
+                            "$ref": "#/definitions/model.LoanUserConfirmationRequest"
                         }
                     }
                 ],
@@ -1209,7 +1313,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1239,7 +1343,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1301,13 +1405,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1336,7 +1440,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLocationRequest"
+                            "$ref": "#/definitions/model.CreateLocationRequest"
                         }
                     }
                 ],
@@ -1344,19 +1448,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1393,19 +1497,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1441,7 +1545,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLocationRequest"
+                            "$ref": "#/definitions/model.UpdateLocationRequest"
                         }
                     }
                 ],
@@ -1449,25 +1553,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1502,25 +1606,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1546,7 +1650,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.LoginRequest"
+                            "$ref": "#/definitions/model.LoginRequest"
                         }
                     }
                 ],
@@ -1556,13 +1660,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse"
+                                            "$ref": "#/definitions/model.AuthResponse"
                                         }
                                     }
                                 }
@@ -1572,13 +1676,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1633,7 +1737,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1641,7 +1745,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse"
+                                                "$ref": "#/definitions/model.MonthlyReportResponse"
                                             }
                                         }
                                     }
@@ -1652,7 +1756,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1681,7 +1785,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateMonthlyReportRequest"
+                            "$ref": "#/definitions/model.CreateMonthlyReportRequest"
                         }
                     }
                 ],
@@ -1691,13 +1795,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse"
+                                            "$ref": "#/definitions/model.MonthlyReportResponse"
                                         }
                                     }
                                 }
@@ -1707,13 +1811,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1744,7 +1848,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.GenerateMonthlyReportRequest"
+                            "$ref": "#/definitions/model.GenerateMonthlyReportRequest"
                         }
                     }
                 ],
@@ -1754,13 +1858,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse"
+                                            "$ref": "#/definitions/model.MonthlyReportResponse"
                                         }
                                     }
                                 }
@@ -1770,19 +1874,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1818,13 +1922,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse"
+                                            "$ref": "#/definitions/model.MonthlyReportResponse"
                                         }
                                     }
                                 }
@@ -1834,13 +1938,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1876,7 +1980,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateMonthlyReportRequest"
+                            "$ref": "#/definitions/model.UpdateMonthlyReportRequest"
                         }
                     }
                 ],
@@ -1886,13 +1990,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse"
+                                            "$ref": "#/definitions/model.MonthlyReportResponse"
                                         }
                                     }
                                 }
@@ -1902,13 +2006,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -1940,19 +2044,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2019,7 +2123,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2027,7 +2131,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse"
+                                                "$ref": "#/definitions/model.PayrollResponse"
                                             }
                                         }
                                     }
@@ -2038,7 +2142,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2067,7 +2171,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollRequest"
+                            "$ref": "#/definitions/model.CreatePayrollRequest"
                         }
                     }
                 ],
@@ -2077,13 +2181,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse"
+                                            "$ref": "#/definitions/model.PayrollResponse"
                                         }
                                     }
                                 }
@@ -2093,13 +2197,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2130,7 +2234,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.GeneratePayrollRequest"
+                            "$ref": "#/definitions/model.GeneratePayrollRequest"
                         }
                     }
                 ],
@@ -2138,25 +2242,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2192,13 +2296,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse"
+                                            "$ref": "#/definitions/model.PayrollResponse"
                                         }
                                     }
                                 }
@@ -2208,13 +2312,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2250,7 +2354,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePayrollRequest"
+                            "$ref": "#/definitions/model.UpdatePayrollRequest"
                         }
                     }
                 ],
@@ -2260,13 +2364,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse"
+                                            "$ref": "#/definitions/model.PayrollResponse"
                                         }
                                     }
                                 }
@@ -2276,13 +2380,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2314,19 +2418,77 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payrolls/{id}/update-payment-status": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mark a payroll as pending, paid or cancelled",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payrolls"
+                ],
+                "summary": "Update payroll payment status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payroll ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payment status",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePaymentStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.PayrollResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -2339,7 +2501,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Parses the uploaded .xlsx and creates personnel records, auto-creating user accounts (role=guard, default password 123456) for unknown emails. Each row is reported back individually.",
+                "description": "Parses the uploaded .xlsx and creates personnel records. Unknown emails receive a one-time random password and must change it at first login.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -2369,25 +2531,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2418,7 +2580,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2480,13 +2642,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2515,7 +2677,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePersonnelRequest"
+                            "$ref": "#/definitions/model.CreatePersonnelRequest"
                         }
                     }
                 ],
@@ -2523,19 +2685,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2572,19 +2734,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2620,7 +2782,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePersonnelRequest"
+                            "$ref": "#/definitions/model.UpdatePersonnelRequest"
                         }
                     }
                 ],
@@ -2628,25 +2790,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2681,25 +2843,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2738,13 +2900,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2773,7 +2935,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateProductRequest"
+                            "$ref": "#/definitions/model.CreateProductRequest"
                         }
                     }
                 ],
@@ -2781,19 +2943,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2832,7 +2994,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2862,13 +3024,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2900,19 +3062,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -2948,7 +3110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProductRequest"
+                            "$ref": "#/definitions/model.UpdateProductRequest"
                         }
                     }
                 ],
@@ -2956,25 +3118,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3009,19 +3171,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3047,7 +3209,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.RegisterRequest"
+                            "$ref": "#/definitions/model.RegisterRequest"
                         }
                     }
                 ],
@@ -3057,13 +3219,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse"
+                                            "$ref": "#/definitions/model.AuthResponse"
                                         }
                                     }
                                 }
@@ -3073,13 +3235,53 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/reset-password": {
+            "post": {
+                "description": "Set password baru menggunakan reset_token yang valid",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Reset token + password baru",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3140,7 +3342,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3148,7 +3350,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse"
+                                                "$ref": "#/definitions/model.SalaryComponentResponse"
                                             }
                                         }
                                     }
@@ -3159,7 +3361,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3188,7 +3390,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateSalaryComponentRequest"
+                            "$ref": "#/definitions/model.CreateSalaryComponentRequest"
                         }
                     }
                 ],
@@ -3198,13 +3400,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse"
+                                            "$ref": "#/definitions/model.SalaryComponentResponse"
                                         }
                                     }
                                 }
@@ -3214,13 +3416,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3256,13 +3458,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse"
+                                            "$ref": "#/definitions/model.SalaryComponentResponse"
                                         }
                                     }
                                 }
@@ -3272,13 +3474,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3314,7 +3516,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateSalaryComponentRequest"
+                            "$ref": "#/definitions/model.UpdateSalaryComponentRequest"
                         }
                     }
                 ],
@@ -3324,13 +3526,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse"
+                                            "$ref": "#/definitions/model.SalaryComponentResponse"
                                         }
                                     }
                                 }
@@ -3340,13 +3542,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3378,19 +3580,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3452,13 +3654,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3487,7 +3689,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateShiftRequest"
+                            "$ref": "#/definitions/model.CreateShiftRequest"
                         }
                     }
                 ],
@@ -3495,19 +3697,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3544,19 +3746,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3592,7 +3794,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateShiftRequest"
+                            "$ref": "#/definitions/model.UpdateShiftRequest"
                         }
                     }
                 ],
@@ -3600,25 +3802,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3653,25 +3855,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3711,19 +3913,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3774,19 +3976,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3826,19 +4028,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3878,19 +4080,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -3930,19 +4132,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4010,13 +4212,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4027,7 +4229,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new user with the provided data",
+                "description": "Create a user and return a one-time random password that must be changed on first login.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4045,7 +4247,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateUserRequest"
+                            "$ref": "#/definitions/model.CreateUserRequest"
                         }
                     }
                 ],
@@ -4053,19 +4255,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.CreateUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4096,7 +4310,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ChangePasswordRequest"
+                            "$ref": "#/definitions/model.ChangePasswordRequest"
                         }
                     }
                 ],
@@ -4104,25 +4318,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4150,19 +4364,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4191,7 +4405,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProfileRequest"
+                            "$ref": "#/definitions/model.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -4199,19 +4413,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4248,19 +4462,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4296,7 +4510,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateUserRequest"
+                            "$ref": "#/definitions/model.UpdateUserRequest"
                         }
                     }
                 ],
@@ -4304,25 +4518,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4357,19 +4571,71 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/verify-reset-otp": {
+            "post": {
+                "description": "Cek OTP yang dikirim ke email, mengembalikan reset_token sementara",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify reset OTP",
+                "parameters": [
+                    {
+                        "description": "Email + OTP",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.VerifyResetOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.VerifyResetOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4429,7 +4695,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4437,11 +4703,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment"
+                                                "$ref": "#/definitions/model.Assignment"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -4451,13 +4717,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4482,7 +4748,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAssignmentRequest"
+                            "$ref": "#/definitions/model.CreateAssignmentRequest"
                         }
                     }
                 ],
@@ -4492,13 +4758,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment"
+                                            "$ref": "#/definitions/model.Assignment"
                                         }
                                     }
                                 }
@@ -4508,13 +4774,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4549,13 +4815,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment"
+                                            "$ref": "#/definitions/model.Assignment"
                                         }
                                     }
                                 }
@@ -4565,19 +4831,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4609,7 +4875,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAssignmentRequest"
+                            "$ref": "#/definitions/model.UpdateAssignmentRequest"
                         }
                     }
                 ],
@@ -4619,13 +4885,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment"
+                                            "$ref": "#/definitions/model.Assignment"
                                         }
                                     }
                                 }
@@ -4635,19 +4901,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4678,25 +4944,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4756,7 +5022,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4764,11 +5030,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection"
+                                                "$ref": "#/definitions/model.AttendanceCorrection"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -4778,13 +5044,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4813,7 +5079,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceCorrectionRequest"
+                            "$ref": "#/definitions/model.CreateAttendanceCorrectionRequest"
                         }
                     }
                 ],
@@ -4823,13 +5089,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection"
+                                            "$ref": "#/definitions/model.AttendanceCorrection"
                                         }
                                     }
                                 }
@@ -4839,13 +5105,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4869,7 +5135,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4904,13 +5170,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection"
+                                            "$ref": "#/definitions/model.AttendanceCorrection"
                                         }
                                     }
                                 }
@@ -4920,19 +5186,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -4964,7 +5230,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceCorrectionRequest"
+                            "$ref": "#/definitions/model.UpdateAttendanceCorrectionRequest"
                         }
                     }
                 ],
@@ -4974,13 +5240,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection"
+                                            "$ref": "#/definitions/model.AttendanceCorrection"
                                         }
                                     }
                                 }
@@ -4990,19 +5256,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5033,25 +5299,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5088,7 +5354,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest"
+                            "$ref": "#/definitions/model.ApproveAttendanceCorrectionRequest"
                         }
                     }
                 ],
@@ -5096,7 +5362,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5133,7 +5399,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest"
+                            "$ref": "#/definitions/model.ApproveAttendanceCorrectionRequest"
                         }
                     }
                 ],
@@ -5141,7 +5407,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5193,6 +5459,24 @@ const docTemplate = `{
                         "description": "Filter by status",
                         "name": "status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter from date (YYYY-MM-DD), inclusive",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter until date (YYYY-MM-DD), inclusive",
+                        "name": "end_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5201,7 +5485,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5209,11 +5493,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance"
+                                                "$ref": "#/definitions/model.Attendance"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -5223,13 +5507,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5254,7 +5538,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceRequest"
+                            "$ref": "#/definitions/model.CreateAttendanceRequest"
                         }
                     }
                 ],
@@ -5264,13 +5548,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance"
+                                            "$ref": "#/definitions/model.Attendance"
                                         }
                                     }
                                 }
@@ -5280,13 +5564,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5310,7 +5594,79 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/attendances/stats": {
+            "get": {
+                "responses": {}
+            }
+        },
+        "/attendances/status/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "pending = queued or not yet stored, recorded = stored, failed = the worker gave up (see error)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attendances"
+                ],
+                "summary": "Status of an asynchronous clock-in/out",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Idempotency key returned with the 202",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/attendances/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns attendance counts grouped by status, scoped by role.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attendances"
+                ],
+                "summary": "Attendance summary (hadir/telat/izin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "today",
+                        "description": "today | this_month",
+                        "name": "period",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5345,13 +5701,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance"
+                                            "$ref": "#/definitions/model.Attendance"
                                         }
                                     }
                                 }
@@ -5361,19 +5717,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5405,7 +5761,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceRequest"
+                            "$ref": "#/definitions/model.UpdateAttendanceRequest"
                         }
                     }
                 ],
@@ -5415,13 +5771,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance"
+                                            "$ref": "#/definitions/model.Attendance"
                                         }
                                     }
                                 }
@@ -5431,19 +5787,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5474,25 +5830,100 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upserts by token: a token already used by another user moves to the signed-in user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Register the device's FCM token",
+                "parameters": [
+                    {
+                        "description": "Token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RegisterDeviceTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Remove the device's FCM token (sign-out)",
+                "parameters": [
+                    {
+                        "description": "Token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnregisterDeviceTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5552,7 +5983,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5560,11 +5991,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                                "$ref": "#/definitions/model.Leave"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -5574,13 +6005,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5609,7 +6040,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLeaveRequest"
+                            "$ref": "#/definitions/model.CreateLeaveRequest"
                         }
                     }
                 ],
@@ -5619,13 +6050,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                            "$ref": "#/definitions/model.Leave"
                                         }
                                     }
                                 }
@@ -5635,13 +6066,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5667,7 +6098,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5675,11 +6106,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                                "$ref": "#/definitions/model.Leave"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -5718,13 +6149,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                            "$ref": "#/definitions/model.Leave"
                                         }
                                     }
                                 }
@@ -5734,19 +6165,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5778,7 +6209,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLeaveRequest"
+                            "$ref": "#/definitions/model.UpdateLeaveRequest"
                         }
                     }
                 ],
@@ -5788,13 +6219,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                            "$ref": "#/definitions/model.Leave"
                                         }
                                     }
                                 }
@@ -5804,19 +6235,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5847,25 +6278,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -5902,7 +6333,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest"
+                            "$ref": "#/definitions/model.ApproveLeaveRequest"
                         }
                     }
                 ],
@@ -5912,13 +6343,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                            "$ref": "#/definitions/model.Leave"
                                         }
                                     }
                                 }
@@ -5959,7 +6390,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest"
+                            "$ref": "#/definitions/model.ApproveLeaveRequest"
                         }
                     }
                 ],
@@ -5969,17 +6400,263 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Leave"
+                                            "$ref": "#/definitions/model.Leave"
                                         }
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/monthly-reports/recap": {
+            "get": {
+                "responses": {}
+            }
+        },
+        "/monthly-reports/recap/export": {
+            "get": {
+                "responses": {}
+            }
+        },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "List the authenticated user's notifications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/clear-read": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Delete all of the authenticated user's already-read notifications",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/preferences": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "The user's push and email notification switches",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Turn push and/or email notifications on or off",
+                "parameters": [
+                    {
+                        "description": "Switches",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.NotificationPreferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark all of the authenticated user's notifications as read",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/unread-count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Get the authenticated user's unread notification count",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Delete one notification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}/read": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark one notification as read",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -6039,7 +6716,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6047,11 +6724,11 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol"
+                                                "$ref": "#/definitions/model.Patrol"
                                             }
                                         },
                                         "meta": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                                            "$ref": "#/definitions/model.PaginationMeta"
                                         }
                                     }
                                 }
@@ -6061,13 +6738,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -6092,7 +6769,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePatrolRequest"
+                            "$ref": "#/definitions/model.CreatePatrolRequest"
                         }
                     }
                 ],
@@ -6102,13 +6779,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol"
+                                            "$ref": "#/definitions/model.Patrol"
                                         }
                                     }
                                 }
@@ -6118,13 +6795,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -6159,13 +6836,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol"
+                                            "$ref": "#/definitions/model.Patrol"
                                         }
                                     }
                                 }
@@ -6175,19 +6852,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -6219,7 +6896,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePatrolRequest"
+                            "$ref": "#/definitions/model.UpdatePatrolRequest"
                         }
                     }
                 ],
@@ -6229,13 +6906,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                                    "$ref": "#/definitions/model.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol"
+                                            "$ref": "#/definitions/model.Patrol"
                                         }
                                     }
                                 }
@@ -6245,19 +6922,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
@@ -6288,33 +6965,113 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse"
+                            "$ref": "#/definitions/model.APIResponse"
                         }
                     }
                 }
             }
+        },
+        "/patrols/{id}/validate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Patrols"
+                ],
+                "summary": "Approve or reject a pending patrol record",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Patrol ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Validation payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ValidatePatrolRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.PatrolResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/personnels/export": {
+            "get": {
+                "responses": {}
+            }
         }
     },
     "definitions": {
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.APIResponse": {
+        "model.APIResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -6327,7 +7084,7 @@ const docTemplate = `{
                     "example": "Success"
                 },
                 "meta": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta"
+                    "$ref": "#/definitions/model.PaginationMeta"
                 },
                 "status": {
                     "type": "string",
@@ -6335,7 +7092,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveAttendanceCorrectionRequest": {
+        "model.ApproveAttendanceCorrectionRequest": {
             "type": "object",
             "required": [
                 "status"
@@ -6353,7 +7110,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.ApproveLeaveRequest": {
+        "model.ApproveLeaveRequest": {
             "type": "object",
             "required": [
                 "status"
@@ -6371,7 +7128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment": {
+        "model.Assignment": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -6381,7 +7138,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "creator": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                    "$ref": "#/definitions/model.User"
                 },
                 "end_date": {
                     "type": "string"
@@ -6390,7 +7147,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location"
+                    "$ref": "#/definitions/model.Location"
                 },
                 "location_id": {
                     "type": "string"
@@ -6402,7 +7159,7 @@ const docTemplate = `{
                     "description": "Relations",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
+                            "$ref": "#/definitions/model.Personnel"
                         }
                     ]
                 },
@@ -6410,7 +7167,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "shift": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Shift"
+                    "$ref": "#/definitions/model.Shift"
                 },
                 "shift_id": {
                     "type": "string"
@@ -6426,11 +7183,61 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance": {
+        "model.AssignmentResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "creator": {
+                    "$ref": "#/definitions/model.UserResponse"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/model.LocationResponse"
+                },
+                "location_id": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "personnel": {
+                    "$ref": "#/definitions/model.PersonnelResponse"
+                },
+                "personnel_id": {
+                    "type": "string"
+                },
+                "shift": {
+                    "$ref": "#/definitions/model.ShiftResponse"
+                },
+                "shift_id": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Attendance": {
             "type": "object",
             "properties": {
                 "assignment": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Assignment"
+                    "$ref": "#/definitions/model.Assignment"
                 },
                 "assignment_id": {
                     "type": "string"
@@ -6469,7 +7276,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "location": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location"
+                    "$ref": "#/definitions/model.Location"
                 },
                 "location_id": {
                     "type": "string"
@@ -6481,7 +7288,7 @@ const docTemplate = `{
                     "description": "Relations",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
+                            "$ref": "#/definitions/model.Personnel"
                         }
                     ]
                 },
@@ -6503,14 +7310,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.AttendanceCorrection": {
+        "model.AttendanceCorrection": {
             "type": "object",
             "properties": {
                 "approved_at": {
                     "type": "string"
                 },
                 "approver": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                    "$ref": "#/definitions/model.User"
                 },
                 "approver_id": {
                     "type": "string"
@@ -6541,7 +7348,7 @@ const docTemplate = `{
                     "description": "Relations",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
+                            "$ref": "#/definitions/model.Personnel"
                         }
                     ]
                 },
@@ -6562,7 +7369,87 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.AuthResponse": {
+        "model.AttendanceResponse": {
+            "type": "object",
+            "properties": {
+                "assignment": {
+                    "$ref": "#/definitions/model.AssignmentResponse"
+                },
+                "assignment_id": {
+                    "type": "string"
+                },
+                "check_in": {
+                    "type": "string"
+                },
+                "check_in_latitude": {
+                    "type": "string"
+                },
+                "check_in_longitude": {
+                    "type": "string"
+                },
+                "check_in_photo": {
+                    "type": "string"
+                },
+                "check_in_photo_url": {
+                    "type": "string"
+                },
+                "check_out": {
+                    "type": "string"
+                },
+                "check_out_latitude": {
+                    "type": "string"
+                },
+                "check_out_longitude": {
+                    "type": "string"
+                },
+                "check_out_photo": {
+                    "type": "string"
+                },
+                "check_out_photo_url": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/model.LocationResponse"
+                },
+                "location_id": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "personnel": {
+                    "$ref": "#/definitions/model.PersonnelResponse"
+                },
+                "personnel_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "supporting_document": {
+                    "type": "string"
+                },
+                "supporting_document_url": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_duration": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.AuthResponse": {
             "type": "object",
             "properties": {
                 "token": {
@@ -6570,11 +7457,11 @@ const docTemplate = `{
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse"
+                    "$ref": "#/definitions/model.UserResponse"
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp": {
+        "model.Bujp": {
             "type": "object",
             "properties": {
                 "address": {
@@ -6598,7 +7485,7 @@ const docTemplate = `{
                 "locations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location"
+                        "$ref": "#/definitions/model.Location"
                     }
                 },
                 "name": {
@@ -6607,7 +7494,7 @@ const docTemplate = `{
                 "personnels": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
+                        "$ref": "#/definitions/model.Personnel"
                     }
                 },
                 "phone": {
@@ -6634,7 +7521,7 @@ const docTemplate = `{
                 "shifts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Shift"
+                        "$ref": "#/definitions/model.Shift"
                     }
                 },
                 "status": {
@@ -6647,12 +7534,12 @@ const docTemplate = `{
                     "description": "Relations",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                        "$ref": "#/definitions/model.User"
                     }
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse": {
+        "model.BujpResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -6723,7 +7610,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.ChangePasswordRequest": {
+        "model.ChangePasswordRequest": {
             "type": "object",
             "required": [
                 "current_password",
@@ -6737,7 +7624,8 @@ const docTemplate = `{
                 },
                 "new_password": {
                     "type": "string",
-                    "minLength": 6,
+                    "maxLength": 72,
+                    "minLength": 8,
                     "example": "newpassword123"
                 },
                 "new_password_confirmation": {
@@ -6746,7 +7634,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAssignmentRequest": {
+        "model.CreateAssignmentRequest": {
             "type": "object",
             "required": [
                 "location_id",
@@ -6787,7 +7675,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceCorrectionRequest": {
+        "model.CreateAttendanceCorrectionRequest": {
             "type": "object",
             "required": [
                 "correction_date",
@@ -6827,7 +7715,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateAttendanceRequest": {
+        "model.CreateAttendanceRequest": {
             "type": "object",
             "required": [
                 "date",
@@ -6892,7 +7780,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateBujpRequest": {
+        "model.CreateBujpRequest": {
             "type": "object",
             "required": [
                 "code",
@@ -6961,7 +7849,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLeaveRequest": {
+        "model.CreateLeaveRequest": {
             "type": "object",
             "required": [
                 "end_date",
@@ -7001,7 +7889,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanProductRequest": {
+        "model.CreateLoanProductRequest": {
             "type": "object",
             "required": [
                 "max_tenor",
@@ -7038,6 +7926,23 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
+                "penalty_early_payoff": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "penalty_running_interest": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "provisi_rate": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "registration_fee": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "require_collateral": {
                     "type": "boolean"
                 },
@@ -7046,12 +7951,12 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLoanRequest": {
+        "model.CreateLoanRequest": {
             "type": "object",
             "required": [
                 "loan_amount",
-                "purpose",
-                "tenor_months"
+                "tenor_months",
+                "terms_accepted"
             ],
             "properties": {
                 "collateral_document": {
@@ -7060,21 +7965,10 @@ const docTemplate = `{
                 "deduct_from_payroll": {
                     "type": "boolean"
                 },
-                "interest_rate": {
-                    "type": "number",
-                    "maximum": 100,
-                    "minimum": 0
-                },
-                "ktp_document": {
-                    "type": "string"
-                },
                 "loan_amount": {
                     "type": "number"
                 },
                 "loan_product_id": {
-                    "type": "string"
-                },
-                "npwp_document": {
                     "type": "string"
                 },
                 "personnel_id": {
@@ -7094,7 +7988,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "purpose": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500
                 },
                 "selfie_document": {
                     "type": "string"
@@ -7109,15 +8004,20 @@ const docTemplate = `{
                     "type": "integer",
                     "maximum": 120,
                     "minimum": 1
+                },
+                "terms_accepted": {
+                    "type": "boolean"
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateLocationRequest": {
+        "model.CreateLocationRequest": {
             "type": "object",
             "required": [
                 "address",
                 "bujp_id",
                 "code",
+                "latitude",
+                "longitude",
                 "name"
             ],
             "properties": {
@@ -7147,10 +8047,14 @@ const docTemplate = `{
                 },
                 "latitude": {
                     "type": "number",
+                    "maximum": 90,
+                    "minimum": -90,
                     "example": -6.917464
                 },
                 "longitude": {
                     "type": "number",
+                    "maximum": 180,
+                    "minimum": -180,
                     "example": 107.60981
                 },
                 "name": {
@@ -7176,7 +8080,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateMonthlyReportRequest": {
+        "model.CreateMonthlyReportRequest": {
             "type": "object",
             "required": [
                 "bujp_id",
@@ -7227,7 +8131,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePatrolRequest": {
+        "model.CreatePatrolRequest": {
             "type": "object",
             "required": [
                 "date",
@@ -7270,7 +8174,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollDetailRequest": {
+        "model.CreatePayrollDetailRequest": {
             "type": "object",
             "required": [
                 "amount",
@@ -7288,7 +8192,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollRequest": {
+        "model.CreatePayrollRequest": {
             "type": "object",
             "required": [
                 "base_salary",
@@ -7307,7 +8211,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePayrollDetailRequest"
+                        "$ref": "#/definitions/model.CreatePayrollDetailRequest"
                     }
                 },
                 "payment_date": {
@@ -7346,13 +8250,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreatePersonnelRequest": {
+        "model.CreatePersonnelRequest": {
             "type": "object",
             "required": [
                 "bujp_id",
                 "full_name",
                 "id_number",
-                "join_date"
+                "join_date",
+                "nip"
             ],
             "properties": {
                 "account_number": {
@@ -7413,6 +8318,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01"
                 },
+                "ktp_document": {
+                    "type": "string",
+                    "example": "personnel/ktp.jpg"
+                },
+                "ktp_final_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/KTP/{personnel_id}/abc.jpg"
+                },
+                "ktp_temp_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/KTP/temp/abc.jpg"
+                },
                 "license_number": {
                     "type": "string",
                     "example": "LIC123456"
@@ -7420,6 +8337,23 @@ const docTemplate = `{
                 "mother_maiden_name": {
                     "type": "string",
                     "example": "Siti Aminah"
+                },
+                "nip": {
+                    "type": "string",
+                    "maxLength": 30,
+                    "example": "19850101201001001"
+                },
+                "npwp_document": {
+                    "type": "string",
+                    "example": "personnel/npwp.jpg"
+                },
+                "npwp_final_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/NPWP/{personnel_id}/abc.jpg"
+                },
+                "npwp_temp_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/NPWP/temp/abc.jpg"
                 },
                 "phone": {
                     "type": "string",
@@ -7453,7 +8387,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateProductRequest": {
+        "model.CreateProductRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -7484,7 +8418,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateSalaryComponentRequest": {
+        "model.CreateSalaryComponentRequest": {
             "type": "object",
             "required": [
                 "calculation_method",
@@ -7530,7 +8464,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateShiftRequest": {
+        "model.CreateShiftRequest": {
             "type": "object",
             "required": [
                 "end_time",
@@ -7573,12 +8507,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.CreateUserRequest": {
+        "model.CreateUserRequest": {
             "type": "object",
             "required": [
                 "email",
                 "full_name",
-                "password",
                 "role"
             ],
             "properties": {
@@ -7595,11 +8528,6 @@ const docTemplate = `{
                     "maxLength": 100,
                     "example": "John Doe"
                 },
-                "password": {
-                    "type": "string",
-                    "minLength": 6,
-                    "example": "password123"
-                },
                 "phone": {
                     "type": "string",
                     "example": "081234567890"
@@ -7614,7 +8542,8 @@ const docTemplate = `{
                         "super_admin",
                         "company_admin",
                         "supervisor",
-                        "guard"
+                        "guard",
+                        "bprks"
                     ],
                     "example": "guard"
                 },
@@ -7628,7 +8557,74 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.GenerateMonthlyReportRequest": {
+        "model.CreateUserResponse": {
+            "type": "object",
+            "properties": {
+                "bujp": {
+                    "$ref": "#/definitions/model.BujpResponse"
+                },
+                "bujp_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "full_name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "last_login": {
+                    "type": "string"
+                },
+                "must_change_password": {
+                    "type": "boolean"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "081234567890"
+                },
+                "photo": {
+                    "type": "string",
+                    "example": "users/photo.jpg"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "guard"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "temporary_password": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                }
+            }
+        },
+        "model.GenerateMonthlyReportRequest": {
             "type": "object",
             "required": [
                 "period"
@@ -7646,7 +8642,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.GeneratePayrollRequest": {
+        "model.GeneratePayrollRequest": {
             "type": "object",
             "required": [
                 "bujp_id",
@@ -7665,14 +8661,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Leave": {
+        "model.Leave": {
             "type": "object",
             "properties": {
                 "approved_at": {
                     "type": "string"
                 },
                 "approver": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                    "$ref": "#/definitions/model.User"
                 },
                 "approver_id": {
                     "type": "string"
@@ -7690,12 +8686,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "personnel": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
-                        }
-                    ]
+                    "$ref": "#/definitions/model.Personnel"
                 },
                 "personnel_id": {
                     "type": "string"
@@ -7724,7 +8715,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.LoanApprovalRequest": {
+        "model.LoanApprovalRequest": {
             "type": "object",
             "required": [
                 "action"
@@ -7747,15 +8738,20 @@ const docTemplate = `{
                 },
                 "notes": {
                     "type": "string"
+                },
+                "sanction_status": {
+                    "description": "Recorded by the Admin Perusahaan reviewer only — see LoanApproval.SanctionStatus.",
+                    "type": "string",
+                    "enum": [
+                        "never_sanctioned",
+                        "previously_sanctioned",
+                        "currently_sanctioned"
+                    ]
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.LoanInstallmentPaymentRequest": {
+        "model.LoanInstallmentPaymentRequest": {
             "type": "object",
-            "required": [
-                "paid_amount",
-                "payment_date"
-            ],
             "properties": {
                 "notes": {
                     "type": "string"
@@ -7764,7 +8760,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "payment_date": {
-                    "description": "YYYY-MM-DD",
+                    "description": "YYYY-MM-DD, optional",
                     "type": "string"
                 },
                 "payment_method": {
@@ -7775,7 +8771,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.LoanUserConfirmationRequest": {
+        "model.LoanUserConfirmationRequest": {
             "type": "object",
             "required": [
                 "action"
@@ -7785,7 +8781,11 @@ const docTemplate = `{
                     "type": "string",
                     "enum": [
                         "accept",
-                        "decline"
+                        "accepted",
+                        "decline",
+                        "declined",
+                        "reject",
+                        "rejected"
                     ]
                 },
                 "reason": {
@@ -7793,7 +8793,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Location": {
+        "model.Location": {
             "type": "object",
             "properties": {
                 "address": {
@@ -7806,7 +8806,7 @@ const docTemplate = `{
                     "description": "Relations",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp"
+                            "$ref": "#/definitions/model.Bujp"
                         }
                     ]
                 },
@@ -7848,7 +8848,69 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.LoginRequest": {
+        "model.LocationResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "Jl. Naripan No. 12-14, Bandung"
+                },
+                "attendance_radius": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "bujp": {
+                    "$ref": "#/definitions/model.BujpResponse"
+                },
+                "bujp_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "code": {
+                    "type": "string",
+                    "example": "LOC001"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "guards_needed": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": -6.917464
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 107.60981
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bank BJB Kantor Pusat"
+                },
+                "pic_name": {
+                    "type": "string",
+                    "example": "Jane Doe"
+                },
+                "pic_phone": {
+                    "type": "string",
+                    "example": "081234567890"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -7865,11 +8927,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.MonthlyReportResponse": {
+        "model.MonthlyReportResponse": {
             "type": "object",
             "properties": {
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse"
+                    "$ref": "#/definitions/model.BujpResponse"
                 },
                 "bujp_id": {
                     "type": "string"
@@ -7881,7 +8943,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "creator": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse"
+                    "$ref": "#/definitions/model.UserResponse"
                 },
                 "id": {
                     "type": "string"
@@ -7921,7 +8983,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.PaginationMeta": {
+        "model.NotificationPreferenceRequest": {
+            "type": "object",
+            "properties": {
+                "email_enabled": {
+                    "type": "boolean"
+                },
+                "push_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.PaginationMeta": {
             "type": "object",
             "properties": {
                 "has_next": {
@@ -7950,11 +9023,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Patrol": {
+        "model.Patrol": {
             "type": "object",
             "properties": {
                 "attendance": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Attendance"
+                    "$ref": "#/definitions/model.Attendance"
                 },
                 "attendance_id": {
                     "type": "string"
@@ -7972,7 +9045,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "location": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Location"
+                    "$ref": "#/definitions/model.Location"
                 },
                 "location_id": {
                     "type": "string"
@@ -7990,12 +9063,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "personnel": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel"
-                        }
-                    ]
+                    "$ref": "#/definitions/model.Personnel"
                 },
                 "personnel_id": {
                     "type": "string"
@@ -8013,14 +9081,82 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "validator": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                    "$ref": "#/definitions/model.User"
                 },
                 "validator_id": {
                     "type": "string"
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollDetailResponse": {
+        "model.PatrolResponse": {
+            "type": "object",
+            "properties": {
+                "attendance": {
+                    "$ref": "#/definitions/model.AttendanceResponse"
+                },
+                "attendance_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "location": {
+                    "$ref": "#/definitions/model.LocationResponse"
+                },
+                "location_id": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "patrol_area": {
+                    "type": "string"
+                },
+                "patrol_time": {
+                    "type": "string"
+                },
+                "personnel": {
+                    "$ref": "#/definitions/model.PersonnelResponse"
+                },
+                "personnel_id": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "validated_at": {
+                    "type": "string"
+                },
+                "validation_status": {
+                    "type": "string"
+                },
+                "validator": {
+                    "$ref": "#/definitions/model.UserResponse"
+                },
+                "validator_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PayrollDetailResponse": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -8039,21 +9175,21 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "salary_component": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse"
+                    "$ref": "#/definitions/model.SalaryComponentResponse"
                 },
                 "salary_component_id": {
                     "type": "string"
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollResponse": {
+        "model.PayrollResponse": {
             "type": "object",
             "properties": {
                 "base_salary": {
                     "type": "number"
                 },
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse"
+                    "$ref": "#/definitions/model.BujpResponse"
                 },
                 "bujp_id": {
                     "type": "string"
@@ -8065,7 +9201,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "creator": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse"
+                    "$ref": "#/definitions/model.UserResponse"
                 },
                 "id": {
                     "type": "string"
@@ -8085,14 +9221,14 @@ const docTemplate = `{
                 "payroll_details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PayrollDetailResponse"
+                        "$ref": "#/definitions/model.PayrollDetailResponse"
                     }
                 },
                 "period": {
                     "type": "string"
                 },
                 "personnel": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.PersonnelResponse"
+                    "$ref": "#/definitions/model.PersonnelResponse"
                 },
                 "personnel_id": {
                     "type": "string"
@@ -8117,7 +9253,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Personnel": {
+        "model.Personnel": {
             "type": "object",
             "properties": {
                 "account_number": {
@@ -8136,12 +9272,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "bujp": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp"
-                        }
-                    ]
+                    "$ref": "#/definitions/model.Bujp"
                 },
                 "bujp_id": {
                     "type": "string"
@@ -8173,10 +9304,19 @@ const docTemplate = `{
                 "join_date": {
                     "type": "string"
                 },
+                "ktp_document": {
+                    "type": "string"
+                },
                 "license_number": {
                     "type": "string"
                 },
                 "mother_maiden_name": {
+                    "type": "string"
+                },
+                "nip": {
+                    "type": "string"
+                },
+                "npwp_document": {
                     "type": "string"
                 },
                 "phone": {
@@ -8192,14 +9332,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.User"
+                    "$ref": "#/definitions/model.User"
                 },
                 "user_id": {
                     "type": "string"
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.PersonnelResponse": {
+        "model.PersonnelResponse": {
             "type": "object",
             "properties": {
                 "account_number": {
@@ -8223,7 +9363,7 @@ const docTemplate = `{
                     "example": "1990-01-15"
                 },
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse"
+                    "$ref": "#/definitions/model.BujpResponse"
                 },
                 "bujp_id": {
                     "type": "string",
@@ -8264,6 +9404,13 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01"
                 },
+                "ktp_document": {
+                    "type": "string",
+                    "example": "personnel/ktp.jpg"
+                },
+                "ktp_document_url": {
+                    "type": "string"
+                },
                 "license_number": {
                     "type": "string",
                     "example": "LIC123456"
@@ -8271,6 +9418,17 @@ const docTemplate = `{
                 "mother_maiden_name": {
                     "type": "string",
                     "example": "Siti Aminah"
+                },
+                "nip": {
+                    "type": "string",
+                    "example": "19850101201001001"
+                },
+                "npwp_document": {
+                    "type": "string",
+                    "example": "personnel/npwp.jpg"
+                },
+                "npwp_document_url": {
+                    "type": "string"
                 },
                 "phone": {
                     "type": "string",
@@ -8280,6 +9438,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "personnel/photo.jpg"
                 },
+                "photo_url": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string",
                     "example": "active"
@@ -8288,7 +9449,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse"
+                    "$ref": "#/definitions/model.UserResponse"
                 },
                 "user_id": {
                     "type": "string",
@@ -8296,7 +9457,32 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.RegisterRequest": {
+        "model.RegisterDeviceTokenRequest": {
+            "type": "object",
+            "required": [
+                "fcm_token"
+            ],
+            "properties": {
+                "device_id": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "fcm_token": {
+                    "type": "string",
+                    "maxLength": 4096,
+                    "minLength": 20
+                },
+                "platform": {
+                    "type": "string",
+                    "enum": [
+                        "android",
+                        "ios",
+                        "web"
+                    ]
+                }
+            }
+        },
+        "model.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -8319,14 +9505,35 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.SalaryComponentResponse": {
+        "model.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "new_password_confirmation",
+                "reset_token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                },
+                "new_password_confirmation": {
+                    "type": "string"
+                },
+                "reset_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SalaryComponentResponse": {
             "type": "object",
             "properties": {
                 "amount": {
                     "type": "number"
                 },
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse"
+                    "$ref": "#/definitions/model.BujpResponse"
                 },
                 "bujp_id": {
                     "type": "string"
@@ -8360,14 +9567,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.Shift": {
+        "model.Shift": {
             "type": "object",
             "properties": {
                 "bujp": {
                     "description": "Relations",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp"
+                            "$ref": "#/definitions/model.Bujp"
                         }
                     ]
                 },
@@ -8384,7 +9591,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "end_time": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly"
+                    "$ref": "#/definitions/model.TimeOnly"
                 },
                 "id": {
                     "type": "string"
@@ -8393,7 +9600,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_time": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly"
+                    "$ref": "#/definitions/model.TimeOnly"
                 },
                 "status": {
                     "type": "string"
@@ -8403,7 +9610,53 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.TimeOnly": {
+        "model.ShiftResponse": {
+            "type": "object",
+            "properties": {
+                "bujp": {
+                    "$ref": "#/definitions/model.BujpResponse"
+                },
+                "bujp_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Shift pagi dari pukul 07:00 hingga 15:00"
+                },
+                "duration_hours": {
+                    "type": "number",
+                    "example": 8
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "15:00:00"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Shift Pagi"
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "07:00:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.TimeOnly": {
             "type": "object",
             "properties": {
                 "time.Time": {
@@ -8411,7 +9664,20 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAssignmentRequest": {
+        "model.UnregisterDeviceTokenRequest": {
+            "type": "object",
+            "required": [
+                "fcm_token"
+            ],
+            "properties": {
+                "fcm_token": {
+                    "type": "string",
+                    "maxLength": 4096,
+                    "minLength": 20
+                }
+            }
+        },
+        "model.UpdateAssignmentRequest": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -8441,7 +9707,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceCorrectionRequest": {
+        "model.UpdateAttendanceCorrectionRequest": {
             "type": "object",
             "properties": {
                 "checkin_time": {
@@ -8472,7 +9738,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateAttendanceRequest": {
+        "model.UpdateAttendanceRequest": {
             "type": "object",
             "properties": {
                 "check_out": {
@@ -8509,7 +9775,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateBujpRequest": {
+        "model.UpdateBujpRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -8574,7 +9840,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLeaveRequest": {
+        "model.UpdateLeaveRequest": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -8604,7 +9870,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanProductRequest": {
+        "model.UpdateLoanProductRequest": {
             "type": "object",
             "properties": {
                 "bujp_id": {
@@ -8638,6 +9904,23 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
+                "penalty_early_payoff": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "penalty_running_interest": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "provisi_rate": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "registration_fee": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "require_collateral": {
                     "type": "boolean"
                 },
@@ -8646,7 +9929,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLoanRequest": {
+        "model.UpdateLoanRequest": {
             "type": "object",
             "properties": {
                 "collateral_document": {
@@ -8655,14 +9938,8 @@ const docTemplate = `{
                 "deduct_from_payroll": {
                     "type": "boolean"
                 },
-                "ktp_document": {
-                    "type": "string"
-                },
                 "loan_amount": {
                     "type": "number"
-                },
-                "npwp_document": {
-                    "type": "string"
                 },
                 "pks_document": {
                     "type": "string"
@@ -8683,7 +9960,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateLocationRequest": {
+        "model.UpdateLocationRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -8741,7 +10018,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateMonthlyReportRequest": {
+        "model.UpdateMonthlyReportRequest": {
             "type": "object",
             "properties": {
                 "period": {
@@ -8784,7 +10061,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePatrolRequest": {
+        "model.UpdatePatrolRequest": {
             "type": "object",
             "properties": {
                 "latitude": {
@@ -8804,7 +10081,30 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePayrollRequest": {
+        "model.UpdatePaymentStatusRequest": {
+            "type": "object",
+            "required": [
+                "payment_status"
+            ],
+            "properties": {
+                "payment_date": {
+                    "description": "YYYY-MM-DD; defaults to today when marking paid",
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "paid",
+                        "cancelled"
+                    ]
+                }
+            }
+        },
+        "model.UpdatePayrollRequest": {
             "type": "object",
             "properties": {
                 "base_salary": {
@@ -8843,7 +10143,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdatePersonnelRequest": {
+        "model.UpdatePersonnelRequest": {
             "type": "object",
             "properties": {
                 "account_number": {
@@ -8904,6 +10204,18 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01"
                 },
+                "ktp_document": {
+                    "type": "string",
+                    "example": "personnel/ktp.jpg"
+                },
+                "ktp_final_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/KTP/{personnel_id}/abc.jpg"
+                },
+                "ktp_temp_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/KTP/temp/abc.jpg"
+                },
                 "license_number": {
                     "type": "string",
                     "example": "LIC123456"
@@ -8911,6 +10223,23 @@ const docTemplate = `{
                 "mother_maiden_name": {
                     "type": "string",
                     "example": "Siti Aminah"
+                },
+                "nip": {
+                    "type": "string",
+                    "maxLength": 30,
+                    "example": "19850101201001001"
+                },
+                "npwp_document": {
+                    "type": "string",
+                    "example": "personnel/npwp.jpg"
+                },
+                "npwp_final_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/NPWP/{personnel_id}/abc.jpg"
+                },
+                "npwp_temp_path": {
+                    "type": "string",
+                    "example": "PERSONNEL/NPWP/temp/abc.jpg"
                 },
                 "phone": {
                     "type": "string",
@@ -8944,7 +10273,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProductRequest": {
+        "model.UpdateProductRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -8969,7 +10298,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateProfileRequest": {
+        "model.UpdateProfileRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -8983,7 +10312,8 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6,
+                    "maxLength": 72,
+                    "minLength": 8,
                     "example": "newpassword123"
                 },
                 "phone": {
@@ -8996,7 +10326,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateSalaryComponentRequest": {
+        "model.UpdateSalaryComponentRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -9036,7 +10366,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateShiftRequest": {
+        "model.UpdateShiftRequest": {
             "type": "object",
             "properties": {
                 "bujp_id": {
@@ -9074,7 +10404,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UpdateUserRequest": {
+        "model.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "bujp_id": {
@@ -9092,7 +10422,8 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6,
+                    "maxLength": 72,
+                    "minLength": 8,
                     "example": "newpassword123"
                 },
                 "phone": {
@@ -9109,7 +10440,8 @@ const docTemplate = `{
                         "super_admin",
                         "company_admin",
                         "supervisor",
-                        "guard"
+                        "guard",
+                        "bprks"
                     ],
                     "example": "guard"
                 },
@@ -9123,11 +10455,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.User": {
+        "model.User": {
             "type": "object",
             "properties": {
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.Bujp"
+                    "$ref": "#/definitions/model.Bujp"
                 },
                 "bujp_id": {
                     "type": "string"
@@ -9147,6 +10479,9 @@ const docTemplate = `{
                 "last_login": {
                     "type": "string"
                 },
+                "must_change_password": {
+                    "type": "boolean"
+                },
                 "phone": {
                     "type": "string"
                 },
@@ -9164,11 +10499,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_ganiramadhan_ganipedia_backend_internal_model.UserResponse": {
+        "model.UserResponse": {
             "type": "object",
             "properties": {
                 "bujp": {
-                    "$ref": "#/definitions/github_com_ganiramadhan_ganipedia_backend_internal_model.BujpResponse"
+                    "$ref": "#/definitions/model.BujpResponse"
                 },
                 "bujp_id": {
                     "type": "string",
@@ -9192,6 +10527,9 @@ const docTemplate = `{
                 "last_login": {
                     "type": "string"
                 },
+                "must_change_password": {
+                    "type": "boolean"
+                },
                 "phone": {
                     "type": "string",
                     "example": "081234567890"
@@ -9209,6 +10547,53 @@ const docTemplate = `{
                     "example": "active"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ValidatePatrolRequest": {
+            "type": "object",
+            "required": [
+                "validation_status"
+            ],
+            "properties": {
+                "validation_status": {
+                    "type": "string",
+                    "enum": [
+                        "approved",
+                        "rejected"
+                    ]
+                },
+                "validator_notes": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.VerifyResetOTPRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "otp"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "otp": {
+                    "type": "string",
+                    "example": "123456"
+                }
+            }
+        },
+        "model.VerifyResetOTPResponse": {
+            "type": "object",
+            "properties": {
+                "expires_in": {
+                    "type": "integer",
+                    "example": 600
+                },
+                "reset_token": {
                     "type": "string"
                 }
             }

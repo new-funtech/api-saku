@@ -618,7 +618,7 @@ func (h *PersonnelHandler) DownloadTemplate(c *fiber.Ctx) error {
 
 // BulkImport godoc
 // @Summary      Bulk import personnel from Excel file
-// @Description  Parses the uploaded .xlsx and creates personnel records, auto-creating user accounts (role=guard, default password 123456) for unknown emails. Each row is reported back individually.
+// @Description  Parses the uploaded .xlsx and creates personnel records. Unknown emails receive a one-time random password and must change it at first login.
 // @Tags         Personnels
 // @Accept       multipart/form-data
 // @Produce      json

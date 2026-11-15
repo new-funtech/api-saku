@@ -17,6 +17,7 @@ import (
 	"github.com/ganiramadhan/ganipedia/backend/pkg/broker/rabbitmq"
 	jwtutil "github.com/ganiramadhan/ganipedia/backend/pkg/jwt"
 	"github.com/ganiramadhan/ganipedia/backend/pkg/mailer"
+	"github.com/ganiramadhan/ganipedia/backend/pkg/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -65,7 +66,7 @@ func (s *authServiceImpl) Login(ctx context.Context, req model.LoginRequest) (*m
 		return nil, errors.New("invalid email or password")
 	}
 
-	token, err := jwtutil.GenerateToken(user.ID, user.Email, user.Role)
+	token, err := jwtutil.GenerateToken(user.ID, user.Email, user.Role, user.MustChangePassword)
 	if err != nil {
 		return nil, err
 	}
@@ -73,14 +74,15 @@ func (s *authServiceImpl) Login(ctx context.Context, req model.LoginRequest) (*m
 	return &model.AuthResponse{
 		Token: token,
 		User: model.UserResponse{
-			ID:       user.ID,
-			BujpID:   user.BujpID,
-			Email:    user.Email,
-			Role:     user.Role,
-			FullName: user.FullName,
-			Phone:    user.Phone,
-			Photo:    user.Photo,
-			Status:   user.Status,
+			ID:                 user.ID,
+			BujpID:             user.BujpID,
+			Email:              user.Email,
+			Role:               user.Role,
+			FullName:           user.FullName,
+			Phone:              user.Phone,
+			Photo:              user.Photo,
+			Status:             user.Status,
+			MustChangePassword: user.MustChangePassword,
 		},
 	}, nil
 }
@@ -224,9 +226,14 @@ func (s *authServiceImpl) ResetPassword(ctx context.Context, req model.ResetPass
 		return err
 	}
 	user.Password = string(hashed)
+	user.MustChangePassword = false
 	user.ResetOTP = nil
 	user.ResetOTPExpiresAt = nil
-	return s.userRepo.Update(ctx, user)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return err
+	}
+	utils.CacheDel(ctx, userProfileCacheKey(user.ID))
+	return nil
 }
 
 func generateNumericOTP(length int) (string, error) {

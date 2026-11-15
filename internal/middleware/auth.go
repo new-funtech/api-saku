@@ -38,6 +38,15 @@ func AuthRequired() fiber.Handler {
 			})
 		}
 
+		if claims.MustChangePassword &&
+			!(c.Method() == http.MethodPost && c.Path() == "/api/v1/users/change-password") {
+			return c.Status(http.StatusForbidden).JSON(model.APIResponse{
+				Status:  "error",
+				Code:    http.StatusForbidden,
+				Message: "Password sementara harus diganti sebelum menggunakan aplikasi.",
+			})
+		}
+
 		// Set user info in Fiber context
 		c.Locals("userID", claims.UserID)
 		c.Locals("email", claims.Email)

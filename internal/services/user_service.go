@@ -2,9 +2,12 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"github.com/ganiramadhan/ganipedia/backend/internal/model"
 	repository "github.com/ganiramadhan/ganipedia/backend/internal/repository"
@@ -22,7 +25,7 @@ func userProfileCacheKey(id uuid.UUID) string {
 type UserService interface {
 	GetAllUsers(ctx context.Context, page, limit int, filters map[string]interface{}) ([]model.UserResponse, *model.PaginationMeta, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.UserResponse, error)
-	CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.UserResponse, error)
+	CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.CreateUserResponse, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetProfile(ctx context.Context, userID uuid.UUID) (*model.ProfileResponse, error)
@@ -91,7 +94,7 @@ func (s *userServiceImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 	return &resp, nil
 }
 
-func (s *userServiceImpl) CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.UserResponse, error) {
+func (s *userServiceImpl) CreateUser(ctx context.Context, req model.CreateUserRequest) (*model.CreateUserResponse, error) {
 	// Check for existing active user. We surface a more informative error
 	// when the conflict is across BUJP tenants so that the company admin
 	// understands the user was already onboarded elsewhere.
@@ -103,8 +106,11 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, req model.CreateUserRe
 		return nil, errors.New("email already exists")
 	}
 
-	// Create new user
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	temporaryPassword, err := generateTemporaryPassword()
+	if err != nil {
+		return nil, err
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(temporaryPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
@@ -120,22 +126,33 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, req model.CreateUserRe
 	}
 
 	user := model.User{
-		BujpID:   req.BujpID,
-		FullName: req.FullName,
-		Email:    req.Email,
-		Password: string(hashedPassword),
-		Role:     role,
-		Phone:    req.Phone,
-		Photo:    req.Photo,
-		Status:   status,
+		BujpID:             req.BujpID,
+		FullName:           req.FullName,
+		Email:              req.Email,
+		Password:           string(hashedPassword),
+		Role:               role,
+		Phone:              req.Phone,
+		Photo:              req.Photo,
+		Status:             status,
+		MustChangePassword: true,
 	}
 
 	if err = s.repo.Create(ctx, &user); err != nil {
 		return nil, err
 	}
 
-	resp := toUserResponse(user)
-	return &resp, nil
+	return &model.CreateUserResponse{
+		UserResponse:      toUserResponse(user),
+		TemporaryPassword: temporaryPassword,
+	}, nil
+}
+
+func generateTemporaryPassword() (string, error) {
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", fmt.Errorf("generate temporary password: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
 func (s *userServiceImpl) UpdateUser(ctx context.Context, id uuid.UUID, req model.UpdateUserRequest) (*model.UserResponse, error) {
@@ -224,18 +241,19 @@ func (s *userServiceImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 func toUserResponse(u model.User) model.UserResponse {
 	return model.UserResponse{
-		ID:        u.ID,
-		BujpID:    u.BujpID,
-		Email:     u.Email,
-		Role:      u.Role,
-		FullName:  u.FullName,
-		Phone:     u.Phone,
-		Photo:     u.Photo,
-		Status:    u.Status,
-		LastLogin: u.LastLogin,
-		Bujp:      nil, // Will be populated by Preload if needed
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:                 u.ID,
+		BujpID:             u.BujpID,
+		Email:              u.Email,
+		Role:               u.Role,
+		FullName:           u.FullName,
+		Phone:              u.Phone,
+		Photo:              u.Photo,
+		Status:             u.Status,
+		MustChangePassword: u.MustChangePassword,
+		LastLogin:          u.LastLogin,
+		Bujp:               nil, // Will be populated by Preload if needed
+		CreatedAt:          u.CreatedAt,
+		UpdatedAt:          u.UpdatedAt,
 	}
 }
 
@@ -252,16 +270,17 @@ func (s *userServiceImpl) GetProfile(ctx context.Context, userID uuid.UUID) (*mo
 	}
 
 	profile := &model.ProfileResponse{
-		ID:        user.ID,
-		Email:     user.Email,
-		Role:      user.Role,
-		FullName:  user.FullName,
-		Phone:     user.Phone,
-		Photo:     user.Photo,
-		Status:    user.Status,
-		BujpID:    user.BujpID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:                 user.ID,
+		Email:              user.Email,
+		Role:               user.Role,
+		FullName:           user.FullName,
+		Phone:              user.Phone,
+		Photo:              user.Photo,
+		Status:             user.Status,
+		MustChangePassword: user.MustChangePassword,
+		BujpID:             user.BujpID,
+		CreatedAt:          user.CreatedAt,
+		UpdatedAt:          user.UpdatedAt,
 	}
 
 	if user.Bujp != nil {
@@ -371,6 +390,9 @@ func (s *userServiceImpl) ChangePassword(ctx context.Context, userID uuid.UUID, 
 	if req.NewPassword != req.ConfirmPassword {
 		return errors.New("new password and confirm password do not match")
 	}
+	if utf8.RuneCountInString(req.NewPassword) < 8 || len(req.NewPassword) > 72 {
+		return errors.New("password baru minimal 8 karakter dan maksimal 72 byte")
+	}
 
 	// Get user from database
 	user, err := s.repo.FindByID(ctx, userID)
@@ -396,6 +418,7 @@ func (s *userServiceImpl) ChangePassword(ctx context.Context, userID uuid.UUID, 
 
 	// Update password
 	user.Password = string(hashedPassword)
+	user.MustChangePassword = false
 	if err := s.repo.Update(ctx, user); err != nil {
 		return err
 	}

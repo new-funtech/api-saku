@@ -65,7 +65,7 @@ func (r *userRepositoryImpl) FindAll(ctx context.Context, page, limit int, filte
 	}
 
 	offset := (page - 1) * limit
-	err := query.Select("id", "bujp_id", "email", "role", "full_name", "phone", "photo", "status", "last_login", "created_at", "updated_at").
+	err := query.Select("id", "bujp_id", "email", "role", "full_name", "phone", "photo", "status", "must_change_password", "last_login", "created_at", "updated_at").
 		Order("updated_at DESC, id").Limit(limit).Offset(offset).Find(&users).Error
 	return users, total, err
 }

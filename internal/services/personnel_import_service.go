@@ -17,26 +17,24 @@ import (
 	"gorm.io/gorm"
 )
 
-// Default password assigned to users that the personnel importer auto-creates
-// when an Excel row references an email that does not yet exist. Mirrors the
-// Laravel implementation (`123456`).
-const PersonnelImportDefaultPassword = "123456"
-
 // PersonnelImportRowResult is a single successful import outcome.
 type PersonnelImportRowResult struct {
-	Row         int       `json:"row"`
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	FullName    string    `json:"full_name"`
-	UserCreated bool      `json:"user_created"`
+	Row               int       `json:"row"`
+	ID                uuid.UUID `json:"id"`
+	UserID            uuid.UUID `json:"user_id"`
+	FullName          string    `json:"full_name"`
+	Email             string    `json:"email"`
+	UserCreated       bool      `json:"user_created"`
+	TemporaryPassword string    `json:"temporary_password,omitempty"`
 }
 
 // PersonnelImportRowError is a single failed row with the offending value(s).
 type PersonnelImportRowError struct {
-	Row     int                    `json:"row"`
-	Field   string                 `json:"field"`
-	Message string                 `json:"message"`
-	Data    map[string]interface{} `json:"data,omitempty"`
+	Row               int                    `json:"row"`
+	Field             string                 `json:"field"`
+	Message           string                 `json:"message"`
+	Data              map[string]interface{} `json:"data,omitempty"`
+	TemporaryPassword string                 `json:"temporary_password,omitempty"`
 }
 
 // PersonnelImportSummary is the response payload returned by BulkImport.
@@ -132,7 +130,7 @@ func (s *personnelImportServiceImpl) BuildTemplate() ([]byte, string, error) {
 		{"PENTING - Baca Dulu Sebelum Mengisi:"},
 		{"", "1. Hapus baris contoh di sheet Personnel Template (baris 2)"},
 		{"", "2. Email wajib diisi - sistem otomatis membuat user baru jika belum ada"},
-		{"", "3. Password default untuk user baru: " + PersonnelImportDefaultPassword},
+		{"", "3. Akun baru mendapat password sementara acak yang ditampilkan satu kali pada hasil impor; pengguna wajib menggantinya saat masuk pertama kali."},
 		{"", "4. NIK (Nomor KTP) harus 16 digit angka"},
 		{"", "5. Mulai isi data dari baris ke-3 di sheet Personnel Template"},
 		{},
@@ -208,11 +206,6 @@ func (s *personnelImportServiceImpl) BulkImport(ctx context.Context, bujpID uuid
 	}
 
 	headers := normalizeHeaders(rows[0])
-	hashedDefaultPassword, err := bcrypt.GenerateFromPassword([]byte(PersonnelImportDefaultPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-
 	summary := &PersonnelImportSummary{Results: []PersonnelImportRowResult{}, Errors: []PersonnelImportRowError{}}
 
 	for i := 1; i < len(rows); i++ {
@@ -257,33 +250,16 @@ func (s *personnelImportServiceImpl) BulkImport(ctx context.Context, bujpID uuid
 			continue
 		}
 
-		userCreated := false
-		if user == nil {
-			phone := strPtrIfNotEmpty(row["phone"])
-			user = &model.User{
-				BujpID:   &bujpID,
-				FullName: fullName,
-				Email:    email,
-				Password: string(hashedDefaultPassword),
-				Phone:    phone,
-				Role:     "guard",
-				Status:   "active",
-			}
-			if cerr := s.userRepo.Create(ctx, user); cerr != nil {
-				summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "email", Message: humanizeUserCreateError(cerr, email), Data: stringMapToAny(row)})
-				continue
-			}
-			userCreated = true
-		}
-
 		// Reject duplicates: same NIK or same (user, bujp) pair.
 		if existing, _ := s.personnelRepo.FindByIDNumber(ctx, idNumber); existing != nil {
 			summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "id_number", Message: fmt.Sprintf("NIK %s sudah terdaftar dalam sistem", idNumber), Data: stringMapToAny(row)})
 			continue
 		}
-		if existing, _ := s.personnelRepo.FindByUserID(ctx, user.ID); existing != nil && existing.BujpID == bujpID {
-			summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "email", Message: fmt.Sprintf("Personnel dengan email %s sudah terdaftar di BUJP ini", email), Data: stringMapToAny(row)})
-			continue
+		if user != nil {
+			if existing, _ := s.personnelRepo.FindByUserID(ctx, user.ID); existing != nil && existing.BujpID == bujpID {
+				summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "email", Message: fmt.Sprintf("Personnel dengan email %s sudah terdaftar di BUJP ini", email), Data: stringMapToAny(row)})
+				continue
+			}
 		}
 
 		joinDate, err := parseImportDate(row["join_date"])
@@ -293,6 +269,35 @@ func (s *personnelImportServiceImpl) BulkImport(ctx context.Context, bujpID uuid
 		}
 		birthDate, _ := parseImportDate(row["birth_date"])
 		contractEndDate, _ := parseImportDate(row["contract_end_date"])
+
+		temporaryPassword := ""
+		userCreated := false
+		if user == nil {
+			temporaryPassword, err = generateTemporaryPassword()
+			if err != nil {
+				return nil, err
+			}
+			hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(temporaryPassword), bcrypt.DefaultCost)
+			if hashErr != nil {
+				return nil, hashErr
+			}
+			phone := strPtrIfNotEmpty(row["phone"])
+			user = &model.User{
+				BujpID:             &bujpID,
+				FullName:           fullName,
+				Email:              email,
+				Password:           string(hashedPassword),
+				Phone:              phone,
+				Role:               "guard",
+				Status:             "active",
+				MustChangePassword: true,
+			}
+			if cerr := s.userRepo.Create(ctx, user); cerr != nil {
+				summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "email", Message: humanizeUserCreateError(cerr, email), Data: stringMapToAny(row)})
+				continue
+			}
+			userCreated = true
+		}
 
 		userID := user.ID
 		personnel := &model.Personnel{
@@ -318,12 +323,20 @@ func (s *personnelImportServiceImpl) BulkImport(ctx context.Context, bujpID uuid
 		}
 
 		if cerr := s.personnelRepo.Create(ctx, personnel); cerr != nil {
-			summary.Errors = append(summary.Errors, PersonnelImportRowError{Row: rowNumber, Field: "general", Message: cerr.Error(), Data: stringMapToAny(row)})
+			rowError := PersonnelImportRowError{Row: rowNumber, Field: "general", Message: cerr.Error(), Data: stringMapToAny(row)}
+			if userCreated {
+				if cleanupErr := s.userRepo.Delete(ctx, user.ID); cleanupErr != nil {
+					rowError.Message += "; akun baru gagal dibersihkan dari sistem"
+					rowError.TemporaryPassword = temporaryPassword
+				}
+			}
+			summary.Errors = append(summary.Errors, rowError)
 			continue
 		}
 
 		summary.Results = append(summary.Results, PersonnelImportRowResult{
-			Row: rowNumber, ID: personnel.ID, UserID: user.ID, FullName: personnel.FullName, UserCreated: userCreated,
+			Row: rowNumber, ID: personnel.ID, UserID: user.ID, FullName: personnel.FullName,
+			Email: email, UserCreated: userCreated, TemporaryPassword: temporaryPassword,
 		})
 	}
 

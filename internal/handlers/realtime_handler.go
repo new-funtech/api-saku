@@ -31,6 +31,9 @@ func (h *RealtimeHandler) UpgradeAuth(c *fiber.Ctx) error {
 	if err != nil || claims.UserID == uuid.Nil {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
+	if claims.MustChangePassword {
+		return fiber.NewError(fiber.StatusForbidden, "password change required")
+	}
 	c.Locals("userID", claims.UserID)
 	return c.Next()
 }

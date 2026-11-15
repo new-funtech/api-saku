@@ -134,12 +134,12 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 
 // CreateUser godoc
 // @Summary      Create a new user
-// @Description  Create a new user with the provided data
+// @Description  Create a user and return a one-time random password that must be changed on first login.
 // @Tags         Users
 // @Accept       json
 // @Produce      json
 // @Param        request  body      model.CreateUserRequest  true  "User data"
-// @Success      201      {object}  model.APIResponse
+// @Success      201      {object}  model.APIResponse{data=model.CreateUserResponse}
 // @Failure      400      {object}  model.APIResponse
 // @Failure      500      {object}  model.APIResponse
 // @Security     BearerAuth

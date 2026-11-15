@@ -65,6 +65,9 @@ func (s *notificationServiceImpl) toResponses(ctx context.Context, items []model
 	var loanIDs []uuid.UUID
 	for i := range items {
 		out[i] = model.ToNotificationResponse(&items[i])
+		if items[i].EntityType == model.NotificationEntityOvertime {
+			out[i].Body = normalizeOvertimeNotificationBody(out[i].Body)
+		}
 		if items[i].EntityType == "loan" {
 			loanIDs = append(loanIDs, items[i].EntityID)
 		}
