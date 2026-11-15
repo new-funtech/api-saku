@@ -54,24 +54,24 @@ func (r *attendanceCorrectionRepositoryImpl) FindAll(ctx context.Context, page, 
 
 	// Apply filters
 	if personnelID, ok := filters["personnel_id"].(uuid.UUID); ok && personnelID != uuid.Nil {
-		query = query.Where("personnel_id = ?", personnelID)
+		query = query.Where("attendance_corrections.personnel_id = ?", personnelID)
 	}
 	if status, ok := filters["status"].(string); ok && status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("attendance_corrections.status = ?", status)
 	}
 	if correctionType, ok := filters["correction_type"].(string); ok && correctionType != "" {
-		query = query.Where("correction_type = ?", correctionType)
+		query = query.Where("attendance_corrections.correction_type = ?", correctionType)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, 0, apperrors.Internal("Failed to count attendance corrections")
 	}
 
 	offset := (page - 1) * limit
-	err := query.
+	err := query.Session(&gorm.Session{}).
 		Preload("Personnel").
 		Preload("Approver").
-		Order("created_at DESC").
+		Order("attendance_corrections.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&corrections).Error
